@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IronGrind · Membership Registration</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="register-body" style="padding:24px; background: radial-gradient(circle at 20% 20%, #1a1207, #0b0e14 60%);">
+    <div style="max-width:900px; margin:0 auto; background:#11161f; border:1px solid #1e2533; border-radius:24px; padding:32px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:20px; border-bottom:1px solid #1e2533; flex-wrap:wrap; gap:12px;">
+            <div class="logo-area">
+                <div class="logo-icon">IG</div>
+                <div class="logo-text">
+                    <h1>Iron<span>Grind</span></h1>
+                    <p>Fitness Gym · Dapitan City</p>
+                </div>
+            </div>
+            <a href="index.html" class="btn-sm"><i class="fas fa-arrow-left"></i> Back to Login</a>
+        </div>
+
+        <div style="text-align:center; margin:28px 0;">
+            <h2 style="font-size:1.4rem; font-weight:700; color:#d31212; margin-bottom:8px;">IRON GRIND FITNESS GYM MEMBERSHIP FORM</h2>
+            <p style="font-size:0.85rem; color:#8b95a9;">Fill in all required fields. Your application will be reviewed by the gym admin.</p>
+        </div>
+
+        <form id="registrationForm" onsubmit="submitRegistration(event)">
+            <div style="background:#0d1219; border:1px solid #1e2533; border-radius:18px; padding:22px; margin-bottom:20px;">
+                <div style="display:flex; align-items:center; gap:10px; font-size:0.95rem; font-weight:600; margin-bottom:18px; padding-bottom:12px; border-bottom:1px solid #1e2533;">
+                    <i class="fas fa-user" style="color:#d31212;"></i><span>Personal Information</span>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Full Name *</label><input type="text" id="regFullName" placeholder="Juan Dela Cruz" required></div>
+                    <div class="form-group"><label>Date of Birth *</label><input type="date" id="regDob" required></div>
+                </div>
+                <div class="form-row" style="grid-template-columns:1fr 1fr 1fr;">
+                    <div class="form-group"><label>Age</label><input type="number" id="regAge" readonly></div>
+                    <div class="form-group"><label>Sex</label><select id="regSex"><option>Male</option><option>Female</option><option>Prefer not to say</option></select></div>
+                    <div class="form-group"><label>Mobile *</label><input type="tel" id="regMobile" placeholder="0917 123 4567" required></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Height (cm)</label><input type="number" id="regHeight" placeholder="170"></div>
+                    <div class="form-group"><label>Weight (kg)</label><input type="number" id="regWeight" placeholder="65"></div>
+                </div>
+            </div>
+
+            <div style="background:#0d1219; border:1px solid #1e2533; border-radius:18px; padding:22px; margin-bottom:20px;">
+                <div style="display:flex; align-items:center; gap:10px; font-size:0.95rem; font-weight:600; margin-bottom:18px; padding-bottom:12px; border-bottom:1px solid #1e2533;">
+                    <i class="fas fa-phone" style="color:#d31212;"></i><span>Emergency Contact</span>
+                </div>
+                <div class="form-row" style="grid-template-columns:1fr 1fr 1fr;">
+                    <div class="form-group"><label>Name *</label><input type="text" id="regEcName" placeholder="Maria Dela Cruz" required></div>
+                    <div class="form-group"><label>Relationship *</label><input type="text" id="regEcRelation" placeholder="Mother" required></div>
+                    <div class="form-group"><label>Contact Number *</label><input type="tel" id="regEcContact" placeholder="0917 123 4567" required></div>
+                </div>
+            </div>
+
+            <div style="background:#0d1219; border:1px solid #1e2533; border-radius:18px; padding:22px; margin-bottom:20px;">
+                <div style="display:flex; align-items:center; gap:10px; font-size:0.95rem; font-weight:600; margin-bottom:18px; padding-bottom:12px; border-bottom:1px solid #1e2533;">
+                    <i class="fas fa-id-card" style="color:#d31212;"></i><span>Membership Details</span>
+                </div>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-bottom:18px;">
+    <label style="cursor:pointer; background:#11161f; border:2px solid #1e2533; border-radius:14px; padding:16px; display:block;">
+        <input type="radio" name="regPlan" value="Monthly|800" required style="accent-color:#d31212; margin-right:8px;">
+        <span style="font-weight:600;">Monthly</span>
+        <div style="font-size:1.1rem; font-weight:700; color:#d31212; margin-top:4px;">₱800 <span style="font-size:0.7rem; color:#2ecc71;">Promo</span></div>
+    </label>
+    <label style="cursor:pointer; background:#11161f; border:2px solid #1e2533; border-radius:14px; padding:16px; display:block;">
+        <input type="radio" name="regPlan" value="Half Month|400" style="accent-color:#d31212; margin-right:8px;">
+        <span style="font-weight:600;">Half Month</span>
+        <div style="font-size:1.1rem; font-weight:700; color:#d31212; margin-top:4px;">₱400 <span style="font-size:0.7rem; color:#2ecc71;">Promo</span></div>
+    </label>
+    <label style="cursor:pointer; background:#11161f; border:2px solid #1e2533; border-radius:14px; padding:16px; display:block;">
+        <input type="radio" name="regPlan" value="Walk-in|80" style="accent-color:#d31212; margin-right:8px;">
+        <span style="font-weight:600;">Walk-in</span>
+        <div style="font-size:1.1rem; font-weight:700; color:#d31212; margin-top:4px;">₱80 <span style="font-size:0.7rem; color:#2ecc71;">per day</span></div>
+    </label>
+</div>
+                <div class="form-row">
+                    <div class="form-group"><label>Start Date</label><input type="date" id="regStartDate" readonly></div>
+                    <div class="form-group"><label>End Date</label><input type="date" id="regEndDate" readonly></div>
+                </div>
+            </div>
+
+            <div style="background:#0d1219; border:1px solid #1e2533; border-radius:18px; padding:22px; margin-bottom:20px;">
+                <div style="display:flex; align-items:center; gap:10px; font-size:0.95rem; font-weight:600; margin-bottom:18px; padding-bottom:12px; border-bottom:1px solid #1e2533;">
+                    <i class="fas fa-heartbeat" style="color:#d31212;"></i><span>Health Declaration</span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:16px;">
+                    <label style="display:flex; align-items:center; gap:10px; font-size:0.85rem; color:#c5cbd8;"><input type="checkbox" id="hcHighBp" style="accent-color:#d31212;"> High Blood Pressure</label>
+                    <label style="display:flex; align-items:center; gap:10px; font-size:0.85rem; color:#c5cbd8;"><input type="checkbox" id="hcHeart" style="accent-color:#d31212;"> Heart Condition</label>
+                    <label style="display:flex; align-items:center; gap:10px; font-size:0.85rem; color:#c5cbd8;"><input type="checkbox" id="hcAsthma" style="accent-color:#d31212;"> Asthma / Breathing Problems</label>
+                    <label style="display:flex; align-items:center; gap:10px; font-size:0.85rem; color:#c5cbd8;"><input type="checkbox" id="hcInjury" style="accent-color:#d31212;"> Recent Injury or Surgery</label>
+                </div>
+                <p style="font-size:0.85rem; color:#8b95a9; margin-bottom:12px;"><strong>Fitness Goal (Optional)</strong></p>
+                <div style="display:flex; flex-direction:column; gap:10px;">
+                    <label style="display:flex; align-items:center; gap:10px; font-size:0.85rem; color:#c5cbd8;"><input type="checkbox" name="goal" value="Weight Loss" style="accent-color:#d31212;"> Weight Loss</label>
+                    <label style="display:flex; align-items:center; gap:10px; font-size:0.85rem; color:#c5cbd8;"><input type="checkbox" name="goal" value="Muscle Gain" style="accent-color:#d31212;"> Muscle Gain</label>
+                    <label style="display:flex; align-items:center; gap:10px; font-size:0.85rem; color:#c5cbd8;"><input type="checkbox" name="goal" value="Strength" style="accent-color:#d31212;"> Strength</label>
+                    <label style="display:flex; align-items:center; gap:10px; font-size:0.85rem; color:#c5cbd8;"><input type="checkbox" name="goal" value="General Fitness" style="accent-color:#d31212;"> General Fitness</label>
+                </div>
+            </div>
+
+            <div style="background:#0d1219; border:1px solid #1e2533; border-radius:18px; padding:22px; margin-bottom:20px;">
+                <div style="display:flex; align-items:center; gap:10px; font-size:0.95rem; font-weight:600; margin-bottom:18px; padding-bottom:12px; border-bottom:1px solid #1e2533;">
+                    <i class="fas fa-scroll" style="color:#d31212;"></i><span>Rules and Agreement</span>
+                </div>
+                <ol style="padding-left:24px; color:#8b95a9; font-size:0.82rem; line-height:1.8; margin-bottom:16px;">
+                    <li>Full payment is required before using the gym.</li>
+                    <li>Memberships are non-transferable and non-refundable.</li>
+                    <li>Follow all gym rules and staff instructions at all times.</li>
+                    <li>Proper attire and hygiene are required.</li>
+                    <li>Use equipment properly and return after use; damages will be charged.</li>
+                    <li>The gym is not responsible for lost or stolen items.</li>
+                    <li>Members are responsible for their own health and safety.</li>
+                    <li>Walk-in users must also follow all rules.</li>
+                </ol>
+                <label style="display:flex; align-items:center; gap:10px; font-size:0.85rem; color:#c5cbd8; background:rgba(255,107,43,0.05); border:1px solid rgba(255,107,43,0.15); padding:12px 16px; border-radius:10px;">
+                    <input type="checkbox" id="agreeRules" required style="accent-color:#d31212;"> I have read and agree to the Rules and Agreement *
+                </label>
+            </div>
+
+            <div style="background:#0d1219; border:1px solid #1e2533; border-radius:18px; padding:22px; margin-bottom:20px;">
+                <div style="display:flex; align-items:center; gap:10px; font-size:0.95rem; font-weight:600; margin-bottom:18px; padding-bottom:12px; border-bottom:1px solid #1e2533;">
+                    <i class="fas fa-file-signature" style="color:#d31212;"></i><span>Liability Waiver</span>
+                </div>
+                <p style="font-size:0.8rem; color:#8b95a9; line-height:1.6; margin-bottom:16px;">
+                    I confirm that I am physically fit to participate in gym activities. I understand the risks involved and accept full responsibility for any injury or accident. I release Iron Grind Fitness Gym, its owners, and staff from any liability, except where prohibited by law.
+                </p>
+                <label style="display:flex; align-items:center; gap:10px; font-size:0.85rem; color:#c5cbd8; background:rgba(255,107,43,0.05); border:1px solid rgba(255,107,43,0.15); padding:12px 16px; border-radius:10px;">
+                    <input type="checkbox" id="agreeWaiver" required style="accent-color:#d31212;"> I accept the Liability Waiver *
+                </label>
+            </div>
+
+            <div style="background:#0d1219; border:1px solid #1e2533; border-radius:18px; padding:22px; margin-bottom:20px;">
+                <div style="display:flex; align-items:center; gap:10px; font-size:0.95rem; font-weight:600; margin-bottom:18px; padding-bottom:12px; border-bottom:1px solid #1e2533;">
+                    <i class="fas fa-lock" style="color:#d31212;"></i><span>Create Your Account</span>
+                </div>
+                <p style="font-size:0.8rem; color:#8b95a9; margin-bottom:16px;">Choose a username and password. You'll use these to log in <strong>after</strong> the admin approves your membership.</p>
+                <div class="form-row">
+                    <div class="form-group"><label>Username *</label><input type="text" id="regUsername" placeholder="juan_dc" required minlength="4"></div>
+                    <div class="form-group">
+                        <label>Password *</label>
+                        <div class="password-wrapper">
+                            <input type="password" id="regPassword" placeholder="At least 6 characters" required minlength="6">
+                            <button type="button" class="toggle-password" onclick="toggleRegPassword('regPassword', 'regPwIcon')"><i class="fas fa-eye" id="regPwIcon"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Confirm Password *</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="regConfirmPassword" placeholder="Re-enter password" required minlength="6">
+                        <button type="button" class="toggle-password" onclick="toggleRegPassword('regConfirmPassword', 'regConfirmPwIcon')"><i class="fas fa-eye" id="regConfirmPwIcon"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="login-error hidden" id="regError">
+                <i class="fas fa-exclamation-circle"></i> <span id="regErrorText"></span>
+            </div>
+
+            <button type="submit" class="btn-login" style="margin-top:24px;">
+                <i class="fas fa-paper-plane"></i> Submit Membership Application
+            </button>
+            <p style="text-align:center; font-size:0.8rem; color:#6a748b; margin-top:16px;">
+                Already have an account? <a href="index.html" style="color:#ff6b2b; text-decoration:none; font-weight:600;">Sign in here</a>
+            </p>
+        </form>
+
+        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; margin-top:32px; padding-top:24px; border-top:1px solid #1e2533; text-align:center;">
+            <div><strong style="font-size:0.75rem; text-transform:uppercase; color:#6a748b;">Our Contact</strong><p style="font-size:0.85rem; margin-top:6px;">09476337525</p></div>
+            <div><strong style="font-size:0.75rem; text-transform:uppercase; color:#6a748b;">Facebook</strong><p style="font-size:0.85rem; margin-top:6px;">IRON GRIND Fitness Gym</p></div>
+            <div><strong style="font-size:0.75rem; text-transform:uppercase; color:#6a748b;">Address</strong><p style="font-size:0.85rem; margin-top:6px;">Purok Mangga, Sulangon, Dapitan City</p></div>
+        </div>
+    </div>
+    <div id="modalOverlay" class="modal-overlay hidden" onclick="if(event.target===this) closeModal()">
+        <div class="modal-content" id="modalContent"></div>
+    </div>
+    <script src="register.js"></script>
+</body>
+</html>
