@@ -164,7 +164,9 @@ function renderDashboard() {
     const total = todaySales.reduce((sum, s) => sum + Number(s.total), 0);
     document.getElementById('statSales').textContent = formatPeso(total);
 
-    const low = products.filter(p => p.stock <= 4);
+    const low = products.filter(p => p.category === 'Supplement'
+        ? p.inventoryUnit === 'gram' && p.stock <= 100
+        : p.stock <= 4);
     document.getElementById('statLowStock').textContent = low.length;
 
     const attTable = document.getElementById('dashboardAttendanceTable');
@@ -180,7 +182,7 @@ function renderDashboard() {
 
     const lowList = document.getElementById('lowStockList');
     if (low.length === 0) lowList.innerHTML = '<div class="empty-state">All items are well-stocked.</div>';
-    else lowList.innerHTML = low.map(p => `<div class="low-stock-item"><span class="name">${p.name}${p.size ? ' — ' + p.size : ''}</span><span class="qty">${p.stock} left</span></div>`).join('');
+    else lowList.innerHTML = low.map(p => `<div class="low-stock-item"><span class="name">${p.name}${p.category === 'Merch' && p.size ? ' — ' + p.size : ''}</span><span class="qty">${p.stock}${p.category === 'Supplement' ? ' g' : ''} left</span></div>`).join('');
 
     const pending = pendingApprovals.filter(p => p.status === 'pending');
     document.getElementById('pendingBadge').textContent = pending.length;
@@ -1074,14 +1076,16 @@ function renderStore() {
 }
 
 function productCard(p) {
-    const low = p.stock <= 4;
+    const supplement = p.category === 'Supplement';
+    const low = supplement ? p.stock <= 100 : p.stock <= 4;
+    const stockLabel = `${Number(p.stock).toLocaleString('en-PH')}${supplement ? ' g' : ''} in stock`;
     return `
         <div class="product-card">
             ${p.image ? `<div class="product-img-wrap"><img src="${p.image}" alt="${escapeHTML(p.name)}" loading="lazy"></div>` : ''}
             <span class="cat">${p.category}</span>
-            <h4>${p.name}${p.size ? ' — ' + p.size : ''}</h4>
-            <div class="price">${formatPeso(p.price)}</div>
-            <div class="stock ${low ? 'low' : ''}">${low ? '⚠ ' : ''}${p.stock} in stock</div>
+            <h4>${p.name}${!supplement && p.size ? ' — ' + p.size : ''}</h4>
+            <div class="price">${formatPeso(p.price)}${supplement ? ' / g' : ''}</div>
+            <div class="stock ${low ? 'low' : ''}">${low ? '⚠ ' : ''}${stockLabel}</div>
             <div class="product-actions">
                 <button class="btn-edit" onclick="editProduct('${p.id}')">Edit</button>
                 <button class="btn-delete" onclick="deleteProduct('${p.id}')"><i class="fas fa-trash"></i></button>
@@ -1094,15 +1098,19 @@ function openAddProductModal() {
         <h3><i class="fas fa-plus"></i> Add Product</h3>
         <div class="form-group product-photo-field"><label for="apImage">Product photo (optional)</label><input type="file" id="apImage" accept="image/*" onchange="previewProductPhoto(this, 'apImagePreview')"><div id="apImagePreview" class="product-photo-preview"><span>No photo selected</span></div><small>Images are resized before saving.</small></div>
         <div class="form-group" style="margin-bottom:14px;"><label>Name</label><input type="text" id="apName" placeholder="Whey Protein — Vanilla"></div>
-        <div class="form-group" style="margin-bottom:14px;"><label>Category</label><select id="apCat"><option value="Supplement">Supplement</option><option value="Merch">Merchandise</option></select></div>
-        <div class="form-group" style="margin-bottom:14px;"><label>Size (optional)</label><input type="text" id="apSize" placeholder="Large"></div>
-        <div class="form-group" style="margin-bottom:14px;"><label>Supplement weight in grams (optional)</label><input type="number" id="apWeightGrams" min="0" step="0.01" placeholder="e.g. 500"><small class="field-hint">Used to calculate total grams sold per day. Leave blank for merchandise.</small></div>
+        <div class="form-group" style="margin-bottom:14px;"><label>Category</label><select id="apCat" onchange="toggleAddProductSize()"><option value="Supplement">Supplement</option><option value="Merch">Merchandise</option></select></div>
+        <div id="apSizeGroup" class="form-group" style="margin-bottom:14px;display:none"><label>Size (optional, merchandise)</label><input type="text" id="apSize" placeholder="Large"></div>
         <div class="form-row">
-            <div class="form-group"><label>Price ₱</label><input type="number" id="apPrice" placeholder="650"></div>
-            <div class="form-group"><label>Stock</label><input type="number" id="apStock" placeholder="10"></div>
+            <div class="form-group"><label>Price (per gram for supplements, per item for merchandise) ₱</label><input type="number" id="apPrice" min="0" step="0.01" placeholder="e.g. 2.50 per gram"></div>
+            <div class="form-group"><label>Stock (grams for supplements, items for merchandise)</label><input type="number" id="apStock" min="0" step="0.01" placeholder="e.g. 500 grams"></div>
         </div>
         <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="submitAddProduct()">Add</button></div>
     `);
+}
+
+function toggleAddProductSize() {
+    const group = document.getElementById('apSizeGroup');
+    if (group) group.style.display = document.getElementById('apCat')?.value === 'Merch' ? '' : 'none';
 }
 
 async function submitAddProduct() {
@@ -1111,13 +1119,10 @@ async function submitAddProduct() {
     const size = document.getElementById('apSize').value.trim();
     const price = Number(document.getElementById('apPrice').value);
     const stock = Number(document.getElementById('apStock').value);
-    const weightInput = document.getElementById('apWeightGrams').value.trim();
-    const weightGrams = weightInput ? Number(weightInput) : null;
-    if (!name || !price) { toast('Fill all required fields.', 'error'); return; }
-    if (weightInput && (!Number.isFinite(weightGrams) || weightGrams <= 0)) { toast('Supplement weight must be greater than zero.', 'error'); return; }
+    if (!name || !Number.isFinite(price) || price <= 0 || !Number.isFinite(stock) || stock < 0) { toast('Enter a name, a price greater than zero, and a valid stock amount.', 'error'); return; }
     const image = await getProductPhoto('apImage');
     if (image === false) return;
-    products.push({ id: uid('P'), name, category, price, stock, size, ...(weightGrams ? { weightGrams } : {}), ...(image ? { image } : {}) });
+    products.push({ id: uid('P'), name, category, price, stock, ...(category === 'Merch' && size ? { size } : {}), inventoryUnit: category === 'Supplement' ? 'gram' : 'item', ...(image ? { image } : {}) });
     try { saveDB('products', products); }
     catch { products.pop(); toast('Could not save product photo. Try a smaller image or remove photos from other products.', 'error'); return; }
     closeModal();
@@ -1131,14 +1136,13 @@ function editProduct(id) {
     if (!p) return;
     openModal(`
         <h3><i class="fas fa-edit"></i> Edit Product</h3>
-        <p class="modal-sub">Password required to change price.</p>
+        <p class="modal-sub">Password required to change price. Supplement price and stock are recorded per gram.</p>
         <div class="form-group product-photo-field"><label for="epImage">Product photo (optional)</label><input type="file" id="epImage" accept="image/*" onchange="previewProductPhoto(this, 'epImagePreview')"><div id="epImagePreview" class="product-photo-preview">${p.image ? `<img src="${p.image}" alt="Current product photo">` : '<span>No photo selected</span>'}</div><label class="product-photo-remove"><input type="checkbox" id="epRemoveImage"> Remove current photo</label><small>Choose a new image to replace the current one.</small></div>
         <div class="form-group" style="margin-bottom:14px;"><label>Name</label><input type="text" id="epName" value="${p.name}"></div>
-        <div class="form-group" style="margin-bottom:14px;"><label>Size</label><input type="text" id="epSize" value="${p.size || ''}"></div>
-        <div class="form-group" style="margin-bottom:14px;"><label>Supplement weight in grams (optional)</label><input type="number" id="epWeightGrams" min="0" step="0.01" value="${p.weightGrams || ''}" placeholder="e.g. 500"><small class="field-hint">Used to calculate total grams sold per day. Leave blank for merchandise.</small></div>
+        ${p.category === 'Merch' ? `<div class="form-group" style="margin-bottom:14px;"><label>Size (optional)</label><input type="text" id="epSize" value="${p.size || ''}"></div>` : ''}
         <div class="form-row">
-            <div class="form-group"><label>Price</label><input type="number" id="epPrice" value="${p.price}"></div>
-            <div class="form-group"><label>Stock</label><input type="number" id="epStock" value="${p.stock}"></div>
+            <div class="form-group"><label>Price (per gram for supplements, per item for merchandise) ₱</label><input type="number" id="epPrice" min="0" step="0.01" value="${p.price}"></div>
+            <div class="form-group"><label>Stock (grams for supplements, items for merchandise)</label><input type="number" id="epStock" min="0" step="0.01" value="${p.stock}"></div>
         </div>
         <div class="form-group" style="margin-top:14px;"><label>Password (for price change)</label><input type="password" id="epPassword" placeholder="irongrind2025"></div>
         <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="submitEditProduct('${p.id}')">Save</button></div>
@@ -1149,20 +1153,20 @@ async function submitEditProduct(id) {
     const p = products.find(x => x.id === id);
     if (!p) return;
     const newPrice = Number(document.getElementById('epPrice').value);
-    const weightInput = document.getElementById('epWeightGrams').value.trim();
-    const weightGrams = weightInput ? Number(weightInput) : null;
+    const stockInput = document.getElementById('epStock').value.trim();
     const pw = document.getElementById('epPassword').value;
+    if (!Number.isFinite(newPrice) || newPrice <= 0 || !Number.isFinite(Number(stockInput)) || Number(stockInput) < 0) { toast('Enter a valid price and stock amount.', 'error'); return; }
     if (newPrice !== p.price && pw !== 'irongrind2025') { toast('Wrong password.', 'error'); return; }
-    if (weightInput && (!Number.isFinite(weightGrams) || weightGrams <= 0)) { toast('Supplement weight must be greater than zero.', 'error'); return; }
+    if (p.category === 'Supplement' && (!stockInput || !Number.isFinite(Number(stockInput)))) { toast('Set supplement stock in grams.', 'error'); return; }
     const image = await getProductPhoto('epImage');
     if (image === false) return;
     const oldProduct = { ...p };
     p.name = document.getElementById('epName').value.trim();
-    p.size = document.getElementById('epSize').value.trim();
+    if (p.category === 'Merch') p.size = document.getElementById('epSize').value.trim();
+    else delete p.size;
     p.price = newPrice;
     p.stock = Number(document.getElementById('epStock').value);
-    if (weightGrams) p.weightGrams = weightGrams;
-    else delete p.weightGrams;
+    p.inventoryUnit = p.category === 'Supplement' ? 'gram' : 'item';
     if (image) p.image = image;
     else if (document.getElementById('epRemoveImage').checked) delete p.image;
     try { saveDB('products', products); }
@@ -1226,26 +1230,45 @@ function completeProductDeletion(id) {
 
 function openNewSaleModal() {
     const available = products.filter(p => p.stock > 0);
-    if (available.length === 0) { toast('No stock.', 'error'); return; }
+    if (available.length === 0) {
+        toast('No stock.', 'error');
+        return;
+    }
     openModal(`
         <h3><i class="fas fa-cash-register"></i> New Sale</h3>
         <div class="form-group" style="margin-bottom:14px;"><label>Customer</label><input type="text" id="nsCustomer" placeholder="Walk-in name"></div>
-        <div class="form-group" style="margin-bottom:14px;"><label>Product</label><select id="nsProduct">
-            ${available.map(p => `<option value="${p.id}">${p.name}${p.size ? ' (' + p.size + ')' : ''} — ${formatPeso(p.price)}</option>`).join('')}
+        <div class="form-group" style="margin-bottom:14px;"><label>Product</label><select id="nsProduct" onchange="updateSaleQuantityMode()">
+            ${available.map(p => `<option value="${p.id}">${p.name}${p.category === 'Merch' && p.size ? ' (' + p.size + ')' : ''} — ${formatPeso(p.price)}${p.category === 'Supplement' ? ' / g' : ''}</option>`).join('')}
         </select></div>
-        <div class="form-group" style="margin-bottom:14px;"><label>Quantity</label><input type="number" id="nsQty" value="1" min="1"></div>
+        <div class="form-group" style="margin-bottom:14px;"><label id="nsQtyLabel">Quantity</label><input type="number" id="nsQty" value="1" min="0.01" step="0.01" oninput="updateSaleTotalPreview()"></div>
+        <p class="modal-sub" id="nsPriceHint"></p>
+        <div class="sale-total-preview">Sale total <strong id="nsTotalPreview">₱0</strong></div>
         <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="submitNewSale()">Complete</button></div>
     `);
+    updateSaleQuantityMode();
 }
 
-function getProductWeightGrams(product) {
-    const stored = Number(product?.weightGrams);
-    if (Number.isFinite(stored) && stored > 0) return stored;
-    const label = `${product?.size || ''} ${product?.name || ''}`;
-    const match = label.match(/(\d+(?:\.\d+)?)\s*(kg|kgs|kilograms?|g|grams?)\b/i);
-    if (!match) return null;
-    const amount = Number(match[1]);
-    return /^k/i.test(match[2]) ? amount * 1000 : amount;
+function updateSaleQuantityMode() {
+    const product = products.find(item => item.id === document.getElementById('nsProduct')?.value);
+    const quantityInput = document.getElementById('nsQty');
+    if (!product || !quantityInput) return;
+    const byGram = product.category === 'Supplement';
+    document.getElementById('nsQtyLabel').textContent = byGram ? 'Amount to sell (grams)' : 'Quantity';
+    quantityInput.min = byGram ? '0.01' : '1';
+    quantityInput.step = byGram ? '0.01' : '1';
+    quantityInput.max = product.stock;
+    quantityInput.value = byGram ? String(Math.min(100, product.stock)) : '1';
+    document.getElementById('nsPriceHint').textContent = byGram
+        ? `${formatPeso(product.price)} per gram · ${Number(product.stock).toLocaleString('en-PH')} g available`
+        : `${formatPeso(product.price)} per item · ${product.stock} available`;
+    updateSaleTotalPreview();
+}
+
+function updateSaleTotalPreview() {
+    const product = products.find(item => item.id === document.getElementById('nsProduct')?.value);
+    const quantity = Number(document.getElementById('nsQty')?.value);
+    const output = document.getElementById('nsTotalPreview');
+    if (output) output.textContent = formatPeso(product && Number.isFinite(quantity) ? product.price * quantity : 0);
 }
 
 function submitNewSale() {
@@ -1253,11 +1276,12 @@ function submitNewSale() {
     const pid = document.getElementById('nsProduct').value;
     const qty = Number(document.getElementById('nsQty').value);
     const p = products.find(x => x.id === pid);
-    if (!p || qty < 1 || qty > p.stock) { toast('Invalid quantity.', 'error'); return; }
+    const supplement = p?.category === 'Supplement';
+    if (!p || !Number.isFinite(qty) || qty <= 0 || (!supplement && !Number.isInteger(qty)) || qty > p.stock) { toast('Enter a valid amount within available stock.', 'error'); return; }
     p.stock -= qty;
     const total = p.price * qty;
     const saleId = 'IG-' + Date.now().toString().slice(-4);
-    const unitWeightGrams = p.category === 'Supplement' ? getProductWeightGrams(p) : null;
+    const quantityUnit = supplement ? 'g' : 'item';
     sales.unshift({
         id: saleId,
         customer,
@@ -1266,9 +1290,9 @@ function submitNewSale() {
         productId: p.id,
         productName: p.name,
         quantity: qty,
-        unitWeightGrams,
-        items: `${p.name} x${qty}`,
-        lineItems: [{ name: p.name, productId: p.id, category: p.category, quantity: qty, unitPrice: p.price, total, unitWeightGrams }],
+        quantityUnit,
+        items: `${p.name} x${qty}${supplement ? 'g' : ''}`,
+        lineItems: [{ name: p.name, productId: p.id, category: p.category, quantity: qty, quantityUnit, unitPrice: p.price, total }],
         total,
         date: todayStr(),
         createdAt: new Date().toISOString(),
@@ -1311,7 +1335,7 @@ function getWalkinProductDetails(sale) {
         productName: item.name,
         category: product.category,
         quantity: Number(item.quantity) || 0,
-        unitWeightGrams: product.category === 'Supplement' ? getProductWeightGrams(product) : null
+        quantityUnit: product.category === 'Supplement' ? 'g' : 'item'
     };
 }
 
@@ -1336,15 +1360,14 @@ function renderWalkinSalesReport() {
                 name: sale.productName || sale.items || 'Product',
                 quantity: 0,
                 income: 0,
-                grams: 0,
-                missingWeight: false
+                grams: 0
             };
             const quantity = Number(sale.quantity) || Number(sale.lineItems?.[0]?.quantity) || 0;
-            const weight = Number(sale.unitWeightGrams ?? sale.lineItems?.[0]?.unitWeightGrams);
             existing.quantity += quantity;
             existing.income += Number(sale.total || 0);
-            if (Number.isFinite(weight) && weight > 0) existing.grams += quantity * weight;
-            else if (items === supplementSales) existing.missingWeight = true;
+            if (items === supplementSales) {
+                existing.grams += quantity;
+            }
             byProduct.set(key, existing);
         });
         return [...byProduct.values()].sort((a, b) => a.name.localeCompare(b.name));
@@ -1352,7 +1375,7 @@ function renderWalkinSalesReport() {
     const supplements = aggregate(supplementSales);
     const merchandise = aggregate(merchSales);
     document.getElementById('walkinSupplementTable').innerHTML = supplements.length
-        ? `<div class="table-scroll"><table class="attendance-table"><thead><tr><th>Supplement</th><th>Packs Sold</th><th>Total Grams</th><th>Income</th></tr></thead><tbody>${supplements.map(item => `<tr><td>${escapeHTML(item.name)}</td><td>${item.quantity}</td><td>${item.missingWeight ? '<span class="walkin-missing-weight">Set product weight</span>' : `${item.grams.toLocaleString('en-PH')} g`}</td><td>${formatPeso(item.income)}</td></tr>`).join('')}</tbody></table></div>`
+        ? `<div class="table-scroll"><table class="attendance-table"><thead><tr><th>Supplement</th><th>Grams Sold</th><th>Income</th></tr></thead><tbody>${supplements.map(item => `<tr><td>${escapeHTML(item.name)}</td><td>${item.grams.toLocaleString('en-PH')} g</td><td>${formatPeso(item.income)}</td></tr>`).join('')}</tbody></table></div>`
         : '<div class="empty-state">No supplement sales for this date.</div>';
     document.getElementById('walkinMerchTable').innerHTML = merchandise.length
         ? `<div class="table-scroll"><table class="attendance-table"><thead><tr><th>Merchandise</th><th>Quantity Sold</th><th>Income</th></tr></thead><tbody>${merchandise.map(item => `<tr><td>${escapeHTML(item.name)}</td><td>${item.quantity}</td><td>${formatPeso(item.income)}</td></tr>`).join('')}</tbody></table></div>`
@@ -1393,7 +1416,7 @@ function getSaleReceiptMarkup(sale) {
         <div class="pos-receipt-meta"><span>Customer</span><strong>${escapeHTML(sale.customer || 'Walk-in')}</strong></div>
         <div class="pos-receipt-rule"></div>
         <div class="pos-receipt-items">${items.map(item => `<div class="pos-receipt-item">
-            <div><strong>${escapeHTML(item.name || 'Item')}</strong><span>${Number(item.quantity) || 1} × ${formatPeso(item.unitPrice ?? item.total ?? 0)}</span></div>
+            <div><strong>${escapeHTML(item.name || 'Item')}</strong><span>${Number(item.quantity) || 1}${item.quantityUnit === 'g' ? ' g' : ''} × ${formatPeso(item.unitPrice ?? item.total ?? 0)}${item.quantityUnit === 'g' ? ' / g' : ''}</span></div>
             <strong>${formatPeso(item.total ?? sale.total)}</strong>
         </div>`).join('')}</div>
         <div class="pos-receipt-rule"></div>
@@ -1536,7 +1559,7 @@ function viewReport(type) {
             ${attendance.map(a => `<tr><td>${a.memberName}</td><td>${a.date}</td><td>${a.timeIn}</td><td>${a.timeOut || '—'}</td></tr>`).join('')}</tbody></table>`;
     } else if (type === 'inventory') {
         body = `<table class="attendance-table"><thead><tr><th>Product</th><th>Price</th><th>Stock</th></tr></thead><tbody>
-            ${products.map(p => `<tr><td>${p.name}${p.size ? ' (' + p.size + ')' : ''}</td><td>${formatPeso(p.price)}</td><td>${p.stock}</td></tr>`).join('')}</tbody></table>`;
+            ${products.map(p => `<tr><td>${p.name}${p.category === 'Merch' && p.size ? ' (' + p.size + ')' : ''}</td><td>${formatPeso(p.price)}${p.category === 'Supplement' ? ' / g' : ''}</td><td>${p.category === 'Supplement' ? `${p.stock} g` : p.stock}</td></tr>`).join('')}</tbody></table>`;
     }
     const title = type === 'member-status'
         ? 'Active / Inactive Members Report'
@@ -1602,7 +1625,11 @@ function printReportPDF(type) {
     } else if (type === 'inventory') {
         columns = ['Product', 'Price', 'Stock'];
         rows = products.map(product => ({
-            cells: [`${product.name}${product.size ? ` (${product.size})` : ''}`, formatPeso(product.price), product.stock]
+            cells: [
+                `${product.name}${product.category === 'Merch' && product.size ? ` (${product.size})` : ''}`,
+                `${formatPeso(product.price)}${product.category === 'Supplement' ? ' / g' : ''}`,
+                product.category === 'Supplement' ? `${product.stock} g` : product.stock
+            ]
         }));
     }
 
