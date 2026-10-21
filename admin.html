@@ -199,9 +199,9 @@
                     <div class="panel-header">
                         <div>
                             <h2><i class="fas fa-chart-line"></i> Walk-in Product Sales</h2>
-                            <p class="modal-sub" style="margin-top:6px;">Daily product sales totals from completed point-of-sale transactions.</p>
+                            <p class="modal-sub" style="margin-top:6px;">Record a walk-in purchase, print its receipt, and review daily grams, quantities, and income here.</p>
                         </div>
-                        <label class="walkin-date-filter">Sales date <input type="date" id="walkinSalesDate" onchange="renderWalkinSalesReport()"></label>
+                        <div class="walkin-sales-actions"><label class="walkin-date-filter">Sales date <input type="date" id="walkinSalesDate" onchange="renderWalkinSalesReport()"></label><button class="btn-primary" onclick="openNewSaleModal()"><i class="fas fa-cash-register"></i> Record Walk-in Sale</button></div>
                     </div>
                     <div class="stats-grid walkin-sales-summary">
                         <div class="stat-card"><div class="stat-label">Total Income</div><div class="stat-value" id="walkinTotalIncome">₱0</div><div class="stat-sub">All walk-in products</div></div>

@@ -612,6 +612,7 @@ label:has(input[name="wiPlan"]:checked) {
 /* Walk-in product sales report */
 .walkin-sales-summary.stats-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .walkin-sales-tabs { margin: 18px 0 14px; }
+.walkin-sales-actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; flex-wrap: wrap; }
 .walkin-date-filter { display: flex; align-items: center; gap: 10px; color: #8b95a9; font-size: 0.8rem; font-weight: 600; }
 .walkin-date-filter input { padding: 9px 12px; color: #e8edf5; background: #0d1219; border: 1px solid #2d3548; border-radius: 10px; font: inherit; color-scheme: dark; }
 .walkin-missing-weight { color: #f1c40f; font-size: 0.78rem; }
@@ -625,6 +626,8 @@ label:has(input[name="wiPlan"]:checked) {
     .progress-stats { grid-template-columns: repeat(2, 1fr); }
     .product-grid.view-only { grid-template-columns: 1fr; }
     .walkin-sales-summary.stats-grid { grid-template-columns: 1fr; }
+    .walkin-sales-actions { width: 100%; justify-content: stretch; }
+    .walkin-sales-actions .btn-primary { width: 100%; justify-content: center; }
     .walkin-date-filter { width: 100%; justify-content: space-between; }
 }
 

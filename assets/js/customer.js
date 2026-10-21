@@ -491,13 +491,13 @@ function renderStore() {
 }
 
 function productCard(p) {
-    const out = p.stock === 0;
     const supplement = p.category === 'Supplement';
-    const low = p.stock > 0 && (supplement ? p.stock <= 100 : p.stock <= 4);
-    let stockLabel = `${Number(p.stock).toLocaleString('en-PH')}${supplement ? ' g' : ''} in stock`;
+    const out = !supplement && p.stock === 0;
+    const low = !supplement && p.stock > 0 && p.stock <= 4;
+    let stockLabel = `${Number(p.stock).toLocaleString('en-PH')} in stock`;
     let stockClass = '';
     if (out) { stockLabel = 'Out of stock'; stockClass = 'low'; }
-    else if (low) { stockLabel = 'Only ' + p.stock + (supplement ? ' g left' : ' left'); stockClass = 'low'; }
+    else if (low) { stockLabel = 'Only ' + p.stock + ' left'; stockClass = 'low'; }
 
     return `
         <div class="product-card view-only-card">
@@ -509,7 +509,7 @@ function productCard(p) {
             <h4>${p.name}${!supplement && p.size ? ' — ' + p.size : ''}</h4>
             <div class="price-row">
                 <span class="price">${formatPeso(p.price)}${supplement ? ' / g' : ''}</span>
-                <span class="stock-tag ${stockClass}">${stockLabel}</span>
+                ${!supplement ? `<span class="stock-tag ${stockClass}">${stockLabel}</span>` : ''}
             </div>
             <div class="view-only-note"><i class="fas fa-store"></i> Available in-store only</div>
         </div>`;
