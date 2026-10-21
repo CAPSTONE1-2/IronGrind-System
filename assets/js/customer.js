@@ -76,6 +76,7 @@ const memberTourSteps = [
     {
         icon: 'fa-chart-line',
         target: '#member-progress',
+        scrollBlock: 'start',
         title: 'Track your membership',
         text: 'Check your current plan and how much time is left in your membership here.'
     },
@@ -148,9 +149,14 @@ function renderMemberTourStep() {
         <button class="onboarding-skip" onclick="finishMemberTour()">Skip tour</button>
     </section>`;
     layer.classList.remove('hidden');
+    const target = document.querySelector(step.target);
+    target?.scrollIntoView({
+        behavior: step.scrollBlock ? 'auto' : 'smooth',
+        block: step.scrollBlock || 'center',
+        inline: 'nearest'
+    });
     repositionMemberTour();
-    document.querySelector(step.target)?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-    window.setTimeout(repositionMemberTour, 320);
+    window.setTimeout(repositionMemberTour, step.scrollBlock ? 0 : 320);
 }
 
 function repositionMemberTour() {
@@ -170,14 +176,41 @@ function repositionMemberTour() {
 
     const tipRect = tooltip.getBoundingClientRect();
     const margin = 16;
-    const left = Math.max(margin, Math.min(rect.left + rect.width / 2 - tipRect.width / 2, window.innerWidth - tipRect.width - margin));
-    const below = rect.bottom + 16;
-    const above = rect.top - tipRect.height - 16;
-    const top = below + tipRect.height <= window.innerHeight - margin
-        ? below
-        : above >= margin
-            ? above
-            : Math.max(margin, Math.min(rect.top + rect.height / 2 - tipRect.height / 2, window.innerHeight - tipRect.height - margin));
+    const gap = 16;
+    const rightSpace = window.innerWidth - rect.right - margin;
+    const leftSpace = rect.left - margin;
+    let left;
+    let top;
+
+    // Keep the membership progress card unobstructed. That step scrolls the
+    // tracker near the top; on desktop, use the open space to its right.
+    if (step.scrollBlock === 'start') {
+        if (window.innerWidth >= 900 && rightSpace >= tipRect.width + gap) {
+            left = rect.right + gap;
+            top = Math.max(margin, Math.min(rect.top + rect.height / 2 - tipRect.height / 2, window.innerHeight - tipRect.height - margin));
+        } else {
+            left = Math.max(margin, Math.min(rect.left + rect.width / 2 - tipRect.width / 2, window.innerWidth - tipRect.width - margin));
+            top = rect.bottom + gap;
+        }
+        tooltip.style.left = `${left}px`;
+        tooltip.style.top = `${top}px`;
+        return;
+    }
+
+    if (rightSpace >= tipRect.width + gap) {
+        left = rect.right + gap;
+        top = Math.max(margin, Math.min(rect.top + rect.height / 2 - tipRect.height / 2, window.innerHeight - tipRect.height - margin));
+    } else if (leftSpace >= tipRect.width + gap) {
+        left = rect.left - tipRect.width - gap;
+        top = Math.max(margin, Math.min(rect.top + rect.height / 2 - tipRect.height / 2, window.innerHeight - tipRect.height - margin));
+    } else {
+        left = Math.max(margin, Math.min(rect.left + rect.width / 2 - tipRect.width / 2, window.innerWidth - tipRect.width - margin));
+        const below = rect.bottom + gap;
+        const above = rect.top - tipRect.height - gap;
+        if (below + tipRect.height <= window.innerHeight - margin) top = below;
+        else if (above >= margin) top = above;
+        else top = Math.max(margin, Math.min(rect.top + rect.height / 2 - tipRect.height / 2, window.innerHeight - tipRect.height - margin));
+    }
     tooltip.style.left = `${left}px`;
     tooltip.style.top = `${top}px`;
 }

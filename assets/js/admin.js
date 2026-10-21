@@ -727,7 +727,14 @@ function startQRScanner() {
     openModal(`<div class="qr-camera-modal">
         <h3><i class="fas fa-camera"></i> Scan Member QR</h3>
         <p class="modal-sub">Allow camera access and hold the member QR code in the frame.</p>
-        <div id="qrReader" class="qr-reader"></div>
+        <div class="qr-reader-frame">
+            <div id="qrReader" class="qr-reader"></div>
+            <div id="qrScanProcessing" class="qr-scan-processing" hidden role="status" aria-live="polite">
+                <span class="qr-scan-spinner" aria-hidden="true"><i class="fas fa-qrcode"></i></span>
+                <strong>Recording attendance</strong>
+                <span>Reading member details…</span>
+            </div>
+        </div>
         <p id="qrCameraStatus" class="qr-camera-status" role="status">Starting camera…</p>
         <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Cancel</button></div>
     </div>`);
@@ -740,13 +747,19 @@ function startQRScanner() {
             if (qrScanHandled) return;
             qrScanHandled = true;
             const scannedText = decodedText.trim();
-            closeModal();
-            const member = findMemberFromQR(scannedText);
-            if (!member) {
-                toast('QR code not recognized. Scan a QR code issued by Iron Grind.', 'error');
-                return;
-            }
-            recordMemberCheckIn(member);
+            const processing = document.getElementById('qrScanProcessing');
+            const status = document.getElementById('qrCameraStatus');
+            if (processing) processing.hidden = false;
+            if (status) status.textContent = 'QR detected. Recording attendance…';
+            window.setTimeout(() => {
+                closeModal();
+                const member = findMemberFromQR(scannedText);
+                if (!member) {
+                    toast('QR code not recognized. Scan a QR code issued by Iron Grind.', 'error');
+                    return;
+                }
+                recordMemberCheckIn(member);
+            }, 650);
         },
         () => {}
     ).then(() => {

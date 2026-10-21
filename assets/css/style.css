@@ -171,8 +171,16 @@ label:has(input[name="wiPlan"]:checked) {
 .qr-scanner-box p { font-size: 0.8rem; color: #6a748b; }
 .qr-camera-modal { text-align: center; }
 .qr-camera-modal > h3 { justify-content: center; }
-.qr-reader { width: 100%; max-width: 420px; margin: 0 auto; overflow: hidden; border: 1px solid #2d3548; border-radius: 16px; background: #05070a; }
+.qr-reader-frame { position: relative; width: 100%; max-width: 420px; margin: 0 auto; overflow: hidden; border: 1px solid #2d3548; border-radius: 16px; background: #05070a; }
+.qr-reader { width: 100%; overflow: hidden; background: #05070a; }
 .qr-reader video { border-radius: 14px; object-fit: cover; }
+.qr-scan-processing { position: absolute; z-index: 5; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 20px; background: rgba(7,10,15,0.88); color: #f1f3f7; backdrop-filter: blur(5px); }
+.qr-scan-processing[hidden] { display: none; }
+.qr-scan-processing strong { font-size: 0.95rem; }
+.qr-scan-processing > span:last-child { color: #a4adc2; font-size: 0.78rem; }
+.qr-scan-spinner { display: grid; place-items: center; width: 48px; height: 48px; margin-bottom: 4px; border: 2px solid rgba(211,18,18,0.25); border-top-color: #ef2929; border-radius: 50%; color: #ef2929; animation: qr-scan-spin 0.9s linear infinite; }
+.qr-scan-spinner i { font-size: 1.15rem; }
+@keyframes qr-scan-spin { to { transform: rotate(360deg); } }
 .qr-camera-status { min-height: 1.25em; margin: 12px 0 0; color: #8b95a9; font-size: 0.8rem; }
 .qr-reader__dashboard_section_csr button,
 .qr-reader__dashboard_section_fsr button { background: #1e2533 !important; color: #e8edf5 !important; border: 1px solid #2d3548 !important; border-radius: 8px !important; padding: 8px 12px !important; cursor: pointer; }
@@ -538,6 +546,7 @@ label:has(input[name="wiPlan"]:checked) {
 }
 .progress-alert.warn { background: rgba(241,196,15,0.12); border-color: rgba(241,196,15,0.3); color: #f1c40f; }
 .progress-alert i { font-size: 1rem; }
+#member-progress { scroll-margin-top: 20px; }
 
 /* View-only store */
 .store-section-label {
