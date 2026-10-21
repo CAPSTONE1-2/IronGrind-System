@@ -89,7 +89,8 @@ function logout() {
     if (!confirm('Are you sure you want to log out?')) return;
     localStorage.removeItem('irongrind_session');
     sessionStorage.removeItem('irongrind_session');
-    window.location.href = 'index.html';
+    document.getElementById('page-loader')?.classList.remove('hidden-loader');
+    window.setTimeout(() => window.location.replace('index.html'), 350);
 }
 
 /* ========== RENDER: DASHBOARD ========== */
