@@ -1,12 +1,18 @@
+// 1. Auth Guard (Fixed)
 (function guardAdmin() {
     const session = JSON.parse(localStorage.getItem('irongrind_session') || sessionStorage.getItem('irongrind_session') || 'null');
-    if (!session || session.role !== 'admin') { window.location.href = 'index.html'; return; }
+    if (!session || session.role !== 'admin') {
+        window.location.replace('index.html'); // Redirect immediately
+        return;
+    }
     document.getElementById('currentUserName').textContent = session.username;
 })();
 
+// 2. Global Variables
 let members = [], products = [], sales = [], attendance = [], pendingApprovals = [], users = [];
 let currentPlanFilter = 'all';
 
+// 3. Helpers
 function todayStr() { return new Date().toISOString().slice(0, 10); }
 function addDays(dateStr, days) { const d = new Date(dateStr); d.setDate(d.getDate() + days); return d.toISOString().slice(0, 10); }
 function formatPeso(n) { return '₱' + Number(n).toLocaleString('en-PH'); }
@@ -15,6 +21,7 @@ function initials(name) { return name.split(' ').map(n => n[0]).slice(0, 2).join
 function loadDB(key) { try { return JSON.parse(localStorage.getItem('ig_' + key)) || []; } catch { return []; } }
 function saveDB(key, data) { localStorage.setItem('ig_' + key, JSON.stringify(data)); }
 
+// 4. UI Functions
 let toastTimer;
 function toast(msg, type = '') {
     const el = document.getElementById('toast'); el.textContent = msg; el.className = 'toast ' + type; el.classList.remove('hidden');
@@ -43,8 +50,9 @@ function switchMemberTab(tab) {
     document.getElementById('tab-approvals').classList.toggle('hidden', tab !== 'approvals');
     if (tab === 'approvals') renderApprovals(); else renderMembers();
 }
-function logout() { if(confirm('Logout?')){ localStorage.removeItem('irongrind_session'); sessionStorage.removeItem('irongrind_session'); window.location.href = 'index.html'; } }
+function logout() { if(confirm('Logout?')){ localStorage.removeItem('irongrind_session'); sessionStorage.removeItem('irongrind_session'); window.location.replace('index.html'); } }
 
+// 5. Rendering Functions
 function renderDashboard() {
     document.getElementById('statTotalMembers').textContent = members.length;
     const today = todayStr();
@@ -69,7 +77,7 @@ function renderMembers() {
             const expired = m.expiry < todayStr();
             return `<div class="member-row">
                 <div class="member-info"><div class="member-avatar">${initials(m.name)}</div><div class="member-details"><h4>${m.name}</h4><p>${m.plan} · Exp: ${m.expiry}</p></div></div>
-                <div class="member-actions"><button class="qr-badge" onclick="showMemberQR('${m.id}')"><i class="fas fa-qrcode"></i></button><span class="approve-badge ${expired?'expired':'pending'}">${expired?'Expired':'Active'}</span></div>
+                <div class="member-actions"><span class="approve-badge ${expired?'expired':'pending'}">${expired?'Expired':'Active'}</span></div>
             </div>`;
         }).join('') : '<div class="empty-state">No members.</div>';
     }, 300);
@@ -80,7 +88,7 @@ function renderApprovals() {
     const pending = pendingApprovals.filter(p => p.status === 'pending');
     document.getElementById('approvalsCount').textContent = pending.length;
     el.innerHTML = pending.length ? pending.map(p => `
-        <div style="background:#0d1219; border-left:4px solid #f1c40f; border-radius:8px; padding:16px; margin-bottom:12px;">
+        <div style="background:#0d1117; border-left:4px solid #f1c40f; border-radius:8px; padding:16px; margin-bottom:12px;">
             <h4>${p.fullName}</h4><p style="font-size:0.8rem; color:#8b95a9;">Plan: ${p.plan} | User: ${p.username}</p>
             <div style="margin-top:10px; display:flex; gap:10px;"><button class="btn-sm" onclick="rejectApp('${p.id}')">Reject</button><button class="btn-primary" onclick="approveApp('${p.id}')">Approve</button></div>
         </div>`).join('') : '<div class="empty-state">No pending applications.</div>';
@@ -91,7 +99,7 @@ function approveApp(id) {
     const p = pendingApprovals[idx];
     users.push({ username: p.username, password: p.password, fullName: p.fullName });
     saveDB('users', users);
-    members.push({ id: uid('M'), name: p.fullName, plan: p.plan, expiry: p.endDate, paid: true });
+    members.push({ id: uid('M'), name: p.fullName, plan: p.plan, expiry: p.endDate || todayStr(), paid: true });
     saveDB('members', members);
     pendingApprovals.splice(idx, 1); saveDB('pendingApprovals', pendingApprovals);
     toast('Approved!', 'success'); renderApprovals(); renderMembers(); renderDashboard();
@@ -110,7 +118,13 @@ function simulateQRScan() {
     saveDB('attendance', attendance); toast(`${m.name} checked in!`, 'success'); renderDashboard();
 }
 
-function unlockStore() { if (document.getElementById('storePasswordInput').value === 'irongrind2025') { document.getElementById('storeLocked').classList.add('hidden'); document.getElementById('storeUnlocked').classList.remove('hidden'); renderStore(); } else toast('Wrong password', 'error'); }
+function unlockStore() { 
+    if (document.getElementById('storePasswordInput').value === 'irongrind2025') { 
+        document.getElementById('storeLocked').classList.add('hidden'); 
+        document.getElementById('storeUnlocked').classList.remove('hidden'); 
+        renderStore(); 
+    } else toast('Wrong password', 'error'); 
+}
 
 function renderStore() {
     const supp = products.filter(p => p.category === 'Supplement');
@@ -132,12 +146,14 @@ function submitWalkIn() {
     saveDB('members', members); closeModal(); renderMembers(); renderDashboard(); toast('Walk-in registered!', 'success');
 }
 
+// Placeholders for UI buttons
+function renderAttendance() { document.getElementById('attendanceLogTable').innerHTML = '<div class="empty-state">No attendance records.</div>'; }
 function renderSales() { document.getElementById('salesTable').innerHTML = '<div class="empty-state">No sales yet.</div>'; }
 function renderReports() { document.getElementById('reportsGrid').innerHTML = '<div class="empty-state">Reports coming soon.</div>'; }
 function openAddProductModal() { toast('Feature coming soon'); }
 function openNewSaleModal() { toast('Feature coming soon'); }
-function showMemberQR(id) { toast('QR generated'); }
 
+// 6. Initialization (Runs on page load)
 document.addEventListener('DOMContentLoaded', () => {
     members = loadDB('members'); products = loadDB('products'); sales = loadDB('sales'); attendance = loadDB('attendance'); pendingApprovals = loadDB('pendingApprovals'); users = loadDB('users');
     renderDashboard();
