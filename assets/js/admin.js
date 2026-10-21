@@ -22,6 +22,7 @@ let planArchives = [];
 let membershipArchives = [];
 let currentPlanFilter = 'all';
 let currentMemberTab = 'members';
+let currentApprovalType = 'registration';
 let activeQRScanner = null;
 let qrScanHandled = false;
 
@@ -131,6 +132,14 @@ function switchMemberTab(tab) {
     else renderMembers();
 }
 
+function switchApprovalType(type) {
+    currentApprovalType = type === 'renewal' ? 'renewal' : 'registration';
+    document.querySelectorAll('[data-approval-type]').forEach(button => button.classList.toggle('active', button.dataset.approvalType === currentApprovalType));
+    document.getElementById('registrationApprovalsList').classList.toggle('hidden', currentApprovalType !== 'registration');
+    document.getElementById('renewalApprovalsList').classList.toggle('hidden', currentApprovalType !== 'renewal');
+    renderApprovals(currentApprovalType);
+}
+
 function logout() {
     askConfirmation('Log out?', 'Are you sure you want to log out?', 'Log out', () => {
         localStorage.removeItem('irongrind_session');
@@ -172,9 +181,11 @@ function renderDashboard() {
     if (low.length === 0) lowList.innerHTML = '<div class="empty-state">All items are well-stocked.</div>';
     else lowList.innerHTML = low.map(p => `<div class="low-stock-item"><span class="name">${p.name}${p.size ? ' — ' + p.size : ''}</span><span class="qty">${p.stock} left</span></div>`).join('');
 
-    const pendingCount = pendingApprovals.filter(p => p.status === 'pending').length;
-    document.getElementById('pendingBadge').textContent = pendingCount;
-    document.getElementById('approvalsCount').textContent = pendingCount;
+    const pending = pendingApprovals.filter(p => p.status === 'pending');
+    document.getElementById('pendingBadge').textContent = pending.length;
+    document.getElementById('approvalsCount').textContent = pending.length;
+    document.getElementById('registrationApprovalsCount').textContent = pending.filter(p => p.source !== 'dashboard-renewal').length;
+    document.getElementById('renewalApprovalsCount').textContent = pending.filter(p => p.source === 'dashboard-renewal').length;
 }
 
 /* ========== RENDER: MEMBERS ========== */
@@ -250,13 +261,21 @@ function filterPlan(plan) {
 }
 
 /* ========== RENDER: APPROVALS ========== */
-function renderApprovals() {
-    const el = document.getElementById('approvalsList');
-    const pending = pendingApprovals.filter(p => p.status === 'pending');
-    document.getElementById('approvalsCount').textContent = pending.length;
+function renderApprovals(type = currentApprovalType) {
+    const isRenewal = type === 'renewal';
+    const el = document.getElementById(isRenewal ? 'renewalApprovalsList' : 'registrationApprovalsList');
+    const allPending = pendingApprovals.filter(p => p.status === 'pending');
+    const registrations = allPending.filter(p => p.source !== 'dashboard-renewal');
+    const renewals = allPending.filter(p => p.source === 'dashboard-renewal');
+    document.getElementById('approvalsCount').textContent = allPending.length;
+    document.getElementById('registrationApprovalsCount').textContent = registrations.length;
+    document.getElementById('renewalApprovalsCount').textContent = renewals.length;
+    const pending = isRenewal ? renewals : registrations;
 
     if (pending.length === 0) {
-        el.innerHTML = '<div class="empty-state">No pending applications.</div>';
+        el.innerHTML = isRenewal
+            ? '<div class="empty-state">No pending renewal requests.</div>'
+            : '<div class="empty-state">No pending new registrations.</div>';
         return;
     }
 

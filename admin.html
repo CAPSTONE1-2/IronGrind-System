@@ -103,7 +103,7 @@
                             <i class="fas fa-users"></i> Active Members
                         </button>
                         <button class="admin-tab" data-tab="approvals" onclick="switchMemberTab('approvals')">
-                            <i class="fas fa-clock"></i> Pending Applications
+                            <i class="fas fa-clock"></i> Approvals
                             <span class="badge" id="approvalsCount">0</span>
                         </button>
                     </div>
@@ -124,9 +124,14 @@
                     </div>
                     <div id="tab-approvals" class="hidden">
                         <p style="font-size:0.85rem; color:#8b95a9; margin-bottom:16px;">
-                            <i class="fas fa-info-circle"></i> New registrations from the public membership form appear here.
+                            <i class="fas fa-info-circle"></i> Review new account registrations and existing member renewal requests separately.
                         </p>
-                        <div id="approvalsList"></div>
+                        <div class="admin-tabs approval-subtabs">
+                            <button class="admin-tab active" data-approval-type="registration" onclick="switchApprovalType('registration')"><i class="fas fa-user-plus"></i> New Registrations <span class="badge" id="registrationApprovalsCount">0</span></button>
+                            <button class="admin-tab" data-approval-type="renewal" onclick="switchApprovalType('renewal')"><i class="fas fa-sync-alt"></i> Renewal Requests <span class="badge" id="renewalApprovalsCount">0</span></button>
+                        </div>
+                        <div id="registrationApprovalsList"></div>
+                        <div id="renewalApprovalsList" class="hidden"></div>
                     </div>
                 </div>
             </div>
