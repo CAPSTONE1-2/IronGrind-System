@@ -45,7 +45,7 @@ const otherMedicalDetailsGroup = document.getElementById('otherMedicalDetailsGro
 const otherMedicalDetailsInput = document.getElementById('otherMedicalDetails');
 
 function updateOtherMedicalDetails() {
-    const hasOtherCondition = otherMedicalChoice.value === 'yes';
+    const hasOtherCondition = otherMedicalChoice.checked;
     otherMedicalDetailsGroup.classList.toggle('hidden', !hasOtherCondition);
     otherMedicalDetailsInput.required = hasOtherCondition;
     if (!hasOtherCondition) otherMedicalDetailsInput.value = '';
@@ -95,13 +95,13 @@ function submitRegistration(event) {
     if (document.getElementById('hcHeart').checked) healthConditions.push('Heart Condition');
     if (document.getElementById('hcAsthma').checked) healthConditions.push('Asthma');
     if (document.getElementById('hcInjury').checked) healthConditions.push('Recent Injury');
-    const otherMedicalConditions = otherMedicalChoice.value === 'yes' ? otherMedicalDetailsInput.value.trim() : '';
+    const otherMedicalConditions = otherMedicalChoice.checked ? otherMedicalDetailsInput.value.trim() : '';
 
     const goals = Array.from(document.querySelectorAll('input[name="goal"]:checked')).map(g => g.value);
 
     if (!document.getElementById('agreeRules').checked) { showError('You must agree to the Rules and Agreement.'); return; }
     if (!document.getElementById('agreeWaiver').checked) { showError('You must accept the Liability Waiver.'); return; }
-    if (otherMedicalChoice.value === 'yes' && !otherMedicalConditions) { showError('Please specify your other medical condition details.'); return; }
+    if (otherMedicalChoice.checked && !otherMedicalConditions) { showError('Please specify your other medical condition details.'); return; }
     if (!registrationSignature || registrationSignature.isEmpty()) { showError('Please add your digital signature.'); return; }
 
     const username = document.getElementById('regUsername').value.trim().toLowerCase();
