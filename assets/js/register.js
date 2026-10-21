@@ -75,6 +75,7 @@ function submitRegistration(event) {
     const sex = document.getElementById('regSex').value;
     const mobile = document.getElementById('regMobile').value.trim();
     const height = document.getElementById('regHeight').value;
+    const heightUnit = height ? document.getElementById('regHeightUnit').value : null;
     const weight = document.getElementById('regWeight').value;
     const ecName = document.getElementById('regEcName').value.trim();
     const ecRelation = document.getElementById('regEcRelation').value.trim();
@@ -127,6 +128,7 @@ function submitRegistration(event) {
         id: 'APP' + Date.now(),
         fullName, dob, age, sex, mobile,
         height: height ? Number(height) : null,
+        heightUnit,
         weight: weight ? Number(weight) : null,
         emergencyContact: { name: ecName, relationship: ecRelation, contact: ecContact },
         plan: planName, planPrice: Number(planPrice),

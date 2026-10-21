@@ -247,6 +247,10 @@ function renderApprovals() {
                         <span>${p.mobile || p.contact || '—'}</span>
                     </div>
                     <div style="display:flex; flex-direction:column; gap:4px; font-size:0.82rem;">
+                        <span style="font-size:0.68rem; text-transform:uppercase; color:#6a748b; font-weight:600;">Height</span>
+                        <span>${p.height !== null && p.height !== undefined && p.height !== '' ? `${p.height} ${p.heightUnit || 'cm'}` : 'Not provided'}</span>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:4px; font-size:0.82rem;">
                         <span style="font-size:0.68rem; text-transform:uppercase; color:#6a748b; font-weight:600;">Plan</span>
                         <span><strong>${p.plan || 'Renewal'}</strong> — ₱${Number(p.planPrice || 0).toLocaleString('en-PH')}</span>
                     </div>
@@ -310,6 +314,9 @@ function completeApproval(id) {
         goal: p.goals[0] || 'General Fitness',
         contact: p.mobile,
         username: p.username,
+        height: p.height ?? null,
+        heightUnit: p.heightUnit || null,
+        weight: p.weight ?? null,
         healthConditions: p.healthConditions || [],
         otherMedicalConditions: p.otherMedicalConditions || '',
         signature: p.signature || null,
