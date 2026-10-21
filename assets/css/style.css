@@ -51,13 +51,16 @@ body.dashboard-body .low-stock-item { background-color: rgba(13,18,25,0.64); bor
 .btn-logout:hover { background: #d31212; border-color: #d31212; color: #fff; }
 
 /* ========== LAYOUT ========== */
-.dashboard { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 24px; align-items: start; }
+.dashboard { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 24px; align-items: start; overflow-anchor: none; }
 .sidebar { background: #11161f; border-radius: 24px; padding: 20px 16px; border: 1px solid #1e2533; height: fit-content; position: sticky; top: 20px; display: flex; flex-direction: column; gap: 6px; }
-.nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 14px; color: #a4adc2; font-weight: 500; font-size: 0.9rem; cursor: pointer; border: none; background: transparent; width: 100%; text-align: left; font-family: inherit; }
+.nav-item { position: relative; display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 14px; color: #a4adc2; font-weight: 500; font-size: 0.9rem; cursor: pointer; border: 0; background: transparent; width: 100%; text-align: left; font-family: inherit; }
 .nav-item i { width: 20px; font-size: 1rem; color: #6a748b; text-align: center; }
 .nav-item:hover { background: #1a1f2b; color: #e8edf5; }
-.nav-item.active { background: #1e2533; color: #fff; border-left: 4px solid #d31212; border-radius: 14px 8px 8px 14px; }
+.nav-item.active { background: #1e2533; color: #fff; }
+.nav-item.active::before { content: ''; position: absolute; inset: 20% auto 20% 0; width: 4px; border-radius: 0 4px 4px 0; background: #d31212; pointer-events: none; }
 .nav-item.active i { color: #d31212; }
+.nav-item:focus:not(:focus-visible) { outline: none; }
+.nav-item:focus-visible { outline: 2px solid #8b95a9; outline-offset: 2px; }
 .badge { background: #d31212; color: #fff; font-size: 0.65rem; font-weight: 700; padding: 3px 8px; border-radius: 40px; margin-left: auto; }
 .nav-section-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.8px; color: #4d566b; font-weight: 700; padding: 16px 16px 6px; }
 .main-content { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
@@ -263,10 +266,13 @@ label:has(input[name="wiPlan"]:checked) {
 @media (max-width: 1024px) {
     .dashboard { grid-template-columns: 1fr; }
     .customer-view.active { grid-template-columns: 1fr; }
-    .sidebar { position: static; flex-direction: row; flex-wrap: wrap; padding: 12px; }
-    .sidebar .nav-item { width: auto; padding: 10px 16px; }
+    .sidebar { position: static; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 12px; }
+    .sidebar .nav-item { width: 100%; min-width: 0; padding: 10px 12px; white-space: nowrap; }
     .nav-section-label { display: none; }
     .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+    .sidebar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 860px) {
     .login-wrapper { grid-template-columns: 1fr; }
@@ -281,6 +287,9 @@ label:has(input[name="wiPlan"]:checked) {
     .panel { padding: 18px; }
     .stat-card { min-height: 120px; padding: 18px; }
     .admin-section, .customer-view { gap: 16px; }
+}
+@media (max-width: 460px) {
+    .sidebar { grid-template-columns: 1fr; }
 }
 
 /* ========== CUSTOMER DASHBOARD ========== */
