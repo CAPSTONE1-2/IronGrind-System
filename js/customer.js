@@ -117,7 +117,7 @@
                 </div>
             </div>
 
-            <!-- ATTENDANCE -->
+            -- ATTENDANCE --
             <div id="section-attendance" class="admin-section hidden">
                 <div class="panel">
                     <div class="panel-header">
