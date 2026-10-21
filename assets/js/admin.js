@@ -399,13 +399,13 @@ function completeRejection(id) {
     toast('Application rejected.', 'error');
 }
 
-/* ========== WALK-IN MEMBERSHIP (FULL FORM) ========== */
+/* ========== ADD MEMBER (FULL REGISTRATION FORM) ========== */
 let signaturePad = null;
 
-function openWalkInModal() {
+function openAddMemberModal() {
     openModal(`
-        <h3 style="display:flex; align-items:center; gap:10px;"><i class="fas fa-user-plus"></i> Walk-in Membership Registration</h3>
-        <p class="modal-sub">Complete the same form used for online registration. Includes digital signature.</p>
+        <h3 style="display:flex; align-items:center; gap:10px;"><i class="fas fa-user-plus"></i> Add New Member</h3>
+        <p class="modal-sub">Enter the member’s details, choose a membership plan, and capture their digital signature.</p>
 
         <!-- PERSONAL INFORMATION -->
         <div style="background:#0d1219; border:1px solid #1e2533; border-radius:14px; padding:18px; margin-bottom:16px;">
@@ -516,7 +516,7 @@ function openWalkInModal() {
         <!-- ACTIONS -->
         <div class="modal-actions" style="position:sticky; bottom:0; background:#11161f; padding-top:12px;">
             <button class="btn-sm" onclick="closeModal()">Cancel</button>
-            <button class="btn-primary" onclick="submitWalkIn()"><i class="fas fa-check"></i> Register &amp; Generate QR</button>
+            <button class="btn-primary" onclick="submitNewMember()"><i class="fas fa-check"></i> Add Member &amp; Generate QR</button>
         </div>
     `);
 
@@ -573,7 +573,7 @@ function clearSignature() {
     if (signaturePad) signaturePad.clear();
 }
 
-function submitWalkIn() {
+function submitNewMember() {
     // ---- Personal ----
     const name = document.getElementById('wiName').value.trim();
     const dob = document.getElementById('wiDob').value;
@@ -645,7 +645,7 @@ function submitWalkIn() {
     sales.unshift({
         id: 'IG-' + Date.now().toString().slice(-4),
         customer: name,
-        items: plan + ' Membership (Walk-in)',
+        items: plan + ' Membership (Admin registration)',
         total: Number(price),
         date: todayStr(),
         status: 'Paid'
