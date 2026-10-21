@@ -710,14 +710,14 @@ function openChangePlanModal(id) {
     const member = members.find(item => String(item.id) === String(id));
     if (!member) return;
     openModal(`<h3><i class="fas fa-exchange-alt"></i> Change Membership Plan</h3>
-        <p class="modal-sub">Changing ${escapeHTML(member.name)} from <strong>${escapeHTML(member.plan || 'No plan')}</strong>. The new plan starts today and replaces the current expiry; the previous plan and dates will be kept in the archive.</p>
+        <p class="modal-sub">Changing ${escapeHTML(member.name)} from <strong>${escapeHTML(member.plan || 'No plan')}</strong>. The new plan starts today and replaces the current expiry; the previous plan and dates will be kept in the archive. The previous payment is non-refundable, including unused days.</p>
         <div class="form-group" style="margin-bottom:14px;"><label>New Plan</label><select id="changePlanSelect" onchange="updatePlanChangePrice()">
             <option value="Monthly" data-days="30" data-price="800">Monthly — ₱800 / 30 days</option>
             <option value="Half Month" data-days="15" data-price="400">Half Month — ₱400 / 15 days</option>
             <option value="Weekly" data-days="7" data-price="">Weekly — set fee / 7 days</option>
             <option value="Walk-in" data-days="1" data-price="80">Walk-in — ₱80 / day</option>
         </select></div>
-        <div class="form-group"><label>Amount received (₱)</label><input type="number" id="changePlanPrice" min="0" step="0.01" placeholder="Enter amount"></div>
+        <div class="form-group"><label>New Plan Charge (₱)</label><input type="number" id="changePlanPrice" min="0" step="0.01" placeholder="Enter amount"></div>
         <p style="font-size:0.75rem; color:#8b95a9;">Previous plan: ${escapeHTML(member.plan || '—')} · Expires ${escapeHTML(member.expiry || '—')}</p>
         <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="submitMemberPlanChange('${encodeURIComponent(String(member.id))}')"><i class="fas fa-archive"></i> Save Change &amp; Archive</button></div>`);
     updatePlanChangePrice();
@@ -768,6 +768,9 @@ function submitMemberPlanChange(encodedId) {
         newStartDate: nextStartDate,
         newExpiry: nextExpiry,
         newPrice: price,
+        refundIssued: false,
+        refundAmount: 0,
+        refundPolicy: 'No refund for the previous plan, including unused days.',
         changedAt,
         changedBy: 'admin'
     };
@@ -801,6 +804,7 @@ function submitMemberPlanChange(encodedId) {
     renderSales();
     renderReports();
     toast(`${member.name}'s plan changed to ${newPlan}. Previous plan archived.`, 'success');
+    showSaleReceipt(saleId);
 }
 
 function renewMember(id) {
@@ -1262,9 +1266,10 @@ function viewReport(type) {
     } else if (type === 'plan-archive') {
         const archivedPlans = [...planArchives].sort((a, b) => String(b.changedAt || '').localeCompare(String(a.changedAt || '')));
         body = archivedPlans.length
-            ? `<table class="attendance-table"><thead><tr><th>Member</th><th>Previous Plan</th><th>New Plan</th><th>Previous Expiry</th><th>New Expiry</th><th>New Fee</th><th>Changed</th></tr></thead><tbody>
-                ${archivedPlans.map(record => `<tr><td>${escapeHTML(record.memberName)}</td><td>${escapeHTML(record.previousPlan)}</td><td>${escapeHTML(record.newPlan)}</td><td>${escapeHTML(record.previousExpiry || '—')}</td><td>${escapeHTML(record.newExpiry || '—')}</td><td>${formatPeso(record.newPrice || 0)}</td><td>${escapeHTML(record.changedAt ? new Date(record.changedAt).toLocaleString() : '—')}</td></tr>`).join('')}</tbody></table>`
+            ? `<table class="attendance-table"><thead><tr><th>Member</th><th>Previous Plan</th><th>New Plan</th><th>Previous Expiry</th><th>New Expiry</th><th>Previous Fee</th><th>New Fee</th><th>Changed</th></tr></thead><tbody>
+                ${archivedPlans.map(record => `<tr><td>${escapeHTML(record.memberName)}</td><td>${escapeHTML(record.previousPlan)}</td><td>${escapeHTML(record.newPlan)}</td><td>${escapeHTML(record.previousExpiry || '—')}</td><td>${escapeHTML(record.newExpiry || '—')}</td><td>${formatPeso(record.previousPrice || 0)}</td><td>${formatPeso(record.newPrice || 0)}</td><td>${escapeHTML(record.changedAt ? new Date(record.changedAt).toLocaleString() : '—')}</td></tr>`).join('')}</tbody></table>`
             : '<div class="empty-state">No plan changes have been archived yet.</div>';
+        if (archivedPlans.length) body = `<p class="modal-sub">No refunds are issued for unused time on the previous plan.</p>${body}`;
     } else if (type === 'payment' || type === 'sales') {
         body = `<table class="attendance-table"><thead><tr><th>Receipt</th><th>Customer</th><th>Total</th><th>Date</th></tr></thead><tbody>
             ${sales.map(s => `<tr><td>${s.id}</td><td>${s.customer}</td><td>${formatPeso(s.total)}</td><td>${s.date}</td></tr>`).join('')}</tbody></table>`;
@@ -1312,9 +1317,9 @@ function printReportPDF(type) {
             status: getMemberActivityStatus(member)
         }));
     } else if (type === 'plan-archive') {
-        columns = ['Member', 'Previous Plan', 'New Plan', 'Previous Expiry', 'New Expiry', 'New Fee', 'Changed'];
+        columns = ['Member', 'Previous Plan', 'New Plan', 'Previous Expiry', 'New Expiry', 'Previous Fee', 'New Fee', 'Changed'];
         rows = planArchives.map(record => ({
-            cells: [record.memberName, record.previousPlan, record.newPlan, record.previousExpiry || '—', record.newExpiry || '—', formatPeso(record.newPrice || 0), record.changedAt ? new Date(record.changedAt).toLocaleString() : '—'],
+            cells: [record.memberName, record.previousPlan, record.newPlan, record.previousExpiry || '—', record.newExpiry || '—', formatPeso(record.previousPrice || 0), formatPeso(record.newPrice || 0), record.changedAt ? new Date(record.changedAt).toLocaleString() : '—'],
             date: record.changedAt
         }));
         dateForRow = row => row.date;
@@ -1334,6 +1339,11 @@ function printReportPDF(type) {
         rows = products.map(product => ({
             cells: [`${product.name}${product.size ? ` (${product.size})` : ''}`, formatPeso(product.price), product.stock]
         }));
+    }
+
+    if (type === 'plan-archive') {
+        columns.push('Refund');
+        rows = rows.map(row => ({ ...row, cells: [...row.cells, 'No refund'] }));
     }
 
     const tableHTML = records => `<table><thead><tr>${columns.map(column => `<th>${escapeHTML(column)}</th>`).join('')}</tr></thead><tbody>${records.map(row =>
