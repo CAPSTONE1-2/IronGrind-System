@@ -18,6 +18,7 @@ let sales = [];
 let attendance = [];
 let pendingApprovals = [];
 let users = [];
+let planArchives = [];
 let currentPlanFilter = 'all';
 let currentMemberTab = 'members';
 let activeQRScanner = null;
@@ -1116,6 +1117,7 @@ function renderReports() {
     const reports = [
         { id: 'membership', name: 'Membership Report' },
         { id: 'member-status', name: 'Active / Inactive Members' },
+        { id: 'plan-archive', name: 'Plan Change Archive' },
         { id: 'payment', name: 'Payment Report' },
         { id: 'attendance', name: 'Attendance Report' },
         { id: 'inventory', name: 'Inventory Report' },
@@ -1143,6 +1145,12 @@ function viewReport(type) {
             ${items.map(member => `<tr><td>${escapeHTML(member.name)}</td><td>${escapeHTML(member.username || '—')}</td><td>${escapeHTML(member.registrationSource || 'Not recorded')}</td><td>${escapeHTML(member.plan || '—')}</td><td>${escapeHTML(member.expiry || '—')}</td></tr>`).join('') || '<tr><td colspan="5">No members in this group.</td></tr>'}</tbody></table>`;
         body = `<p class="modal-sub">Active means the membership has not expired. Inactive includes expired, suspended, or disabled memberships.</p>
             ${statusTable(activeMembers, 'Active')}${statusTable(inactiveMembers, 'Inactive')}`;
+    } else if (type === 'plan-archive') {
+        const archivedPlans = [...planArchives].sort((a, b) => String(b.changedAt || '').localeCompare(String(a.changedAt || '')));
+        body = archivedPlans.length
+            ? `<table class="attendance-table"><thead><tr><th>Member</th><th>Previous Plan</th><th>New Plan</th><th>Previous Expiry</th><th>New Expiry</th><th>Changed</th></tr></thead><tbody>
+                ${archivedPlans.map(record => `<tr><td>${escapeHTML(record.memberName)}</td><td>${escapeHTML(record.previousPlan)}</td><td>${escapeHTML(record.newPlan)}</td><td>${escapeHTML(record.previousExpiry || '—')}</td><td>${escapeHTML(record.newExpiry || '—')}</td><td>${escapeHTML(record.changedAt ? new Date(record.changedAt).toLocaleString() : '—')}</td></tr>`).join('')}</tbody></table>`
+            : '<div class="empty-state">No plan changes have been archived yet.</div>';
     } else if (type === 'payment' || type === 'sales') {
         body = `<table class="attendance-table"><thead><tr><th>Receipt</th><th>Customer</th><th>Total</th><th>Date</th></tr></thead><tbody>
             ${sales.map(s => `<tr><td>${s.id}</td><td>${s.customer}</td><td>${formatPeso(s.total)}</td><td>${s.date}</td></tr>`).join('')}</tbody></table>`;
@@ -1153,7 +1161,11 @@ function viewReport(type) {
         body = `<table class="attendance-table"><thead><tr><th>Product</th><th>Price</th><th>Stock</th></tr></thead><tbody>
             ${products.map(p => `<tr><td>${p.name}${p.size ? ' (' + p.size + ')' : ''}</td><td>${formatPeso(p.price)}</td><td>${p.stock}</td></tr>`).join('')}</tbody></table>`;
     }
-    const title = type === 'member-status' ? 'Active / Inactive Members Report' : `${type.charAt(0).toUpperCase() + type.slice(1)} Report`;
+    const title = type === 'member-status'
+        ? 'Active / Inactive Members Report'
+        : type === 'plan-archive'
+            ? 'Plan Change Archive'
+            : `${type.charAt(0).toUpperCase() + type.slice(1)} Report`;
     openModal(`<h3><i class="fas fa-chart-bar"></i> ${title}</h3>
         <div style="max-height:60vh; overflow:auto; margin-top:16px;">${body}</div>
         <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Close</button><button class="btn-primary" onclick="printReportPDF('${type}')"><i class="fas fa-file-pdf"></i> Print / Save PDF</button></div>`);
@@ -1166,7 +1178,7 @@ function printReportPDF(type) {
         return;
     }
 
-    const reportNames = { membership: 'Membership', 'member-status': 'Active / Inactive Members', payment: 'Payment', attendance: 'Attendance', inventory: 'Inventory', sales: 'Sales' };
+    const reportNames = { membership: 'Membership', 'member-status': 'Active / Inactive Members', 'plan-archive': 'Plan Change Archive', payment: 'Payment', attendance: 'Attendance', inventory: 'Inventory', sales: 'Sales' };
     const reportTitle = `${reportNames[type] || 'Gym'} Report`;
     let columns = [];
     let rows = [];
@@ -1185,6 +1197,13 @@ function printReportPDF(type) {
             cells: [member.name, member.username || '—', member.registrationSource || 'Not recorded', member.plan || '—', member.expiry || '—'],
             status: getMemberActivityStatus(member)
         }));
+    } else if (type === 'plan-archive') {
+        columns = ['Member', 'Previous Plan', 'New Plan', 'Previous Expiry', 'New Expiry', 'Changed'];
+        rows = planArchives.map(record => ({
+            cells: [record.memberName, record.previousPlan, record.newPlan, record.previousExpiry || '—', record.newExpiry || '—', record.changedAt ? new Date(record.changedAt).toLocaleString() : '—'],
+            date: record.changedAt
+        }));
+        dateForRow = row => row.date;
     } else if (type === 'payment' || type === 'sales') {
         columns = ['Receipt', 'Customer', 'Total', 'Date'];
         rows = sales.map(sale => ({ cells: [sale.id, sale.customer, formatPeso(sale.total), sale.date], date: sale.date }));
@@ -1328,6 +1347,7 @@ document.addEventListener('DOMContentLoaded', () => {
     attendance = loadDB('attendance');
     pendingApprovals = loadDB('pendingApprovals');
     users = loadDB('users');
+    planArchives = loadDB('planArchives');
 
     renderDashboard();
     renderMembers();
