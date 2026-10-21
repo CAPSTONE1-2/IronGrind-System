@@ -711,6 +711,84 @@ function renderAttendance() {
         </table>`;
 }
 
+function startQRScanner() {
+    if (typeof Html5Qrcode === 'undefined') {
+        toast('The QR scanner could not load. Check your internet connection and reload.', 'error');
+        return;
+    }
+
+    qrScanHandled = false;
+    openModal(`<div class="qr-camera-modal">
+        <h3><i class="fas fa-camera"></i> Scan Member QR</h3>
+        <p class="modal-sub">Allow camera access and hold the member QR code in the frame.</p>
+        <div id="qrReader" class="qr-reader"></div>
+        <p id="qrCameraStatus" class="qr-camera-status" role="status">Starting camera…</p>
+        <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Cancel</button></div>
+    </div>`);
+
+    activeQRScanner = new Html5Qrcode('qrReader');
+    activeQRScanner.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: { width: 240, height: 240 }, aspectRatio: 1 },
+        decodedText => {
+            if (qrScanHandled) return;
+            qrScanHandled = true;
+            const scannedText = decodedText.trim();
+            closeModal();
+            const member = findMemberFromQR(scannedText);
+            if (!member) {
+                toast('QR code not recognized. Scan a QR code issued by Iron Grind.', 'error');
+                return;
+            }
+            recordMemberCheckIn(member);
+        },
+        () => {}
+    ).then(() => {
+        const status = document.getElementById('qrCameraStatus');
+        if (status) status.textContent = 'Camera is on. Point it at the member’s QR code.';
+    }).catch(error => {
+        stopQRScanner();
+        const status = document.getElementById('qrCameraStatus');
+        if (status) status.textContent = 'Camera unavailable. Allow camera access and use this page over HTTPS or localhost.';
+        console.warn('QR camera failed to start:', error);
+    });
+}
+
+function stopQRScanner() {
+    const scanner = activeQRScanner;
+    activeQRScanner = null;
+    if (!scanner) return;
+    scanner.stop().catch(() => {}).finally(() => {
+        try { scanner.clear(); } catch {}
+    });
+}
+
+function findMemberFromQR(value) {
+    const exactMatch = members.find(member => member.qrCode && member.qrCode === value);
+    if (exactMatch) return exactMatch;
+    const parts = value.split('|');
+    if (parts[0]?.toUpperCase() !== 'IRONGRIND' || !parts[1]) return null;
+    const identifier = parts[1].trim();
+    return members.find(member => String(member.id) === identifier || member.username === identifier) || null;
+}
+
+function recordMemberCheckIn(member) {
+    if (!member || member.expiry < todayStr()) {
+        toast('Membership is expired. Check the member’s renewal status.', 'error');
+        return;
+    }
+    const today = todayStr();
+    if (attendance.find(a => a.memberId === member.id && a.date === today && !a.timeOut)) {
+        toast(`${member.name} is already checked in.`, 'error'); return;
+    }
+    const timeIn = new Date().toTimeString().slice(0, 5);
+    attendance.push({ id: uid('A'), memberId: member.id, memberName: member.name, date: today, timeIn, timeOut: null });
+    saveDB('attendance', attendance);
+    renderAttendance();
+    renderDashboard();
+    toast(`${member.name} checked in at ${timeIn}.`, 'success');
+}
+
 function simulateQRScan() {
     const active = members.filter(m => m.expiry >= todayStr());
     if (active.length === 0) { toast('No active members.', 'error'); return; }
