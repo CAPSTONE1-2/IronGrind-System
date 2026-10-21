@@ -212,6 +212,29 @@ function toast(message, type = '') {
     window.customerToastTimer = setTimeout(() => element.classList.add('hidden'), 3000);
 }
 
+function submitMembershipForm(event) {
+    event.preventDefault();
+    const name = document.getElementById('mfName')?.value.trim();
+    const contact = document.getElementById('mfContact')?.value.trim();
+    if (!name || !contact) {
+        toast('Please enter your name and contact number.', 'error');
+        return;
+    }
+
+    const requests = loadDB('membershipRequests');
+    requests.push({
+        id: `REQ${Date.now()}`,
+        username: customerSession?.username || '',
+        name,
+        contact,
+        status: 'pending',
+        submittedAt: new Date().toISOString()
+    });
+    localStorage.setItem('ig_membershipRequests', JSON.stringify(requests));
+    document.querySelector('.membership-form-card form')?.reset();
+    toast('Membership request submitted.', 'success');
+}
+
 function logout() {
     localStorage.removeItem('irongrind_session');
     sessionStorage.removeItem('irongrind_session');
