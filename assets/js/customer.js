@@ -468,12 +468,7 @@ function submitMembershipForm(event) {
     const planPrice = Number(planPriceStr) || 0;
     if (!name || !contact) { toast('Please fill in all fields.', 'error'); return; }
 
-    if (!/^[0-9]+$/.test(contact)) {
-        toast('Contact number must contain numbers only.', 'error');
-        document.getElementById('mfContact').classList.add('input-error');
-        return;
-    }
-    if (!isValidPhoneNumber(contact)) {
+    if (!/^09\d{9}$/.test(contact)) {
         toast('Enter a valid PH mobile number (e.g. 09171234567).', 'error');
         document.getElementById('mfContact').classList.add('input-error');
         return;
