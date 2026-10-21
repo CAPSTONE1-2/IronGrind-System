@@ -27,6 +27,14 @@ function hideError() {
     document.getElementById('loginError').classList.add('hidden');
 }
 
+function showForgotPassword() {
+    document.getElementById('forgotPasswordModal').classList.remove('hidden');
+}
+
+function closeForgotPassword() {
+    document.getElementById('forgotPasswordModal').classList.add('hidden');
+}
+
 function handleLogin(event) {
     event.preventDefault();
     hideError();
