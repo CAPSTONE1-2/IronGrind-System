@@ -20,6 +20,8 @@ let pendingApprovals = [];
 let users = [];
 let currentPlanFilter = 'all';
 let currentMemberTab = 'members';
+let activeQRScanner = null;
+let qrScanHandled = false;
 
 /* ========== HELPERS ========== */
 function todayStr() { return new Date().toISOString().slice(0, 10); }
@@ -57,7 +59,10 @@ function openModal(html) {
     document.getElementById('modalContent').innerHTML = html;
     document.getElementById('modalOverlay').classList.remove('hidden');
 }
-function closeModal() { document.getElementById('modalOverlay').classList.add('hidden'); }
+function closeModal() {
+    document.getElementById('modalOverlay').classList.add('hidden');
+    stopQRScanner();
+}
 function printQRCode() {
     document.body.classList.add('print-qr-only');
     const cleanup = () => document.body.classList.remove('print-qr-only');

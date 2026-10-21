@@ -137,10 +137,10 @@
                         <h2><i class="fas fa-qrcode"></i> QR Code Attendance</h2>
                         <button class="btn-sm" onclick="simulateQRScan()"><i class="fas fa-camera"></i> Simulate Scan</button>
                     </div>
-                    <div class="qr-scanner-box" onclick="simulateQRScan()">
+                    <div class="qr-scanner-box" onclick="startQRScanner()" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();startQRScanner()}">
                         <i class="fas fa-camera"></i>
-                        <h3>Tap to Scan QR Code</h3>
-                        <p>Click to simulate scanning a random member's QR code</p>
+                        <h3>Scan Member QR Code</h3>
+                        <p>Open the camera and scan a member’s QR code to record attendance</p>
                     </div>
                     <h3 style="font-size:0.95rem; font-weight:600; margin-bottom:12px;">
                         <i class="fas fa-list" style="color:#ff6b2b;"></i> Today's Attendance Log
@@ -205,6 +205,7 @@
 </div>
 <div id="toast" class="toast hidden"></div>
 
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="assets/js/admin.js"></script>
 </body>
 </html>
