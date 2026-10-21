@@ -72,6 +72,18 @@ body { background: #0b0e14; color: #e8edf5; padding: 20px; min-height: 100vh; }
 .confirm-dialog .modal-sub { margin: 10px 0 20px; line-height: 1.55; }
 .confirm-dialog .modal-actions { justify-content: center; }
 
+/* QR-only print layout */
+.qr-print-card { display: none; }
+@media print {
+    body.print-qr-only { min-height: 0; padding: 0 !important; background: #fff !important; }
+    body.print-qr-only * { visibility: hidden !important; }
+    body.print-qr-only .qr-print-card,
+    body.print-qr-only .qr-print-card * { visibility: visible !important; }
+    body.print-qr-only .qr-print-card { position: fixed; inset: 0; display: flex !important; flex-direction: column; align-items: center; justify-content: center; gap: 8mm; width: 100%; height: 100%; margin: 0; background: #fff; }
+    body.print-qr-only .qr-print-gym { color: #111; font-size: 18pt; font-weight: 700; text-align: center; }
+    body.print-qr-only .qr-print-card img { display: block; width: 65mm; height: 65mm; object-fit: contain; }
+}
+
 /* ========== TABLES ========== */
 .attendance-table { width: 100%; border-collapse: collapse; }
 .attendance-table th { text-align: left; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.6px; color: #6a748b; padding: 8px 12px; border-bottom: 1px solid #1e2533; font-weight: 600; }

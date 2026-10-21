@@ -62,6 +62,13 @@ function closeModal() {
     document.getElementById('modalOverlay').classList.add('hidden');
 }
 
+function printQRCode() {
+    document.body.classList.add('print-qr-only');
+    const cleanup = () => document.body.classList.remove('print-qr-only');
+    window.addEventListener('afterprint', cleanup, { once: true });
+    window.print();
+}
+
 function confirmLogout() {
     openModal(`<div class="confirm-dialog">
         <div class="confirm-dialog-icon"><i class="fas fa-right-from-bracket"></i></div>
@@ -311,12 +318,13 @@ function showQRCode() {
         <div style="text-align:center; padding:20px; background:#fff; border-radius:20px;">
             <img src="${qrUrl}" alt="My QR" style="width:240px; height:240px;">
         </div>
+        <div class="qr-print-card"><div class="qr-print-gym">Iron Grind Fitness Gym</div><img src="${qrUrl}" alt="Member QR code"></div>
         <p style="text-align:center; margin-top:16px; font-size:0.85rem; color:#8b95a9;">
             Member: <strong>${m.name || session.username}</strong>
         </p>
         <div class="modal-actions">
             <button class="btn-sm" onclick="closeModal()">Close</button>
-            <button class="btn-primary" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+            <button class="btn-primary" onclick="printQRCode()"><i class="fas fa-print"></i> Print</button>
         </div>
     `);
 }

@@ -58,6 +58,12 @@ function openModal(html) {
     document.getElementById('modalOverlay').classList.remove('hidden');
 }
 function closeModal() { document.getElementById('modalOverlay').classList.add('hidden'); }
+function printQRCode() {
+    document.body.classList.add('print-qr-only');
+    const cleanup = () => document.body.classList.remove('print-qr-only');
+    window.addEventListener('afterprint', cleanup, { once: true });
+    window.print();
+}
 let pendingConfirmationAction = null;
 function escapeDialogText(value) {
     const element = document.createElement('span');
@@ -343,6 +349,7 @@ function showApprovalSuccessModal(p, member) {
             <div style="background:#fff; padding:16px; border-radius:20px; display:inline-block; margin:16px 0;">
                 <img src="${qrUrl}" alt="QR" style="width:200px; height:200px;">
             </div>
+            <div class="qr-print-card"><div class="qr-print-gym">Iron Grind Fitness Gym</div><img src="${qrUrl}" alt="Member QR code"></div>
             <div style="background:#0d1219; border:1px solid #1e2533; border-radius:16px; padding:16px; text-align:left; font-size:0.85rem;">
                 <div style="font-size:0.75rem; text-transform:uppercase; color:#6a748b; font-weight:600; margin-bottom:12px;">Send to Member — Credentials</div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span style="color:#8b95a9;">Username:</span><code style="color:#ff6b2b; font-weight:700;">${p.username}</code></div>
@@ -353,7 +360,7 @@ function showApprovalSuccessModal(p, member) {
         </div>
         <div class="modal-actions">
             <button class="btn-sm" onclick="copyCredentials('${p.username}', '${p.password}')"><i class="fas fa-copy"></i> Copy</button>
-            <button class="btn-primary" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+            <button class="btn-primary" onclick="printQRCode()"><i class="fas fa-print"></i> Print</button>
         </div>
     `);
 }
@@ -676,7 +683,8 @@ function showMemberQR(id) {
         <h3><i class="fas fa-qrcode"></i> Member QR</h3>
         <p class="modal-sub">${m.name} · ${m.id}</p>
         <div style="text-align:center; padding:20px; background:#fff; border-radius:20px;"><img src="${qrUrl}" style="width:200px;height:200px;"></div>
-        <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Close</button><button class="btn-primary" onclick="window.print()"><i class="fas fa-print"></i> Print</button></div>
+        <div class="qr-print-card"><div class="qr-print-gym">Iron Grind Fitness Gym</div><img src="${qrUrl}" alt="Member QR code"></div>
+        <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Close</button><button class="btn-primary" onclick="printQRCode()"><i class="fas fa-print"></i> Print</button></div>
     `);
 }
 
