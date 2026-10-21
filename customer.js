@@ -1,5 +1,5 @@
 /* =====================================================
-   IRONGRIND CUSTOMER DASHBOARD — COMPLETE LOGIC
+   IRONGRIND CUSTOMER DASHBOARD — VIEW-ONLY + PROGRESS
    ===================================================== */
 
 // ===== AUTH GUARD =====
@@ -16,10 +16,6 @@ let session;
     const pretty = session.fullName || session.username;
     document.getElementById('currentUserName').textContent = pretty;
     document.getElementById('heroName').textContent = pretty.split(' ')[0] + '!';
-
-    // Fill the form with logged-in member's info
-    const mfName = document.getElementById('mfName');
-    if (mfName) mfName.value = session.fullName || session.username;
 })();
 
 // ===== HELPERS =====
@@ -36,28 +32,15 @@ function loadDB(key) {
 }
 function saveDB(key, data) { localStorage.setItem('ig_' + key, JSON.stringify(data)); }
 
-// ===== SEED DATA (so a fresh browser shows products/members) =====
-function ensureSeedData() {
-    if (!localStorage.getItem('ig_products')) {
-        saveDB('products', [
-            { id: 'P001', name: 'Whey Protein — Chocolate', category: 'Supplement', price: 2450, stock: 3, size: '' },
-            { id: 'P002', name: 'Creatine Monohydrate', category: 'Supplement', price: 1200, stock: 2, size: '' },
-            { id: 'P003', name: 'Pre-Workout — Fruit Punch', category: 'Supplement', price: 1850, stock: 4, size: '' },
-            { id: 'P004', name: 'Multivitamins', category: 'Supplement', price: 850, stock: 24, size: '' },
-            { id: 'P005', name: 'IronGrind Shirt', category: 'Merch', price: 650, stock: 1, size: 'Large' },
-            { id: 'P006', name: 'IronGrind Shirt', category: 'Merch', price: 650, stock: 12, size: 'Medium' },
-            { id: 'P007', name: 'IronGrind Shirt', category: 'Merch', price: 650, stock: 8, size: 'Small' }
-        ]);
-    }
-    if (!localStorage.getItem('ig_members')) {
-        saveDB('members', [
-            { id: 'M001', name: 'Juan Dela Cruz', plan: 'Monthly', startDate: '2025-03-15', expiry: '2025-04-15', status: 'active', paid: true, goal: 'Muscle Gain', contact: '09171234567' },
-            { id: 'M002', name: 'Maria Santos', plan: 'Monthly', startDate: '2025-04-03', expiry: '2025-05-03', status: 'active', paid: true, goal: 'Weight Loss', contact: '09171234568' },
-            { id: 'M003', name: 'Pedro Reyes', plan: 'Walk-in', startDate: '2025-04-08', expiry: '2025-04-08', status: 'active', paid: false, goal: 'General Fitness', contact: '09171234569' },
-            { id: 'M004', name: 'Ana Lopez', plan: 'Monthly', startDate: '2025-04-02', expiry: '2025-05-02', status: 'active', paid: true, goal: 'Strength', contact: '09171234570' },
-            { id: 'M005', name: 'Mark Villanueva', plan: 'Half Month', startDate: '2025-04-05', expiry: '2025-04-20', status: 'active', paid: true, goal: 'Endurance', contact: '09171234571' }
-        ]);
-    }
+// ===== PRODUCT IMAGE GENERATOR =====
+// Since there are no real product photos stored, generate a branded placeholder
+// using the product name. Swap `imgUrl` in your data with real image paths later.
+function productImage(p) {
+    if (p.image) return p.image;
+    const label = encodeURIComponent(p.name.replace(/[—-]/g, ' ').trim());
+    const color = p.category === 'Supplement' ? '1e2533' : '2a1a1a';
+    const accent = p.category === 'Supplement' ? '2ecc71' : 'd31212';
+    return `https://placehold.co/400x300/${color}/e8edf5?text=${label}&font=montserrat`;
 }
 
 // ===== TOAST & MODAL =====
@@ -86,35 +69,7 @@ function logout() {
     window.location.href = 'index.html';
 }
 
-// ===== NUMERIC-ONLY PHONE VALIDATION =====
-function validatePhoneInput(input) {
-    const original = input.value;
-    const cleaned = original.replace(/[^0-9]/g, '');
-    const errorEl = document.getElementById(input.id + 'Error');
-
-    if (original !== cleaned) {
-        input.classList.add('input-error');
-        if (errorEl) errorEl.classList.remove('hidden');
-        input.value = cleaned;
-        clearTimeout(input._errorTimer);
-        input._errorTimer = setTimeout(() => {
-            input.classList.remove('input-error');
-            if (errorEl) errorEl.classList.add('hidden');
-        }, 1600);
-    } else {
-        input.classList.remove('input-error');
-        if (errorEl) errorEl.classList.add('hidden');
-    }
-}
-function isValidPhoneNumber(value) {
-    const digits = value.replace(/[^0-9]/g, '');
-    if (digits.length === 11 && digits.startsWith('09')) return true;
-    if (digits.length === 12 && digits.startsWith('639')) return true;
-    if (digits.length === 10 && digits.startsWith('9')) return true;
-    return false;
-}
-
-// ===== FIND CURRENT MEMBER RECORD =====
+// ===== FIND CURRENT MEMBER =====
 function getCurrentMember() {
     const members = loadDB('members');
     let m = members.find(m => m.username === session.username);
@@ -124,7 +79,7 @@ function getCurrentMember() {
     return m || null;
 }
 
-// ===== UPDATE STATUS TEXT =====
+// ===== MEMBERSHIP STATUS =====
 function updateMemberStatus() {
     const m = getCurrentMember();
     const statusEl = document.getElementById('memberStatus');
@@ -135,120 +90,193 @@ function updateMemberStatus() {
     const today = todayStr();
     const expired = m.expiry < today;
     if (expired) {
-        statusEl.innerHTML = `Your membership <strong style="color:#e74c3c;">expired</strong> on ${m.expiry}. Please renew.`;
+        statusEl.innerHTML = `Your membership <strong style="color:#e74c3c;">expired</strong> on ${m.expiry}. Please renew at the gym.`;
     } else {
         statusEl.innerHTML = `Your <strong>${m.plan}</strong> membership is active · Expires ${m.expiry}`;
     }
 }
 
-// ===== RENDER STORE =====
+// ===== MEMBERSHIP PROGRESS =====
+function renderMembershipProgress() {
+    const el = document.getElementById('membershipProgress');
+    const m = getCurrentMember();
+    if (!m) {
+        el.innerHTML = '<div class="empty-state">No membership record found.</div>';
+        return;
+    }
+
+    const today = new Date(todayStr());
+    const start = new Date(m.startDate || todayStr());
+    const end = new Date(m.expiry);
+    const totalDays = Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)));
+    const elapsed = Math.max(0, Math.round((today - start) / (1000 * 60 * 60 * 24)));
+    const daysLeft = Math.max(0, Math.round((end - today) / (1000 * 60 * 60 * 24)));
+    const pct = Math.min(100, Math.round((elapsed / totalDays) * 100));
+    const expired = m.expiry < todayStr();
+
+    // Progress bar colour
+    let barColor = '#2ecc71';
+    if (expired) barColor = '#d31212';
+    else if (daysLeft <= 3) barColor = '#f1c40f';
+    else if (daysLeft <= 7) barColor = '#e67e22';
+
+    el.innerHTML = `
+        <div class="progress-wrap">
+            <div class="progress-meta">
+                <div>
+                    <span class="progress-label">Current Plan</span>
+                    <div class="progress-plan">${m.plan}</div>
+                </div>
+                <div style="text-align:right;">
+                    <span class="progress-label">${expired ? 'Status' : 'Days Remaining'}</span>
+                    <div class="progress-plan" style="color:${barColor};">${expired ? 'Expired' : daysLeft + ' day' + (daysLeft === 1 ? '' : 's')}</div>
+                </div>
+            </div>
+
+            <div class="progress-bar-track">
+                <div class="progress-bar-fill" style="width:${pct}%; background:${barColor};"></div>
+            </div>
+
+            <div class="progress-dates">
+                <span><i class="fas fa-play"></i> Started ${m.startDate || '—'}</span>
+                <span><i class="fas fa-flag-checkered"></i> Expires ${m.expiry}</span>
+            </div>
+
+            <div class="progress-stats">
+                <div class="progress-stat">
+                    <div class="ps-value">${totalDays}</div>
+                    <div class="ps-label">Total Days</div>
+                </div>
+                <div class="progress-stat">
+                    <div class="ps-value">${Math.min(elapsed, totalDays)}</div>
+                    <div class="ps-label">Days Used</div>
+                </div>
+                <div class="progress-stat">
+                    <div class="ps-value" style="color:${barColor};">${expired ? 0 : daysLeft}</div>
+                    <div class="ps-label">Days Left</div>
+                </div>
+                <div class="progress-stat">
+                    <div class="ps-value">${pct}%</div>
+                    <div class="ps-label">Progress</div>
+                </div>
+            </div>
+
+            ${expired ? `
+            <div class="progress-alert">
+                <i class="fas fa-exclamation-triangle"></i>
+                Your membership has expired. Visit the front desk to renew.
+            </div>` : daysLeft <= 3 ? `
+            <div class="progress-alert warn">
+                <i class="fas fa-bell"></i>
+                Only ${daysLeft} day${daysLeft === 1 ? '' : 's'} left — renew soon at the gym!
+            </div>` : ''}
+        </div>
+    `;
+}
+
+// ===== ATTENDANCE HISTORY =====
+function renderAttendanceHistory() {
+    const el = document.getElementById('attendanceHistory');
+    const summaryEl = document.getElementById('attendanceSummary');
+    const m = getCurrentMember();
+    if (!m) {
+        el.innerHTML = '<div class="empty-state">No member record.</div>';
+        summaryEl.textContent = '';
+        return;
+    }
+
+    const all = loadDB('attendance').filter(a =>
+        a.memberId === m.id || a.memberName === m.name
+    );
+
+    // Summary counts
+    const today = todayStr();
+    const thisMonth = today.slice(0, 7);
+    const monthCount = all.filter(a => a.date.startsWith(thisMonth)).length;
+    const totalCount = all.length;
+    const insideNow = all.some(a => a.date === today && !a.timeOut);
+
+    summaryEl.innerHTML = `<i class="fas fa-clock"></i> ${totalCount} total visits · ${monthCount} this month${insideNow ? ' · <span style="color:#2ecc71;">Currently inside</span>' : ''}`;
+
+    if (all.length === 0) {
+        el.innerHTML = '<div class="empty-state">No attendance records yet. Check in at the gym to start tracking!</div>';
+        return;
+    }
+
+    // Sort newest first, show last 15
+    const sorted = [...all].sort((a, b) => (b.date + (b.timeIn || '')).localeCompare(a.date + (a.timeIn || '')));
+    const recent = sorted.slice(0, 15);
+
+    el.innerHTML = `
+        <table class="attendance-table">
+            <thead><tr><th>Date</th><th>Time In</th><th>Time Out</th><th>Duration</th><th>Status</th></tr></thead>
+            <tbody>
+                ${recent.map(a => {
+                    let duration = '—';
+                    if (a.timeIn && a.timeOut) {
+                        const [h1, m1] = a.timeIn.split(':').map(Number);
+                        const [h2, m2] = a.timeOut.split(':').map(Number);
+                        let mins = (h2 * 60 + m2) - (h1 * 60 + m1);
+                        if (mins < 0) mins += 24 * 60;
+                        const hrs = Math.floor(mins / 60);
+                        const rm = mins % 60;
+                        duration = (hrs > 0 ? hrs + 'h ' : '') + rm + 'm';
+                    }
+                    const status = a.timeOut
+                        ? '<span class="badge-status out">Completed</span>'
+                        : '<span class="badge-status in">Inside</span>';
+                    return `<tr>
+                        <td>${a.date}</td>
+                        <td>${a.timeIn || '—'}</td>
+                        <td>${a.timeOut || '—'}</td>
+                        <td>${duration}</td>
+                        <td>${status}</td>
+                    </tr>`;
+                }).join('')}
+            </tbody>
+        </table>
+        ${all.length > 15 ? `<p style="text-align:center; font-size:0.75rem; color:#6a748b; margin-top:12px;">Showing 15 of ${all.length} visits</p>` : ''}
+    `;
+}
+
+// ===== STORE (VIEW ONLY) =====
 function renderStore() {
     const products = loadDB('products');
-    const grid = document.getElementById('customerStoreGrid');
-    if (!grid) return;
-    if (products.length === 0) {
-        grid.innerHTML = '<div class="empty-state">No products available right now.</div>';
-        return;
-    }
-    grid.innerHTML = products.map(p => {
-        const low = p.stock <= 4;
-        const out = p.stock === 0;
-        return `
-            <div class="supplement-card">
-                <span class="tag">${p.category}</span>
-                <h4>${p.name}${p.size ? ' — ' + p.size : ''}</h4>
-                <p class="desc">${p.category === 'Supplement' ? 'Premium quality' : 'Official gym merch'}</p>
-                <div class="price-row">
-                    <span class="price">${formatPeso(p.price)}</span>
-                    <span class="stock-badge ${low ? 'low' : ''}">${out ? 'Out of stock' : p.stock + ' left'}</span>
-                </div>
-                <button class="btn-reserve-lg" ${out ? 'disabled' : ''} onclick="reserveItem('${p.id}')">
-                    <i class="fas fa-bookmark"></i> ${out ? 'Unavailable' : 'Reserve Now'}
-                </button>
-            </div>`;
-    }).join('');
+    const supp = products.filter(p => p.category === 'Supplement');
+    const merch = products.filter(p => p.category === 'Merch');
+
+    const suppGrid = document.getElementById('customerSupplementsGrid');
+    const merchGrid = document.getElementById('customerMerchGrid');
+
+    if (supp.length === 0) suppGrid.innerHTML = '<div class="empty-state">No supplements available.</div>';
+    else suppGrid.innerHTML = supp.map(productCard).join('');
+
+    if (merch.length === 0) merchGrid.innerHTML = '<div class="empty-state">No merchandise available.</div>';
+    else merchGrid.innerHTML = merch.map(productCard).join('');
 }
 
-// ===== RESERVE =====
-function reserveItem(productId) {
-    const products = loadDB('products');
-    const p = products.find(x => x.id === productId);
-    if (!p) return;
-    if (p.stock < 1) { toast('Out of stock.', 'error'); return; }
+function productCard(p) {
+    const out = p.stock === 0;
+    const low = p.stock > 0 && p.stock <= 4;
+    let stockLabel = p.stock + ' in stock';
+    let stockClass = '';
+    if (out) { stockLabel = 'Out of stock'; stockClass = 'low'; }
+    else if (low) { stockLabel = 'Only ' + p.stock + ' left'; stockClass = 'low'; }
 
-    p.stock -= 1;
-    saveDB('products', products);
-
-    const reservations = loadDB('reservations_' + session.username);
-    reservations.push({
-        id: 'R' + Date.now(),
-        productId: p.id,
-        productName: p.name + (p.size ? ' — ' + p.size : ''),
-        price: p.price,
-        reservedAt: new Date().toISOString(),
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-        status: 'Pending Payment'
-    });
-    saveDB('reservations_' + session.username, reservations);
-
-    renderStore();
-    renderMyReservations();
-    toast(`✅ Reserved ${p.name}. Pay within 24 hours.`, 'success');
-}
-
-// ===== MY RESERVATIONS =====
-function renderMyReservations() {
-    const reservations = loadDB('reservations_' + session.username);
-    const panel = document.getElementById('myReservationsPanel');
-    const list = document.getElementById('myReservationsList');
-    if (!panel || !list) return;
-
-    if (reservations.length === 0) {
-        panel.style.display = 'none';
-        return;
-    }
-    panel.style.display = 'block';
-
-    list.innerHTML = reservations.map(r => {
-        const expires = new Date(r.expiresAt);
-        const hoursLeft = Math.max(0, Math.round((expires - Date.now()) / (1000 * 60 * 60)));
-        return `
-            <div class="member-row">
-                <div class="member-info">
-                    <div class="member-avatar" style="background:rgba(255,107,43,0.15);">
-                        <i class="fas fa-bookmark" style="color:#ff6b2b;"></i>
-                    </div>
-                    <div class="member-details">
-                        <h4>${r.productName}</h4>
-                        <p>${formatPeso(r.price)} · Expires in ${hoursLeft}h</p>
-                    </div>
-                </div>
-                <div class="member-actions">
-                    <span class="approve-badge pending"><i class="fas fa-clock"></i> ${r.status}</span>
-                    <button class="renew-btn" onclick="cancelReservation('${r.id}')">
-                        <i class="fas fa-times"></i> Cancel
-                    </button>
-                </div>
-            </div>`;
-    }).join('');
-}
-
-function cancelReservation(id) {
-    if (!confirm('Cancel this reservation? Stock will be released.')) return;
-    let reservations = loadDB('reservations_' + session.username);
-    const r = reservations.find(x => x.id === id);
-    if (!r) return;
-
-    const products = loadDB('products');
-    const p = products.find(x => x.id === r.productId);
-    if (p) { p.stock += 1; saveDB('products', products); }
-
-    reservations = reservations.filter(x => x.id !== id);
-    saveDB('reservations_' + session.username, reservations);
-
-    renderStore();
-    renderMyReservations();
-    toast('Reservation cancelled. Stock released.', 'error');
+    return `
+        <div class="product-card view-only-card">
+            <div class="product-img-wrap">
+                <img src="${productImage(p)}" alt="${p.name}" loading="lazy">
+                ${out ? '<span class="img-badge out">Out</span>' : ''}
+            </div>
+            <span class="cat">${p.category}</span>
+            <h4>${p.name}${p.size ? ' — ' + p.size : ''}</h4>
+            <div class="price-row">
+                <span class="price">${formatPeso(p.price)}</span>
+                <span class="stock-tag ${stockClass}">${stockLabel}</span>
+            </div>
+            <div class="view-only-note"><i class="fas fa-store"></i> Available in-store only</div>
+        </div>`;
 }
 
 // ===== SHOW QR =====
@@ -258,7 +286,7 @@ function showQRCode() {
         toast('Member record not found.', 'error');
         return;
     }
-    const qrData = m.qrCode || ('IRONGRIND|' + session.username);
+    const qrData = m.qrCode || ('IRONGRIND|' + (m.id || session.username) + '|' + (m.name || session.username));
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(qrData)}`;
     openModal(`
         <h3><i class="fas fa-qrcode"></i> My QR Code</h3>
@@ -267,7 +295,7 @@ function showQRCode() {
             <img src="${qrUrl}" alt="My QR" style="width:240px; height:240px;">
         </div>
         <p style="text-align:center; margin-top:16px; font-size:0.85rem; color:#8b95a9;">
-            Member: <strong>${session.fullName || session.username}</strong>
+            Member: <strong>${m.name || session.username}</strong>
         </p>
         <div class="modal-actions">
             <button class="btn-sm" onclick="closeModal()">Close</button>
@@ -276,157 +304,10 @@ function showQRCode() {
     `);
 }
 
-// ===== RENEW MEMBERSHIP =====
-function renewMembership() {
-    openModal(`
-        <h3><i class="fas fa-sync-alt"></i> Renew Membership</h3>
-        <p class="modal-sub">Choose a plan to renew your membership.</p>
-        <div class="form-group" style="margin-bottom:14px;">
-            <label>Plan</label>
-            <select id="renewPlan">
-                <option value="Monthly|800">Monthly — ₱800</option>
-                <option value="Half Month|400">Half Month — ₱400</option>
-                <option value="Walk-in|80">Walk-in — ₱80</option>
-            </select>
-        </div>
-        <div class="modal-actions">
-            <button class="btn-sm" onclick="closeModal()">Cancel</button>
-            <button class="btn-primary" onclick="confirmRenew()">
-                <i class="fas fa-check"></i> Confirm Renewal
-            </button>
-        </div>
-    `);
-}
-
-function confirmRenew() {
-    const m = getCurrentMember();
-    if (!m) {
-        toast('No membership record found. Please contact admin.', 'error');
-        closeModal();
-        return;
-    }
-
-    const [plan, price] = document.getElementById('renewPlan').value.split('|');
-    const days = plan === 'Monthly' ? 30 : plan === 'Half Month' ? 15 : 1;
-    const expiry = addDays(todayStr(), days);
-
-    // Update the member record (match by id)
-    const members = loadDB('members');
-    const idx = members.findIndex(x => x.id === m.id);
-    if (idx !== -1) {
-        members[idx].plan = plan;
-        members[idx].startDate = todayStr();
-        members[idx].expiry = expiry;
-        members[idx].paid = true;
-        saveDB('members', members);
-    }
-
-    // Record sale
-    const sales = loadDB('sales');
-    sales.unshift({
-        id: 'IG-' + Date.now().toString().slice(-4),
-        customer: session.fullName || session.username,
-        items: plan + ' Renewal',
-        total: Number(price),
-        date: todayStr(),
-        status: 'Paid'
-    });
-    saveDB('sales', sales);
-
-    updateMemberStatus();
-    closeModal();
-    toast(`✅ Membership renewed until ${expiry}.`, 'success');
-}
-
-// ===== MEMBERSHIP FORM (for renewals/updates from dashboard) =====
-function submitMembershipForm(event) {
-    event.preventDefault();
-    const name = document.getElementById('mfName').value.trim();
-    const contact = document.getElementById('mfContact').value.trim();
-    const planValue = document.getElementById('mfPlan').value;
-    const [plan, planPriceStr] = planValue.split('|');
-    const planPrice = Number(planPriceStr) || 0;
-    const goal = document.getElementById('mfGoal').value;
-
-    if (!name || !contact) { toast('Please fill in all fields.', 'error'); return; }
-
-    if (!/^[0-9]+$/.test(contact)) {
-        toast('Contact number must contain numbers only.', 'error');
-        document.getElementById('mfContact').classList.add('input-error');
-        return;
-    }
-    if (!isValidPhoneNumber(contact)) {
-        toast('Enter a valid PH mobile number (e.g. 09171234567).', 'error');
-        document.getElementById('mfContact').classList.add('input-error');
-        return;
-    }
-
-    // Push to pending approvals
-    const pending = loadDB('pendingApprovals');
-    pending.push({
-        id: 'APP' + Date.now(),
-        fullName: name,
-        mobile: contact,
-        plan,
-        planPrice,
-        goals: [goal],
-        username: session.username,
-        submittedAt: new Date().toISOString(),
-        status: 'pending',
-        source: 'dashboard-renewal'
-    });
-    saveDB('pendingApprovals', pending);
-
-    toast('✅ Form submitted! Awaiting admin approval.', 'success');
-    document.getElementById('mfContact').value = '';
-}
-
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
-    ensureSeedData();
     updateMemberStatus();
+    renderMembershipProgress();
+    renderAttendanceHistory();
     renderStore();
-    renderMyReservations();
-
-    // Block non-numeric keystrokes on phone field
-    document.addEventListener('keypress', (e) => {
-        const el = e.target;
-        if (el.tagName !== 'INPUT') return;
-        if (el.id !== 'mfContact') return;
-        if (!/[0-9]/.test(e.key)) {
-            e.preventDefault();
-            el.classList.add('input-error');
-            const errorEl = document.getElementById('mfContactError');
-            if (errorEl) errorEl.classList.remove('hidden');
-            clearTimeout(el._errorTimer);
-            el._errorTimer = setTimeout(() => {
-                el.classList.remove('input-error');
-                if (errorEl) errorEl.classList.add('hidden');
-            }, 1600);
-        }
-    });
-
-    // Auto-expire old reservations
-    const reservations = loadDB('reservations_' + session.username);
-    const now = Date.now();
-    let changed = false;
-    const active = reservations.filter(r => {
-        if (new Date(r.expiresAt).getTime() < now && r.status === 'Pending Payment') {
-            const products = loadDB('products');
-            const p = products.find(x => x.id === r.productId);
-            if (p) { p.stock += 1; saveDB('products', products); }
-            changed = true;
-            return false;
-        }
-        return true;
-    });
-    if (changed) {
-        saveDB('reservations_' + session.username, active);
-        renderStore();
-        renderMyReservations();
-    }
-});
-
-window.addEventListener('load', () => {
-    window.setTimeout(() => document.getElementById('page-loader')?.classList.add('hidden-loader'), 300);
 });
