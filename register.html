@@ -9,4 +9,16 @@
     <div style="max-width:800px; margin:0 auto; background:#11151c; border:1px solid #1e2530; border-radius:14px; padding:32px;">
         <div class="logo-area" style="margin-bottom:20px;"><div class="logo-icon">IG</div><div class="logo-text"><h1>Iron<span>Grind</span></h1><p>Member Registration</p></div></div>
         <form id="registrationForm" onsubmit="submitRegistration(event)">
-            <div class="form-row"><div class="form-group"><label>Full Name</label><input type="text" id="regFullName" required></div><
+            <div class="form-row"><div class="form-group"><label>Full Name</label><input type="text" id="regFullName" required></div><div class="form-group"><label>Mobile</label><input type="tel" id="regMobile" required></div></div>
+            <div class="form-row"><div class="form-group"><label>Username</label><input type="text" id="regUsername" required></div><div class="form-group"><label>Password</label><input type="password" id="regPassword" required></div></div>
+            <input type="hidden" id="regDob" value="2000-01-01"><input type="hidden" id="regAge" value="24"><input type="hidden" id="regSex" value="Male">
+            <input type="hidden" id="regEcName" value="N/A"><input type="hidden" id="regEcRelation" value="N/A"><input type="hidden" id="regEcContact" value="N/A">
+            <input type="hidden" id="regConfirmPassword">
+            <div class="form-group"><label>Plan</label><select id="regPlan"><option value="Monthly|800">Monthly (₱800)</option><option value="Walk-in|80">Walk-in (₱80)</option></select></div>
+            <button type="submit" class="btn-primary" style="width:100%; margin-top:20px;">Submit Application</button>
+        </form>
+    </div>
+    <div id="modalOverlay" class="modal-overlay hidden"><div class="modal-content" id="modalContent"></div></div>
+    <script src="register.js"></script>
+</body>
+</html>
