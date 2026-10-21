@@ -403,6 +403,7 @@ function completeRejection(id) {
 let signaturePad = null;
 
 function openAddMemberModal() {
+    signaturePad = null;
     openModal(`
         <h3 style="display:flex; align-items:center; gap:10px;"><i class="fas fa-user-plus"></i> Add New Member</h3>
         <p class="modal-sub">Enter the member’s details, choose a membership plan, and capture their digital signature.</p>
@@ -509,7 +510,7 @@ function openAddMemberModal() {
             </div>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
                 <small style="color:#6a748b; font-size:0.7rem;">Signature required before submitting.</small>
-                <button type="button" class="btn-sm" onclick="clearSignature()"><i class="fas fa-eraser"></i> Clear</button>
+                <button type="button" id="clearSignatureButton" class="btn-sm"><i class="fas fa-eraser"></i> Clear</button>
             </div>
         </div>
 
@@ -520,24 +521,13 @@ function openAddMemberModal() {
         </div>
     `);
 
-    // ---- Attach signature pad AFTER the modal HTML is in the DOM ----
+    // ---- Attach the signature canvas after the modal is visible ----
     setTimeout(() => {
-        const canvas = document.getElementById('signatureCanvas');
-        if (!canvas || typeof SignaturePad === 'undefined') return;
-
-        // Handle high-DPI displays so signature stays crisp
-        const ratio = Math.max(window.devicePixelRatio || 1, 1);
-        canvas.width = canvas.offsetWidth * ratio;
-        canvas.height = canvas.offsetHeight * ratio;
-        const ctx = canvas.getContext('2d');
-        ctx.scale(ratio, ratio);
-
-        signaturePad = new SignaturePad(canvas, {
-            backgroundColor: 'rgba(255,255,255,0)',
-            penColor: '#11161f',
-            minWidth: 1,
-            maxWidth: 2.5
-        });
+        if (typeof initDigitalSignature !== 'function') {
+            toast('The signature canvas could not load. Please refresh and try again.', 'error');
+            return;
+        }
+        signaturePad = initDigitalSignature('signatureCanvas', 'clearSignatureButton');
     }, 100);
 
     // ---- Auto-compute age from DOB ----
@@ -622,6 +612,7 @@ function submitNewMember() {
 
     // ---- Create Member ----
     const memberId = uid('M');
+    const saleId = 'IG-' + Date.now().toString().slice(-4);
     members.push({
         id: memberId,
         name,
@@ -637,17 +628,20 @@ function submitNewMember() {
         emergencyContact: { name: ecName, relationship: ecRelation, contact: ecContact },
         signature: signatureData,   // base64 PNG
         registeredAt: new Date().toISOString(),
+        receiptId: saleId,
         qrCode: 'IRONGRIND|' + memberId + '|' + name
     });
     saveDB('members', members);
 
     // ---- Record Sale ----
     sales.unshift({
-        id: 'IG-' + Date.now().toString().slice(-4),
+        id: saleId,
         customer: name,
         items: plan + ' Membership (Admin registration)',
+        lineItems: [{ name: `${plan} Membership`, quantity: 1, unitPrice: Number(price), total: Number(price) }],
         total: Number(price),
         date: todayStr(),
+        createdAt: new Date().toISOString(),
         status: 'Paid'
     });
     saveDB('sales', sales);
@@ -696,7 +690,7 @@ function showMemberQR(id) {
         <p class="modal-sub">${m.name} · ${m.id}</p>
         <div style="text-align:center; padding:20px; background:#fff; border-radius:20px;"><img src="${qrUrl}" style="width:200px;height:200px;"></div>
         <div class="qr-print-card"><div class="qr-print-gym">Iron Grind Fitness Gym</div><img src="${qrUrl}" alt="Member QR code"></div>
-        <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Close</button><button class="btn-primary" onclick="printQRCode()"><i class="fas fa-print"></i> Print</button></div>
+        <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Close</button>${m.receiptId ? `<button class="btn-sm" onclick="showSaleReceipt(decodeURIComponent('${encodeURIComponent(String(m.receiptId))}'))"><i class="fas fa-receipt"></i> Receipt</button>` : ''}<button class="btn-primary" onclick="printQRCode()"><i class="fas fa-print"></i> Print QR</button></div>
     `);
 }
 
