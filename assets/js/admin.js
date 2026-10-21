@@ -177,6 +177,20 @@ function renderDashboard() {
 }
 
 /* ========== RENDER: MEMBERS ========== */
+function getPlanDurationDays(plan) {
+    if (plan === 'Monthly') return 30;
+    if (plan === 'Half Month') return 15;
+    if (plan === 'Weekly') return 7;
+    return 1;
+}
+
+function getPlanPrice(plan, member = null) {
+    if (plan === 'Monthly') return 800;
+    if (plan === 'Half Month') return 400;
+    if (plan === 'Weekly') return Number(member?.planPrice) || 0;
+    return 80;
+}
+
 function renderMembers() {
     const searchEl = document.getElementById('memberSearch');
     const query = searchEl ? searchEl.value.toLowerCase() : '';
@@ -206,6 +220,7 @@ function renderMembers() {
                 </div>
                 <div class="member-actions">
                     <button class="qr-badge" onclick="showMemberQR('${m.id}')"><i class="fas fa-qrcode"></i> QR</button>
+                    <button class="renew-btn" onclick="openChangePlanModal('${m.id}')"><i class="fas fa-exchange-alt"></i> Change Plan</button>
                     <button class="renew-btn" onclick="renewMember('${m.id}')"><i class="fas fa-sync-alt"></i> Renew</button>
                     <span class="approve-badge ${statusClass}">${statusText}</span>
                 </div>
@@ -313,6 +328,7 @@ function completeApproval(id) {
         id: uid('M'),
         name: p.fullName,
         plan: p.plan,
+        planPrice: Number(p.planPrice) || 0,
         startDate: p.startDate,
         expiry: p.endDate,
         status: 'active',
@@ -649,6 +665,7 @@ function submitNewMember() {
         username,
         registrationSource: 'Walk-in',
         plan,
+        planPrice: Number(price),
         startDate: startDate,
         expiry: endDate || addDays(startDate, days),
         status: 'active',
@@ -689,19 +706,116 @@ function submitNewMember() {
     setTimeout(() => showMemberQR(memberId), 400);
 }
 
+function openChangePlanModal(id) {
+    const member = members.find(item => String(item.id) === String(id));
+    if (!member) return;
+    openModal(`<h3><i class="fas fa-exchange-alt"></i> Change Membership Plan</h3>
+        <p class="modal-sub">Changing ${escapeHTML(member.name)} from <strong>${escapeHTML(member.plan || 'No plan')}</strong>. The new plan starts today and replaces the current expiry; the previous plan and dates will be kept in the archive.</p>
+        <div class="form-group" style="margin-bottom:14px;"><label>New Plan</label><select id="changePlanSelect" onchange="updatePlanChangePrice()">
+            <option value="Monthly" data-days="30" data-price="800">Monthly — ₱800 / 30 days</option>
+            <option value="Half Month" data-days="15" data-price="400">Half Month — ₱400 / 15 days</option>
+            <option value="Weekly" data-days="7" data-price="">Weekly — set fee / 7 days</option>
+            <option value="Walk-in" data-days="1" data-price="80">Walk-in — ₱80 / day</option>
+        </select></div>
+        <div class="form-group"><label>Amount received (₱)</label><input type="number" id="changePlanPrice" min="0" step="0.01" placeholder="Enter amount"></div>
+        <p style="font-size:0.75rem; color:#8b95a9;">Previous plan: ${escapeHTML(member.plan || '—')} · Expires ${escapeHTML(member.expiry || '—')}</p>
+        <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="submitMemberPlanChange('${encodeURIComponent(String(member.id))}')"><i class="fas fa-archive"></i> Save Change &amp; Archive</button></div>`);
+    updatePlanChangePrice();
+}
+
+function updatePlanChangePrice() {
+    const select = document.getElementById('changePlanSelect');
+    const priceInput = document.getElementById('changePlanPrice');
+    if (!select || !priceInput) return;
+    const selectedPrice = select.selectedOptions[0]?.dataset.price;
+    priceInput.value = selectedPrice || '';
+    priceInput.readOnly = Boolean(selectedPrice);
+}
+
+function submitMemberPlanChange(encodedId) {
+    const id = decodeURIComponent(encodedId);
+    const member = members.find(item => String(item.id) === id);
+    const select = document.getElementById('changePlanSelect');
+    const priceValue = document.getElementById('changePlanPrice')?.value.trim();
+    const price = Number(priceValue);
+    if (!member || !select) return;
+    const newPlan = select.value;
+    const duration = Number(select.selectedOptions[0]?.dataset.days) || getPlanDurationDays(newPlan);
+    if (!priceValue || !Number.isFinite(price) || price <= 0) { toast('Enter an amount greater than zero for the new plan.', 'error'); return; }
+    if (newPlan === member.plan && price === Number(member.planPrice || getPlanPrice(member.plan, member))) {
+        toast('The member already has this plan and price.', 'error');
+        return;
+    }
+
+    const changedAt = new Date().toISOString();
+    const nextStartDate = todayStr();
+    const nextExpiry = addDays(nextStartDate, duration);
+    const previous = {
+        plan: member.plan || '—',
+        startDate: member.startDate || null,
+        expiry: member.expiry || null,
+        planPrice: Number(member.planPrice || getPlanPrice(member.plan, member)) || 0
+    };
+    const archiveRecord = {
+        id: 'PA-' + Date.now().toString().slice(-8),
+        memberId: member.id,
+        memberName: member.name,
+        previousPlan: previous.plan,
+        previousStartDate: previous.startDate,
+        previousExpiry: previous.expiry,
+        previousPrice: previous.planPrice,
+        newPlan,
+        newStartDate: nextStartDate,
+        newExpiry: nextExpiry,
+        newPrice: price,
+        changedAt,
+        changedBy: 'admin'
+    };
+
+    planArchives.unshift(archiveRecord);
+    member.plan = newPlan;
+    member.planPrice = price;
+    member.startDate = nextStartDate;
+    member.expiry = nextExpiry;
+    member.paid = true;
+    member.status = 'active';
+
+    const saleId = 'IG-' + Date.now().toString().slice(-4);
+    sales.unshift({
+        id: saleId,
+        customer: member.name,
+        items: `${newPlan} Membership Plan Change`,
+        lineItems: [{ name: `${newPlan} Membership Plan Change`, quantity: 1, unitPrice: price, total: price }],
+        total: price,
+        date: todayStr(),
+        createdAt: changedAt,
+        status: 'Paid'
+    });
+
+    saveDB('members', members);
+    saveDB('planArchives', planArchives);
+    saveDB('sales', sales);
+    closeModal();
+    renderMembers();
+    renderDashboard();
+    renderSales();
+    renderReports();
+    toast(`${member.name}'s plan changed to ${newPlan}. Previous plan archived.`, 'success');
+}
+
 function renewMember(id) {
     const m = members.find(x => x.id === id);
     if (!m) return;
-    const days = m.plan === 'Monthly' ? 30 : m.plan === 'Half Month' ? 15 : 1;
-    const price = m.plan === 'Monthly' ? 800 : m.plan === 'Half Month' ? 400 : 80;
+    const days = getPlanDurationDays(m.plan);
+    const price = getPlanPrice(m.plan, m);
     askConfirmation('Renew membership?', `Renew ${m.name}'s ${m.plan} membership for ${formatPeso(price)}?`, 'Renew', () => completeMemberRenewal(id), false);
 }
 
 function completeMemberRenewal(id) {
     const m = members.find(x => x.id === id);
     if (!m) return;
-    const days = m.plan === 'Monthly' ? 30 : m.plan === 'Half Month' ? 15 : 1;
-    const price = m.plan === 'Monthly' ? 800 : m.plan === 'Half Month' ? 400 : 80;
+    const days = getPlanDurationDays(m.plan);
+    const price = getPlanPrice(m.plan, m);
     m.startDate = todayStr();
     m.expiry = addDays(todayStr(), days);
     m.paid = true;
@@ -1148,8 +1262,8 @@ function viewReport(type) {
     } else if (type === 'plan-archive') {
         const archivedPlans = [...planArchives].sort((a, b) => String(b.changedAt || '').localeCompare(String(a.changedAt || '')));
         body = archivedPlans.length
-            ? `<table class="attendance-table"><thead><tr><th>Member</th><th>Previous Plan</th><th>New Plan</th><th>Previous Expiry</th><th>New Expiry</th><th>Changed</th></tr></thead><tbody>
-                ${archivedPlans.map(record => `<tr><td>${escapeHTML(record.memberName)}</td><td>${escapeHTML(record.previousPlan)}</td><td>${escapeHTML(record.newPlan)}</td><td>${escapeHTML(record.previousExpiry || '—')}</td><td>${escapeHTML(record.newExpiry || '—')}</td><td>${escapeHTML(record.changedAt ? new Date(record.changedAt).toLocaleString() : '—')}</td></tr>`).join('')}</tbody></table>`
+            ? `<table class="attendance-table"><thead><tr><th>Member</th><th>Previous Plan</th><th>New Plan</th><th>Previous Expiry</th><th>New Expiry</th><th>New Fee</th><th>Changed</th></tr></thead><tbody>
+                ${archivedPlans.map(record => `<tr><td>${escapeHTML(record.memberName)}</td><td>${escapeHTML(record.previousPlan)}</td><td>${escapeHTML(record.newPlan)}</td><td>${escapeHTML(record.previousExpiry || '—')}</td><td>${escapeHTML(record.newExpiry || '—')}</td><td>${formatPeso(record.newPrice || 0)}</td><td>${escapeHTML(record.changedAt ? new Date(record.changedAt).toLocaleString() : '—')}</td></tr>`).join('')}</tbody></table>`
             : '<div class="empty-state">No plan changes have been archived yet.</div>';
     } else if (type === 'payment' || type === 'sales') {
         body = `<table class="attendance-table"><thead><tr><th>Receipt</th><th>Customer</th><th>Total</th><th>Date</th></tr></thead><tbody>
@@ -1198,9 +1312,9 @@ function printReportPDF(type) {
             status: getMemberActivityStatus(member)
         }));
     } else if (type === 'plan-archive') {
-        columns = ['Member', 'Previous Plan', 'New Plan', 'Previous Expiry', 'New Expiry', 'Changed'];
+        columns = ['Member', 'Previous Plan', 'New Plan', 'Previous Expiry', 'New Expiry', 'New Fee', 'Changed'];
         rows = planArchives.map(record => ({
-            cells: [record.memberName, record.previousPlan, record.newPlan, record.previousExpiry || '—', record.newExpiry || '—', record.changedAt ? new Date(record.changedAt).toLocaleString() : '—'],
+            cells: [record.memberName, record.previousPlan, record.newPlan, record.previousExpiry || '—', record.newExpiry || '—', formatPeso(record.newPrice || 0), record.changedAt ? new Date(record.changedAt).toLocaleString() : '—'],
             date: record.changedAt
         }));
         dateForRow = row => row.date;
@@ -1292,7 +1406,7 @@ function printReportPDF(type) {
 }
 
 function exportAllReports() {
-    const data = { members, products, sales, attendance, generatedAt: new Date().toISOString() };
+    const data = { members, products, sales, attendance, planArchives, generatedAt: new Date().toISOString() };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = `irongrind-${todayStr()}.json`; a.click();
