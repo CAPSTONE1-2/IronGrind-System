@@ -53,6 +53,34 @@ function openModal(html) {
     document.getElementById('modalOverlay').classList.remove('hidden');
 }
 function closeModal() { document.getElementById('modalOverlay').classList.add('hidden'); }
+let pendingConfirmationAction = null;
+function escapeDialogText(value) {
+    const element = document.createElement('span');
+    element.textContent = value;
+    return element.innerHTML;
+}
+function askConfirmation(title, message, actionLabel, callback, danger = false) {
+    pendingConfirmationAction = callback;
+    openModal(`<div class="confirm-dialog">
+        <div class="confirm-dialog-icon"><i class="fas ${danger ? 'fa-triangle-exclamation' : 'fa-circle-question'}"></i></div>
+        <h3>${escapeDialogText(title)}</h3>
+        <p class="modal-sub">${escapeDialogText(message)}</p>
+        <div class="modal-actions">
+            <button class="btn-sm" onclick="cancelConfirmation()">Cancel</button>
+            <button class="${danger ? 'btn-danger' : 'btn-primary'}" onclick="runConfirmation()">${escapeDialogText(actionLabel)}</button>
+        </div>
+    </div>`);
+}
+function cancelConfirmation() {
+    pendingConfirmationAction = null;
+    closeModal();
+}
+function runConfirmation() {
+    const callback = pendingConfirmationAction;
+    pendingConfirmationAction = null;
+    closeModal();
+    callback?.();
+}
 
 /* ========== NAV ========== */
 function showAdminSection(section, event) {
@@ -86,11 +114,12 @@ function switchMemberTab(tab) {
 }
 
 function logout() {
-    if (!confirm('Are you sure you want to log out?')) return;
-    localStorage.removeItem('irongrind_session');
-    sessionStorage.removeItem('irongrind_session');
-    document.getElementById('page-loader')?.classList.remove('hidden-loader');
-    window.setTimeout(() => window.location.replace('index.html'), 350);
+    askConfirmation('Log out?', 'Are you sure you want to log out?', 'Log out', () => {
+        localStorage.removeItem('irongrind_session');
+        sessionStorage.removeItem('irongrind_session');
+        document.getElementById('page-loader')?.classList.remove('hidden-loader');
+        window.setTimeout(() => window.location.replace('index.html'), 350);
+    }, true);
 }
 
 /* ========== RENDER: DASHBOARD ========== */
@@ -200,23 +229,23 @@ function renderApprovals() {
                 <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px;">
                     <div style="display:flex; flex-direction:column; gap:4px; font-size:0.82rem;">
                         <span style="font-size:0.68rem; text-transform:uppercase; color:#6a748b; font-weight:600;">Age · Sex</span>
-                        <span>${p.age} · ${p.sex}</span>
+                        <span>${p.age || '—'} · ${p.sex || '—'}</span>
                     </div>
                     <div style="display:flex; flex-direction:column; gap:4px; font-size:0.82rem;">
                         <span style="font-size:0.68rem; text-transform:uppercase; color:#6a748b; font-weight:600;">Mobile</span>
-                        <span>${p.mobile}</span>
+                        <span>${p.mobile || p.contact || '—'}</span>
                     </div>
                     <div style="display:flex; flex-direction:column; gap:4px; font-size:0.82rem;">
                         <span style="font-size:0.68rem; text-transform:uppercase; color:#6a748b; font-weight:600;">Plan</span>
-                        <span><strong>${p.plan}</strong> — ₱${p.planPrice.toLocaleString()}</span>
+                        <span><strong>${p.plan || 'Renewal'}</strong> — ₱${Number(p.planPrice || 0).toLocaleString('en-PH')}</span>
                     </div>
                     <div style="display:flex; flex-direction:column; gap:4px; font-size:0.82rem;">
                         <span style="font-size:0.68rem; text-transform:uppercase; color:#6a748b; font-weight:600;">Dates</span>
-                        <span>${p.startDate} → ${p.endDate}</span>
+                        <span>${p.startDate || '—'} → ${p.endDate || '—'}</span>
                     </div>
                     <div style="display:flex; flex-direction:column; gap:4px; font-size:0.82rem;">
                         <span style="font-size:0.68rem; text-transform:uppercase; color:#6a748b; font-weight:600;">Emergency Contact</span>
-                        <span>${p.emergencyContact.name} (${p.emergencyContact.relationship}) · ${p.emergencyContact.contact}</span>
+                        <span>${p.emergencyContact ? `${p.emergencyContact.name} (${p.emergencyContact.relationship}) · ${p.emergencyContact.contact}` : 'Not provided for renewal'}</span>
                     </div>
                     <div style="display:flex; flex-direction:column; gap:4px; font-size:0.82rem;">
                         <span style="font-size:0.68rem; text-transform:uppercase; color:#6a748b; font-weight:600;">Username</span>
@@ -238,8 +267,13 @@ function approveApplication(id) {
     const idx = pendingApprovals.findIndex(x => x.id === id);
     if (idx === -1) return;
     const p = pendingApprovals[idx];
+    askConfirmation('Approve application?', `Approve ${p.fullName}? This will create their account and generate their QR code.`, 'Approve', () => completeApproval(id));
+}
 
-    if (!confirm(`Approve ${p.fullName}?\n\nThis will create their account and generate their QR code.`)) return;
+function completeApproval(id) {
+    const idx = pendingApprovals.findIndex(x => x.id === id);
+    if (idx === -1) return;
+    const p = pendingApprovals[idx];
 
     users.push({
         username: p.username,
@@ -315,14 +349,19 @@ function showApprovalSuccessModal(p, member) {
 
 function copyCredentials(username, password) {
     const text = `Iron Grind Fitness Gym\nUsername: ${username}\nPassword: ${password}`;
-    navigator.clipboard.writeText(text).then(() => toast('Credentials copied!', 'success')).catch(() => alert(text));
+    navigator.clipboard.writeText(text).then(() => toast('Credentials copied!', 'success')).catch(() => toast('Clipboard unavailable. Copy the credentials from the approval details.', 'error'));
 }
 
 function rejectApplication(id) {
     const idx = pendingApprovals.findIndex(x => x.id === id);
     if (idx === -1) return;
     const p = pendingApprovals[idx];
-    if (!confirm(`Reject ${p.fullName}'s application?`)) return;
+    askConfirmation('Reject application?', `Reject ${p.fullName}'s application?`, 'Reject', () => completeRejection(id), true);
+}
+
+function completeRejection(id) {
+    const idx = pendingApprovals.findIndex(x => x.id === id);
+    if (idx === -1) return;
     pendingApprovals.splice(idx, 1);
     saveDB('pendingApprovals', pendingApprovals);
     renderApprovals();
@@ -599,7 +638,14 @@ function renewMember(id) {
     if (!m) return;
     const days = m.plan === 'Monthly' ? 30 : m.plan === 'Half Month' ? 15 : 1;
     const price = m.plan === 'Monthly' ? 800 : m.plan === 'Half Month' ? 400 : 80;
-    if (!confirm(`Renew ${m.name}'s ${m.plan} for ${formatPeso(price)}?`)) return;
+    askConfirmation('Renew membership?', `Renew ${m.name}'s ${m.plan} membership for ${formatPeso(price)}?`, 'Renew', () => completeMemberRenewal(id), false);
+}
+
+function completeMemberRenewal(id) {
+    const m = members.find(x => x.id === id);
+    if (!m) return;
+    const days = m.plan === 'Monthly' ? 30 : m.plan === 'Half Month' ? 15 : 1;
+    const price = m.plan === 'Monthly' ? 800 : m.plan === 'Half Month' ? 400 : 80;
     m.startDate = todayStr();
     m.expiry = addDays(todayStr(), days);
     m.paid = true;
@@ -778,7 +824,13 @@ function submitEditProduct(id) {
 
 function deleteProduct(id) {
     const p = products.find(x => x.id === id);
-    if (!p || !confirm(`Delete ${p.name}?`)) return;
+    if (!p) return;
+    askConfirmation('Delete product?', `Delete ${p.name}? This action cannot be undone.`, 'Delete', () => completeProductDeletion(id), true);
+}
+
+function completeProductDeletion(id) {
+    const p = products.find(x => x.id === id);
+    if (!p) return;
     products = products.filter(x => x.id !== id);
     saveDB('products', products);
     renderStore();

@@ -62,8 +62,24 @@ function closeModal() {
     document.getElementById('modalOverlay').classList.add('hidden');
 }
 
+function confirmLogout() {
+    openModal(`<div class="confirm-dialog">
+        <div class="confirm-dialog-icon"><i class="fas fa-right-from-bracket"></i></div>
+        <h3>Log out?</h3>
+        <p class="modal-sub">Are you sure you want to log out?</p>
+        <div class="modal-actions">
+            <button class="btn-sm" onclick="closeModal()">Cancel</button>
+            <button class="btn-danger" onclick="completeLogout()">Log out</button>
+        </div>
+    </div>`);
+}
+
 function logout() {
-    if (!confirm('Are you sure you want to log out?')) return;
+    confirmLogout();
+}
+
+function completeLogout() {
+    closeModal();
     localStorage.removeItem('irongrind_session');
     sessionStorage.removeItem('irongrind_session');
     document.getElementById('page-loader')?.classList.remove('hidden-loader');
@@ -305,8 +321,6 @@ function showQRCode() {
     `);
 }
 
-<<<<<<< HEAD:customer.js
-=======
 // ===== RENEW MEMBERSHIP =====
 function renewMembership() {
     openModal(`
@@ -421,7 +435,6 @@ function submitMembershipForm(event) {
     membershipSignature.clear();
 }
 
->>>>>>> f5116e963896d9a675d2e6b2f2e482f032bed41d:assets/js/customer.js
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
     updateMemberStatus();
