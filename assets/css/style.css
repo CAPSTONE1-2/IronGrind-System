@@ -291,6 +291,8 @@ label:has(input[name="wiPlan"]:checked) {
 .member-shortcuts a:hover { color: #fff; background: rgba(30,37,51,0.8); border-color: #454f63; }
 .member-insights-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 20px; }
 .member-insights-grid > .panel { height: 100%; }
+.member-tools-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 16px; }
+.member-tools-grid > .member-collapsible[open] { grid-column: 1 / -1; }
 .member-collapsible > summary { list-style: none; cursor: pointer; }
 .member-collapsible > summary::-webkit-details-marker { display: none; }
 .member-collapse-summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
@@ -540,4 +542,6 @@ label:has(input[name="wiPlan"]:checked) {
 
 @media (max-width: 1024px) {
     .member-insights-grid { grid-template-columns: 1fr; }
+    .member-tools-grid { grid-template-columns: 1fr; }
+    .member-tools-grid > .member-collapsible[open] { grid-column: auto; }
 }
