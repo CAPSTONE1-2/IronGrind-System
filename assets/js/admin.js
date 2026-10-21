@@ -119,6 +119,7 @@ function showAdminSection(section, event) {
     if (section === 'membership') switchMemberTab(currentMemberTab);
     if (section === 'attendance') renderAttendance();
     if (section === 'sales') renderSales();
+    if (section === 'walkin-sales') renderWalkinSalesReport();
     if (section === 'reports') renderReports();
     if (section === 'dashboard') renderDashboard();
 }
@@ -1095,6 +1096,7 @@ function openAddProductModal() {
         <div class="form-group" style="margin-bottom:14px;"><label>Name</label><input type="text" id="apName" placeholder="Whey Protein — Vanilla"></div>
         <div class="form-group" style="margin-bottom:14px;"><label>Category</label><select id="apCat"><option value="Supplement">Supplement</option><option value="Merch">Merchandise</option></select></div>
         <div class="form-group" style="margin-bottom:14px;"><label>Size (optional)</label><input type="text" id="apSize" placeholder="Large"></div>
+        <div class="form-group" style="margin-bottom:14px;"><label>Supplement weight in grams (optional)</label><input type="number" id="apWeightGrams" min="0" step="0.01" placeholder="e.g. 500"><small class="field-hint">Used to calculate total grams sold per day. Leave blank for merchandise.</small></div>
         <div class="form-row">
             <div class="form-group"><label>Price ₱</label><input type="number" id="apPrice" placeholder="650"></div>
             <div class="form-group"><label>Stock</label><input type="number" id="apStock" placeholder="10"></div>
@@ -1109,10 +1111,13 @@ async function submitAddProduct() {
     const size = document.getElementById('apSize').value.trim();
     const price = Number(document.getElementById('apPrice').value);
     const stock = Number(document.getElementById('apStock').value);
+    const weightInput = document.getElementById('apWeightGrams').value.trim();
+    const weightGrams = weightInput ? Number(weightInput) : null;
     if (!name || !price) { toast('Fill all required fields.', 'error'); return; }
+    if (weightInput && (!Number.isFinite(weightGrams) || weightGrams <= 0)) { toast('Supplement weight must be greater than zero.', 'error'); return; }
     const image = await getProductPhoto('apImage');
     if (image === false) return;
-    products.push({ id: uid('P'), name, category, price, stock, size, ...(image ? { image } : {}) });
+    products.push({ id: uid('P'), name, category, price, stock, size, ...(weightGrams ? { weightGrams } : {}), ...(image ? { image } : {}) });
     try { saveDB('products', products); }
     catch { products.pop(); toast('Could not save product photo. Try a smaller image or remove photos from other products.', 'error'); return; }
     closeModal();
@@ -1130,6 +1135,7 @@ function editProduct(id) {
         <div class="form-group product-photo-field"><label for="epImage">Product photo (optional)</label><input type="file" id="epImage" accept="image/*" onchange="previewProductPhoto(this, 'epImagePreview')"><div id="epImagePreview" class="product-photo-preview">${p.image ? `<img src="${p.image}" alt="Current product photo">` : '<span>No photo selected</span>'}</div><label class="product-photo-remove"><input type="checkbox" id="epRemoveImage"> Remove current photo</label><small>Choose a new image to replace the current one.</small></div>
         <div class="form-group" style="margin-bottom:14px;"><label>Name</label><input type="text" id="epName" value="${p.name}"></div>
         <div class="form-group" style="margin-bottom:14px;"><label>Size</label><input type="text" id="epSize" value="${p.size || ''}"></div>
+        <div class="form-group" style="margin-bottom:14px;"><label>Supplement weight in grams (optional)</label><input type="number" id="epWeightGrams" min="0" step="0.01" value="${p.weightGrams || ''}" placeholder="e.g. 500"><small class="field-hint">Used to calculate total grams sold per day. Leave blank for merchandise.</small></div>
         <div class="form-row">
             <div class="form-group"><label>Price</label><input type="number" id="epPrice" value="${p.price}"></div>
             <div class="form-group"><label>Stock</label><input type="number" id="epStock" value="${p.stock}"></div>
@@ -1143,8 +1149,11 @@ async function submitEditProduct(id) {
     const p = products.find(x => x.id === id);
     if (!p) return;
     const newPrice = Number(document.getElementById('epPrice').value);
+    const weightInput = document.getElementById('epWeightGrams').value.trim();
+    const weightGrams = weightInput ? Number(weightInput) : null;
     const pw = document.getElementById('epPassword').value;
     if (newPrice !== p.price && pw !== 'irongrind2025') { toast('Wrong password.', 'error'); return; }
+    if (weightInput && (!Number.isFinite(weightGrams) || weightGrams <= 0)) { toast('Supplement weight must be greater than zero.', 'error'); return; }
     const image = await getProductPhoto('epImage');
     if (image === false) return;
     const oldProduct = { ...p };
@@ -1152,6 +1161,8 @@ async function submitEditProduct(id) {
     p.size = document.getElementById('epSize').value.trim();
     p.price = newPrice;
     p.stock = Number(document.getElementById('epStock').value);
+    if (weightGrams) p.weightGrams = weightGrams;
+    else delete p.weightGrams;
     if (image) p.image = image;
     else if (document.getElementById('epRemoveImage').checked) delete p.image;
     try { saveDB('products', products); }
@@ -1227,6 +1238,16 @@ function openNewSaleModal() {
     `);
 }
 
+function getProductWeightGrams(product) {
+    const stored = Number(product?.weightGrams);
+    if (Number.isFinite(stored) && stored > 0) return stored;
+    const label = `${product?.size || ''} ${product?.name || ''}`;
+    const match = label.match(/(\d+(?:\.\d+)?)\s*(kg|kgs|kilograms?|g|grams?)\b/i);
+    if (!match) return null;
+    const amount = Number(match[1]);
+    return /^k/i.test(match[2]) ? amount * 1000 : amount;
+}
+
 function submitNewSale() {
     const customer = document.getElementById('nsCustomer').value.trim() || 'Walk-in';
     const pid = document.getElementById('nsProduct').value;
@@ -1236,11 +1257,18 @@ function submitNewSale() {
     p.stock -= qty;
     const total = p.price * qty;
     const saleId = 'IG-' + Date.now().toString().slice(-4);
+    const unitWeightGrams = p.category === 'Supplement' ? getProductWeightGrams(p) : null;
     sales.unshift({
         id: saleId,
         customer,
+        source: 'walk-in',
+        category: p.category,
+        productId: p.id,
+        productName: p.name,
+        quantity: qty,
+        unitWeightGrams,
         items: `${p.name} x${qty}`,
-        lineItems: [{ name: p.name, quantity: qty, unitPrice: p.price, total }],
+        lineItems: [{ name: p.name, productId: p.id, category: p.category, quantity: qty, unitPrice: p.price, total, unitWeightGrams }],
         total,
         date: todayStr(),
         createdAt: new Date().toISOString(),
@@ -1254,6 +1282,56 @@ function submitNewSale() {
     renderDashboard();
     showSaleReceipt(saleId);
     toast(`✅ Sale complete — ${formatPeso(total)}.`, 'success');
+}
+
+function switchWalkinSalesType(type) {
+    const selected = type === 'Merch' ? 'Merch' : 'Supplement';
+    document.querySelectorAll('[data-walkin-type]').forEach(button => button.classList.toggle('active', button.dataset.walkinType === selected));
+    document.getElementById('walkinSupplementPanel').classList.toggle('hidden', selected !== 'Supplement');
+    document.getElementById('walkinMerchPanel').classList.toggle('hidden', selected !== 'Merch');
+}
+
+function renderWalkinSalesReport() {
+    const dateInput = document.getElementById('walkinSalesDate');
+    if (!dateInput) return;
+    if (!dateInput.value) dateInput.value = todayStr();
+    const daySales = sales.filter(sale => sale.source === 'walk-in' && sale.date === dateInput.value && sale.status === 'Paid');
+    const supplementSales = daySales.filter(sale => sale.category === 'Supplement');
+    const merchSales = daySales.filter(sale => sale.category === 'Merch');
+    const sumIncome = items => items.reduce((sum, sale) => sum + Number(sale.total || 0), 0);
+    document.getElementById('walkinTotalIncome').textContent = formatPeso(sumIncome(daySales));
+    document.getElementById('walkinSupplementIncome').textContent = formatPeso(sumIncome(supplementSales));
+    document.getElementById('walkinMerchIncome').textContent = formatPeso(sumIncome(merchSales));
+
+    const aggregate = items => {
+        const byProduct = new Map();
+        items.forEach(sale => {
+            const key = sale.productId || sale.productName || sale.items;
+            const existing = byProduct.get(key) || {
+                name: sale.productName || sale.items || 'Product',
+                quantity: 0,
+                income: 0,
+                grams: 0,
+                missingWeight: false
+            };
+            const quantity = Number(sale.quantity) || Number(sale.lineItems?.[0]?.quantity) || 0;
+            const weight = Number(sale.unitWeightGrams ?? sale.lineItems?.[0]?.unitWeightGrams);
+            existing.quantity += quantity;
+            existing.income += Number(sale.total || 0);
+            if (Number.isFinite(weight) && weight > 0) existing.grams += quantity * weight;
+            else if (items === supplementSales) existing.missingWeight = true;
+            byProduct.set(key, existing);
+        });
+        return [...byProduct.values()].sort((a, b) => a.name.localeCompare(b.name));
+    };
+    const supplements = aggregate(supplementSales);
+    const merchandise = aggregate(merchSales);
+    document.getElementById('walkinSupplementTable').innerHTML = supplements.length
+        ? `<div class="table-scroll"><table class="attendance-table"><thead><tr><th>Supplement</th><th>Packs Sold</th><th>Total Grams</th><th>Income</th></tr></thead><tbody>${supplements.map(item => `<tr><td>${escapeHTML(item.name)}</td><td>${item.quantity}</td><td>${item.missingWeight ? '<span class="walkin-missing-weight">Set product weight</span>' : `${item.grams.toLocaleString('en-PH')} g`}</td><td>${formatPeso(item.income)}</td></tr>`).join('')}</tbody></table></div>`
+        : '<div class="empty-state">No supplement sales for this date.</div>';
+    document.getElementById('walkinMerchTable').innerHTML = merchandise.length
+        ? `<div class="table-scroll"><table class="attendance-table"><thead><tr><th>Merchandise</th><th>Quantity Sold</th><th>Income</th></tr></thead><tbody>${merchandise.map(item => `<tr><td>${escapeHTML(item.name)}</td><td>${item.quantity}</td><td>${formatPeso(item.income)}</td></tr>`).join('')}</tbody></table></div>`
+        : '<div class="empty-state">No merchandise sales for this date.</div>';
 }
 
 function renderSales() {

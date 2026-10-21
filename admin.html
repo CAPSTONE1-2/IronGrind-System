@@ -47,6 +47,9 @@
             <button class="nav-item" data-section="sales" onclick="showAdminSection('sales', event)">
                 <i class="fas fa-receipt"></i> Sales Transaction
             </button>
+            <button class="nav-item" data-section="walkin-sales" onclick="showAdminSection('walkin-sales', event)">
+                <i class="fas fa-chart-line"></i> Walk-in Sales
+            </button>
             <button class="nav-item" data-section="reports" onclick="showAdminSection('reports', event)">
                 <i class="fas fa-chart-bar"></i> Reports
             </button>
@@ -188,6 +191,29 @@
                         <button class="btn-primary" onclick="openNewSaleModal()"><i class="fas fa-plus"></i> New Sale</button>
                     </div>
                     <div id="salesTable"></div>
+                </div>
+            </div>
+
+            <div id="section-walkin-sales" class="admin-section hidden">
+                <div class="panel">
+                    <div class="panel-header">
+                        <div>
+                            <h2><i class="fas fa-chart-line"></i> Walk-in Product Sales</h2>
+                            <p class="modal-sub" style="margin-top:6px;">Daily product sales totals from completed point-of-sale transactions.</p>
+                        </div>
+                        <label class="walkin-date-filter">Sales date <input type="date" id="walkinSalesDate" onchange="renderWalkinSalesReport()"></label>
+                    </div>
+                    <div class="stats-grid walkin-sales-summary">
+                        <div class="stat-card"><div class="stat-label">Total Income</div><div class="stat-value" id="walkinTotalIncome">₱0</div><div class="stat-sub">All walk-in products</div></div>
+                        <div class="stat-card"><div class="stat-label">Supplement Income</div><div class="stat-value" id="walkinSupplementIncome">₱0</div><div class="stat-sub">Supplements sold</div></div>
+                        <div class="stat-card"><div class="stat-label">Merchandise Income</div><div class="stat-value" id="walkinMerchIncome">₱0</div><div class="stat-sub">Merchandise sold</div></div>
+                    </div>
+                    <div class="admin-tabs walkin-sales-tabs">
+                        <button class="admin-tab active" data-walkin-type="Supplement" onclick="switchWalkinSalesType('Supplement')"><i class="fas fa-pills"></i> Supplement Sales</button>
+                        <button class="admin-tab" data-walkin-type="Merch" onclick="switchWalkinSalesType('Merch')"><i class="fas fa-tshirt"></i> Merchandise Sales</button>
+                    </div>
+                    <div id="walkinSupplementPanel"><div id="walkinSupplementTable"></div></div>
+                    <div id="walkinMerchPanel" class="hidden"><div id="walkinMerchTable"></div></div>
                 </div>
             </div>
 
