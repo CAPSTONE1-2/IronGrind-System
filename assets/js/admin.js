@@ -1009,8 +1009,8 @@ function renderReports() {
 function viewReport(type) {
     let body = '';
     if (type === 'membership') {
-        body = `<table class="attendance-table"><thead><tr><th>Name</th><th>Plan</th><th>Expires</th></tr></thead><tbody>
-            ${members.map(m => `<tr><td>${m.name}</td><td>${m.plan}</td><td>${m.expiry}</td></tr>`).join('')}</tbody></table>`;
+        body = `<table class="attendance-table"><thead><tr><th>Name</th><th>Plan</th><th>Started</th><th>Expires</th></tr></thead><tbody>
+            ${members.map(m => `<tr><td>${m.name}</td><td>${m.plan}</td><td>${m.startDate || '—'}</td><td>${m.expiry}</td></tr>`).join('')}</tbody></table>`;
     } else if (type === 'payment' || type === 'sales') {
         body = `<table class="attendance-table"><thead><tr><th>Receipt</th><th>Customer</th><th>Total</th><th>Date</th></tr></thead><tbody>
             ${sales.map(s => `<tr><td>${s.id}</td><td>${s.customer}</td><td>${formatPeso(s.total)}</td><td>${s.date}</td></tr>`).join('')}</tbody></table>`;
@@ -1023,7 +1023,109 @@ function viewReport(type) {
     }
     openModal(`<h3><i class="fas fa-chart-bar"></i> ${type.charAt(0).toUpperCase() + type.slice(1)} Report</h3>
         <div style="max-height:60vh; overflow:auto; margin-top:16px;">${body}</div>
-        <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Close</button></div>`);
+        <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Close</button><button class="btn-primary" onclick="printReportPDF('${type}')"><i class="fas fa-file-pdf"></i> Print / Save PDF</button></div>`);
+}
+
+function printReportPDF(type) {
+    const reportWindow = window.open('', '_blank');
+    if (!reportWindow) {
+        toast('Allow pop-ups to print or save this report as a PDF.', 'error');
+        return;
+    }
+
+    const reportNames = { membership: 'Membership', payment: 'Payment', attendance: 'Attendance', inventory: 'Inventory', sales: 'Sales' };
+    const reportTitle = `${reportNames[type] || 'Gym'} Report`;
+    let columns = [];
+    let rows = [];
+    let dateForRow = () => null;
+
+    if (type === 'membership') {
+        columns = ['Member', 'Plan', 'Started', 'Expires'];
+        rows = members.map(member => ({
+            cells: [member.name, member.plan, member.startDate || '—', member.expiry || '—'],
+            date: member.startDate || member.registeredAt
+        }));
+        dateForRow = row => row.date;
+    } else if (type === 'payment' || type === 'sales') {
+        columns = ['Receipt', 'Customer', 'Total', 'Date'];
+        rows = sales.map(sale => ({ cells: [sale.id, sale.customer, formatPeso(sale.total), sale.date], date: sale.date }));
+        dateForRow = row => row.date;
+    } else if (type === 'attendance') {
+        columns = ['Member', 'Date', 'Time in', 'Time out'];
+        rows = attendance.map(record => ({
+            cells: [record.memberName, record.date, record.timeIn, record.timeOut || '—'],
+            date: record.date
+        }));
+        dateForRow = row => row.date;
+    } else if (type === 'inventory') {
+        columns = ['Product', 'Price', 'Stock'];
+        rows = products.map(product => ({
+            cells: [`${product.name}${product.size ? ` (${product.size})` : ''}`, formatPeso(product.price), product.stock]
+        }));
+    }
+
+    const tableHTML = records => `<table><thead><tr>${columns.map(column => `<th>${escapeHTML(column)}</th>`).join('')}</tr></thead><tbody>${records.map(row =>
+        `<tr>${row.cells.map(cell => `<td>${escapeHTML(cell ?? '—')}</td>`).join('')}</tr>`
+    ).join('')}</tbody></table>`;
+
+    let reportContent;
+    if (type === 'inventory') {
+        reportContent = `<section class="report-section"><div class="section-heading"><h2>Current Inventory Snapshot</h2><span>${rows.length} products</span></div>${rows.length ? tableHTML(rows) : '<p class="empty">No inventory records.</p>'}</section>`;
+    } else {
+        const monthGroups = new Map();
+        rows.forEach(row => {
+            const value = dateForRow(row);
+            const parsed = value ? new Date(value.length === 10 ? `${value}T00:00:00` : value) : null;
+            const key = parsed && !Number.isNaN(parsed.getTime())
+                ? `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, '0')}`
+                : 'undated';
+            const label = key === 'undated'
+                ? 'Date not recorded'
+                : new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric' }).format(parsed);
+            if (!monthGroups.has(key)) monthGroups.set(key, { label, rows: [] });
+            monthGroups.get(key).rows.push(row);
+        });
+        const orderedGroups = [...monthGroups.entries()].sort(([a], [b]) => {
+            if (a === 'undated') return 1;
+            if (b === 'undated') return -1;
+            return b.localeCompare(a);
+        });
+        reportContent = orderedGroups.length
+            ? orderedGroups.map(([, group]) => `<section class="report-section"><div class="section-heading"><h2>${escapeHTML(group.label)}</h2><span>${group.rows.length} ${group.rows.length === 1 ? 'record' : 'records'}</span></div>${tableHTML(group.rows)}</section>`).join('')
+            : '<p class="empty">No report records available.</p>';
+    }
+
+    const generatedAt = new Date().toLocaleString();
+    const logoURL = new URL('assets/images/iron-grind-mark.png', window.location.href).href;
+    reportWindow.document.open();
+    reportWindow.document.write(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Iron Grind - ${reportTitle} - ${todayStr()}</title>
+        <style>
+            @page { size: auto; margin: 14mm; }
+            * { box-sizing: border-box; }
+            body { margin: 0; color: #20242c; font: 11px Arial, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .masthead { display: flex; align-items: center; gap: 14px; padding: 17px 20px; color: #fff; background: #11161f; border-bottom: 5px solid #d31212; }
+            .masthead img { width: 48px; height: 48px; object-fit: contain; border-radius: 8px; background: #fff; }
+            .brand { color: #c4cad5; font-size: 9px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+            h1 { margin: 4px 0 0; color: #fff; font-size: 21px; }
+            .meta { display: flex; justify-content: space-between; gap: 12px; margin: 15px 0 20px; color: #636b78; font-size: 10px; }
+            .report-section { margin: 0 0 22px; }
+            .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; padding: 8px 11px; border-left: 4px solid #d31212; background: #f2f3f5; break-after: avoid; }
+            .section-heading h2 { margin: 0; color: #242933; font-size: 13px; }
+            .section-heading span { color: #727987; font-size: 9px; font-weight: 700; text-transform: uppercase; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { padding: 8px 9px; border-bottom: 1px solid #e1e4e9; text-align: left; vertical-align: top; }
+            th { color: #fff; background: #282e38; font-size: 9px; letter-spacing: .5px; text-transform: uppercase; }
+            tbody tr:nth-child(even) { background: #f7f8fa; }
+            tr { break-inside: avoid; }
+            .empty { padding: 18px; border: 1px dashed #cbd0d8; color: #707887; text-align: center; }
+            .footer { margin-top: 28px; padding-top: 9px; border-top: 1px solid #d8dce2; color: #858c98; font-size: 9px; }
+            @media print { thead { display: table-header-group; } }
+        </style></head><body><header class="masthead"><img src="${logoURL}" alt="Iron Grind"><div><div class="brand">Iron Grind Fitness Gym</div><h1>${escapeHTML(reportTitle)}</h1></div></header><div class="meta"><span>${rows.length} ${rows.length === 1 ? 'total record' : 'total records'}</span><span>Generated ${escapeHTML(generatedAt)}</span></div>${reportContent}<footer class="footer">Iron Grind Fitness Gym · Internal report · ${todayStr()}</footer></body></html>`);
+    reportWindow.document.close();
+    window.setTimeout(() => {
+        reportWindow.focus();
+        reportWindow.print();
+    }, 300);
 }
 
 function exportAllReports() {
