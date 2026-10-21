@@ -26,8 +26,7 @@
                     <li><i class="fas fa-check-circle"></i> Supplement &amp; merch reservations</li>
                 </ul>
             </div>
-            <p class="login-brand-footer"> 2026 Iron Grind Fitness Gym · Dapitan City</p>
-        </div>
+            </div>
         <div class="login-form-panel">
             <div class="login-form-header">
                 <h2>Welcome back</h2>
@@ -68,6 +67,13 @@
             </div>
         </div>
     </div>
-    <script src="auth.js"></script>
+    <footer class="login-page-footer">© 2026 Iron Grind Fitness Gym · Dapitan City</footer>
+    <div id="forgotPasswordModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="forgotPasswordTitle" onclick="if(event.target===this) closeForgotPassword()">
+        <div class="modal-content">
+            <h3 id="forgotPasswordTitle">Forgot your password?</h3>
+            <p class="modal-sub">For account security, password resets are handled by gym staff. Please contact or visit the gym counter and verify your identity to regain access.</p>
+            <div class="modal-actions"><button type="button" class="btn-primary" onclick="closeForgotPassword()">Got it</button></div>
+        </div>
+    </div>    <script src="auth.js"></script>
 </body>
 </html>

@@ -134,8 +134,8 @@ label:has(input[name="wiPlan"]:checked) {
 .btn-delete { background: rgba(231,76,60,0.15); color: #d31212; flex: 0 0 36px !important; }
 
 /* ========== LOGIN ========== */
-.login-body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; background: radial-gradient(circle at 20% 20%, #1a1207, #0b0e14 60%); }
-.login-wrapper { display: grid; grid-template-columns: 1fr 1fr; max-width: 1000px; width: 100%; min-height: min(700px, calc(100vh - 40px)); background: #11161f; border: 1px solid #1e2533; border-radius: 28px; overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,0.6); }
+.login-body { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; background: radial-gradient(circle at 20% 20%, #1a1207, #0b0e14 60%); }
+.login-wrapper { display: grid; grid-template-columns: 1fr 1fr; max-width: 1000px; width: 100%; min-height: min(700px, calc(100vh - 80px)); margin: auto; background: #11161f; border: 1px solid #1e2533; border-radius: 28px; overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,0.6); }
 .login-brand { background: linear-gradient(160deg, #d31212 0%, #a50c0c 100%); padding: 40px; display: flex; flex-direction: column; justify-content: space-between; color: #fff; }
 .login-brand .logo-icon { background: #0b0e14; color: #d31212; }
 .login-brand .logo-text h1 { color: #fff; }
@@ -145,7 +145,7 @@ label:has(input[name="wiPlan"]:checked) {
 .login-brand-content p { font-size: 0.95rem; opacity: 0.9; margin-bottom: 24px; }
 .feature-list { list-style: none; display: flex; flex-direction: column; gap: 12px; }
 .feature-list li { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; font-weight: 500; }
-.login-brand-footer { font-size: 0.75rem; opacity: 0.75; margin-top: auto; }
+.login-page-footer { width: 100%; padding: 14px 8px 0; color: #8b95a9; font-size: 0.75rem; text-align: center; }
 .login-form-panel { padding: 48px 44px; display: flex; flex-direction: column; justify-content: center; }
 .login-form-header h2 { font-size: 1.8rem; font-weight: 700; margin-bottom: 6px; }
 .login-form-header p { color: #8b95a9; font-size: 0.9rem; margin-bottom: 28px; }
