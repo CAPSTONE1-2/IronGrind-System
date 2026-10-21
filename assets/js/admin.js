@@ -19,6 +19,7 @@ let attendance = [];
 let pendingApprovals = [];
 let users = [];
 let planArchives = [];
+let membershipArchives = [];
 let currentPlanFilter = 'all';
 let currentMemberTab = 'members';
 let activeQRScanner = null;
@@ -314,6 +315,41 @@ function completeApproval(id) {
     const idx = pendingApprovals.findIndex(x => x.id === id);
     if (idx === -1) return;
     const p = pendingApprovals[idx];
+
+    // Member portal renewal requests update the existing member account.
+    // Keep the old subscription snapshot before replacing its dates and plan.
+    if (p.source === 'dashboard-renewal') {
+        const member = members.find(item => item.id === p.memberId || item.username?.toLowerCase() === p.username?.toLowerCase());
+        if (!member) { toast('Could not find the member for this renewal request.', 'error'); return; }
+        archiveExpiredMembership(member);
+        const duration = getPlanDurationDays(p.plan);
+        const startDate = todayStr();
+        member.plan = p.plan || member.plan;
+        member.planPrice = Number(p.planPrice) || getPlanPrice(member.plan, member);
+        member.startDate = startDate;
+        member.expiry = addDays(startDate, duration);
+        member.status = 'active';
+        member.paid = true;
+        saveDB('members', members);
+        saveDB('membershipArchives', membershipArchives);
+        sales.unshift({
+            id: 'IG-' + Date.now().toString().slice(-4),
+            customer: member.name,
+            items: member.plan + ' Renewal',
+            total: member.planPrice,
+            date: todayStr(),
+            status: 'Paid'
+        });
+        saveDB('sales', sales);
+        pendingApprovals.splice(idx, 1);
+        saveDB('pendingApprovals', pendingApprovals);
+        renderApprovals();
+        renderMembers();
+        renderDashboard();
+        renderReports();
+        toast(`${member.name}'s renewal was approved. Their previous subscription is saved in Archives.`, 'success');
+        return;
+    }
 
     users.push({
         username: p.username,
@@ -756,6 +792,7 @@ function submitMemberPlanChange(encodedId) {
         expiry: member.expiry || null,
         planPrice: Number(member.planPrice || getPlanPrice(member.plan, member)) || 0
     };
+    archiveExpiredMembership(member);
     const archiveRecord = {
         id: 'PA-' + Date.now().toString().slice(-8),
         memberId: member.id,
@@ -797,6 +834,7 @@ function submitMemberPlanChange(encodedId) {
 
     saveDB('members', members);
     saveDB('planArchives', planArchives);
+    saveDB('membershipArchives', membershipArchives);
     saveDB('sales', sales);
     closeModal();
     renderMembers();
@@ -820,10 +858,12 @@ function completeMemberRenewal(id) {
     if (!m) return;
     const days = getPlanDurationDays(m.plan);
     const price = getPlanPrice(m.plan, m);
+    archiveExpiredMembership(m);
     m.startDate = todayStr();
     m.expiry = addDays(todayStr(), days);
     m.paid = true;
     saveDB('members', members);
+    saveDB('membershipArchives', membershipArchives);
     sales.unshift({ id: 'IG-' + Date.now().toString().slice(-4), customer: m.name, items: m.plan + ' Renewal', total: price, date: todayStr(), status: 'Paid' });
     saveDB('sales', sales);
     renderMembers();
@@ -1278,11 +1318,34 @@ function getMemberActivityStatus(member) {
     return explicitlyInactive || membershipExpired ? 'Inactive' : 'Active';
 }
 
+function archiveExpiredMembership(member) {
+    if (!member?.expiry || member.expiry >= todayStr()) return;
+    const exists = membershipArchives.some(record => record.memberId === member.id && record.expiry === member.expiry && record.plan === member.plan);
+    if (exists) return;
+    membershipArchives.unshift({
+        id: `EA-${member.id}-${member.expiry}-${member.plan}`,
+        memberId: member.id,
+        memberName: member.name,
+        username: member.username || '',
+        plan: member.plan || '—',
+        startDate: member.startDate || '',
+        expiry: member.expiry,
+        price: Number(member.planPrice || getPlanPrice(member.plan, member)) || 0,
+        archivedAt: new Date().toISOString()
+    });
+}
+
+function captureExpiredMemberships() {
+    const before = membershipArchives.length;
+    members.forEach(archiveExpiredMembership);
+    if (membershipArchives.length !== before) saveDB('membershipArchives', membershipArchives);
+}
+
 function renderReports() {
     const reports = [
         { id: 'membership', name: 'Membership Report' },
         { id: 'member-status', name: 'Active / Inactive Members' },
-        { id: 'plan-archive', name: 'Plan Change Archive' },
+        { id: 'archives', name: 'Membership Archives' },
         { id: 'payment', name: 'Payment Report' },
         { id: 'attendance', name: 'Attendance Report' },
         { id: 'inventory', name: 'Inventory Report' },
@@ -1310,13 +1373,17 @@ function viewReport(type) {
             ${items.map(member => `<tr><td>${escapeHTML(member.name)}</td><td>${escapeHTML(member.username || '—')}</td><td>${escapeHTML(member.registrationSource || 'Not recorded')}</td><td>${escapeHTML(member.plan || '—')}</td><td>${escapeHTML(member.expiry || '—')}</td></tr>`).join('') || '<tr><td colspan="5">No members in this group.</td></tr>'}</tbody></table>`;
         body = `<p class="modal-sub">Active means the membership has not expired. Inactive includes expired, suspended, or disabled memberships.</p>
             ${statusTable(activeMembers, 'Active')}${statusTable(inactiveMembers, 'Inactive')}`;
-    } else if (type === 'plan-archive') {
+    } else if (type === 'archives') {
+        captureExpiredMemberships();
         const archivedPlans = [...planArchives].sort((a, b) => String(b.changedAt || '').localeCompare(String(a.changedAt || '')));
-        body = archivedPlans.length
-            ? `<table class="attendance-table"><thead><tr><th>Member</th><th>Previous Plan</th><th>New Plan</th><th>Previous Expiry</th><th>New Expiry</th><th>Previous Fee</th><th>New Fee</th><th>Changed</th></tr></thead><tbody>
-                ${archivedPlans.map(record => `<tr><td>${escapeHTML(record.memberName)}</td><td>${escapeHTML(record.previousPlan)}</td><td>${escapeHTML(record.newPlan)}</td><td>${escapeHTML(record.previousExpiry || '—')}</td><td>${escapeHTML(record.newExpiry || '—')}</td><td>${formatPeso(record.previousPrice || 0)}</td><td>${formatPeso(record.newPrice || 0)}</td><td>${escapeHTML(record.changedAt ? new Date(record.changedAt).toLocaleString() : '—')}</td></tr>`).join('')}</tbody></table>`
+        const expiredMembers = [...membershipArchives].sort((a, b) => String(b.expiry || '').localeCompare(String(a.expiry || '')));
+        const expiredTable = expiredMembers.length
+            ? `<table class="attendance-table"><thead><tr><th>Member</th><th>Username</th><th>Plan</th><th>Started</th><th>Expired</th><th>Fee</th></tr></thead><tbody>${expiredMembers.map(record => `<tr><td>${escapeHTML(record.memberName)}</td><td>${escapeHTML(record.username || '—')}</td><td>${escapeHTML(record.plan)}</td><td>${escapeHTML(record.startDate || '—')}</td><td>${escapeHTML(record.expiry)}</td><td>${formatPeso(record.price || 0)}</td></tr>`).join('')}</tbody></table>`
+            : '<div class="empty-state">No expired subscriptions have been archived.</div>';
+        const planTable = archivedPlans.length
+            ? `<table class="attendance-table"><thead><tr><th>Member</th><th>Previous Plan</th><th>New Plan</th><th>Previous Expiry</th><th>New Expiry</th><th>Previous Fee</th><th>New Fee</th><th>Changed</th></tr></thead><tbody>${archivedPlans.map(record => `<tr><td>${escapeHTML(record.memberName)}</td><td>${escapeHTML(record.previousPlan)}</td><td>${escapeHTML(record.newPlan)}</td><td>${escapeHTML(record.previousExpiry || '—')}</td><td>${escapeHTML(record.newExpiry || '—')}</td><td>${formatPeso(record.previousPrice || 0)}</td><td>${formatPeso(record.newPrice || 0)}</td><td>${escapeHTML(record.changedAt ? new Date(record.changedAt).toLocaleString() : '—')}</td></tr>`).join('')}</tbody></table>`
             : '<div class="empty-state">No plan changes have been archived yet.</div>';
-        if (archivedPlans.length) body = `<p class="modal-sub">No refunds are issued for unused time on the previous plan.</p>${body}`;
+        body = `<section><h4>Expired Subscriptions (${expiredMembers.length})</h4>${expiredTable}</section><section style="margin-top:24px;"><h4>Plan Changes (${archivedPlans.length})</h4><p class="modal-sub">No refunds are issued for unused time on the previous plan.</p>${planTable}</section>`;
     } else if (type === 'payment' || type === 'sales') {
         body = `<table class="attendance-table"><thead><tr><th>Receipt</th><th>Customer</th><th>Total</th><th>Date</th></tr></thead><tbody>
             ${sales.map(s => `<tr><td>${s.id}</td><td>${s.customer}</td><td>${formatPeso(s.total)}</td><td>${s.date}</td></tr>`).join('')}</tbody></table>`;
@@ -1329,8 +1396,8 @@ function viewReport(type) {
     }
     const title = type === 'member-status'
         ? 'Active / Inactive Members Report'
-        : type === 'plan-archive'
-            ? 'Plan Change Archive'
+        : type === 'archives'
+            ? 'Membership Archives'
             : `${type.charAt(0).toUpperCase() + type.slice(1)} Report`;
     openModal(`<h3><i class="fas fa-chart-bar"></i> ${title}</h3>
         <div style="max-height:60vh; overflow:auto; margin-top:16px;">${body}</div>
@@ -1344,7 +1411,7 @@ function printReportPDF(type) {
         return;
     }
 
-    const reportNames = { membership: 'Membership', 'member-status': 'Active / Inactive Members', 'plan-archive': 'Plan Change Archive', payment: 'Payment', attendance: 'Attendance', inventory: 'Inventory', sales: 'Sales' };
+    const reportNames = { membership: 'Membership', 'member-status': 'Active / Inactive Members', archives: 'Membership Archives', payment: 'Payment', attendance: 'Attendance', inventory: 'Inventory', sales: 'Sales' };
     const reportTitle = `${reportNames[type] || 'Gym'} Report`;
     let columns = [];
     let rows = [];
@@ -1363,12 +1430,19 @@ function printReportPDF(type) {
             cells: [member.name, member.username || '—', member.registrationSource || 'Not recorded', member.plan || '—', member.expiry || '—'],
             status: getMemberActivityStatus(member)
         }));
-    } else if (type === 'plan-archive') {
-        columns = ['Member', 'Previous Plan', 'New Plan', 'Previous Expiry', 'New Expiry', 'Previous Fee', 'New Fee', 'Changed'];
-        rows = planArchives.map(record => ({
-            cells: [record.memberName, record.previousPlan, record.newPlan, record.previousExpiry || '—', record.newExpiry || '—', formatPeso(record.previousPrice || 0), formatPeso(record.newPrice || 0), record.changedAt ? new Date(record.changedAt).toLocaleString() : '—'],
-            date: record.changedAt
-        }));
+    } else if (type === 'archives') {
+        captureExpiredMemberships();
+        columns = ['Record Type', 'Member', 'Username', 'Plan', 'Previous Plan', 'New Plan', 'Started', 'Expired', 'New Expiry', 'Fee', 'New Fee', 'Recorded'];
+        rows = [
+            ...membershipArchives.map(record => ({
+                cells: ['Expired subscription', record.memberName, record.username || '—', record.plan, '—', '—', record.startDate || '—', record.expiry, '—', formatPeso(record.price || 0), '—', record.expiry],
+                date: record.expiry
+            })),
+            ...planArchives.map(record => ({
+                cells: ['Plan change', record.memberName, '—', '—', record.previousPlan, record.newPlan, record.previousStartDate || '—', record.previousExpiry || '—', record.newExpiry || '—', formatPeso(record.previousPrice || 0), formatPeso(record.newPrice || 0), record.changedAt ? new Date(record.changedAt).toLocaleString() : '—'],
+                date: record.changedAt
+            }))
+        ];
         dateForRow = row => row.date;
     } else if (type === 'payment' || type === 'sales') {
         columns = ['Receipt', 'Customer', 'Total', 'Date'];
@@ -1386,11 +1460,6 @@ function printReportPDF(type) {
         rows = products.map(product => ({
             cells: [`${product.name}${product.size ? ` (${product.size})` : ''}`, formatPeso(product.price), product.stock]
         }));
-    }
-
-    if (type === 'plan-archive') {
-        columns.push('Refund');
-        rows = rows.map(row => ({ ...row, cells: [...row.cells, 'No refund'] }));
     }
 
     const tableHTML = records => `<table><thead><tr>${columns.map(column => `<th>${escapeHTML(column)}</th>`).join('')}</tr></thead><tbody>${records.map(row =>

@@ -32,6 +32,24 @@ function loadDB(key) {
 }
 function saveDB(key, data) { localStorage.setItem('ig_' + key, JSON.stringify(data)); }
 
+function saveExpiredMembershipSnapshot(member) {
+    if (!member?.expiry || member.expiry >= todayStr()) return;
+    const archives = loadDB('membershipArchives');
+    if (archives.some(record => record.memberId === member.id && record.expiry === member.expiry && record.plan === member.plan)) return;
+    archives.unshift({
+        id: `EA-${member.id}-${member.expiry}-${member.plan}`,
+        memberId: member.id,
+        memberName: member.name,
+        username: member.username || '',
+        plan: member.plan || '—',
+        startDate: member.startDate || '',
+        expiry: member.expiry,
+        price: Number(member.planPrice) || 0,
+        archivedAt: new Date().toISOString()
+    });
+    saveDB('membershipArchives', archives);
+}
+
 // ===== PRODUCT IMAGE GENERATOR =====
 // Since there are no real product photos stored, generate a branded placeholder
 // using the product name. Swap `imgUrl` in your data with real image paths later.
@@ -552,6 +570,7 @@ function confirmRenew() {
     const members = loadDB('members');
     const idx = members.findIndex(x => x.id === m.id);
     if (idx !== -1) {
+        saveExpiredMembershipSnapshot(members[idx]);
         members[idx].plan = plan;
         members[idx].startDate = todayStr();
         members[idx].expiry = expiry;
@@ -617,6 +636,7 @@ function submitMembershipForm(event) {
         goals: [goal],
         signature: membershipSignature.toDataURL(),
         username: session.username,
+        memberId: getCurrentMember()?.id || null,
         submittedAt: new Date().toISOString(),
         status: 'pending',
         source: 'dashboard-renewal'
