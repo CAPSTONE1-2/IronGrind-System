@@ -1291,11 +1291,36 @@ function switchWalkinSalesType(type) {
     document.getElementById('walkinMerchPanel').classList.toggle('hidden', selected !== 'Merch');
 }
 
+function getWalkinProductDetails(sale) {
+    if (sale.source === 'walk-in' && sale.category) return {
+        ...sale,
+        productName: sale.productName || sale.lineItems?.[0]?.name || sale.items || 'Product',
+        quantity: Number(sale.quantity) || Number(sale.lineItems?.[0]?.quantity) || 0
+    };
+    // Older POS records predate explicit product metadata; infer them only when
+    // their single sold item matches a product currently in inventory.
+    const item = sale.lineItems?.length === 1 ? sale.lineItems[0] : null;
+    if (!item) return null;
+    const matches = products.filter(product => product.name === item.name);
+    const categories = [...new Set(matches.map(product => product.category))];
+    if (categories.length !== 1) return null;
+    const product = matches[0];
+    return {
+        ...sale,
+        productId: product.id,
+        productName: item.name,
+        category: product.category,
+        quantity: Number(item.quantity) || 0,
+        unitWeightGrams: product.category === 'Supplement' ? getProductWeightGrams(product) : null
+    };
+}
+
 function renderWalkinSalesReport() {
     const dateInput = document.getElementById('walkinSalesDate');
     if (!dateInput) return;
     if (!dateInput.value) dateInput.value = todayStr();
-    const daySales = sales.filter(sale => sale.source === 'walk-in' && sale.date === dateInput.value && sale.status === 'Paid');
+    const daySales = sales.filter(sale => sale.date === dateInput.value && sale.status === 'Paid')
+        .map(getWalkinProductDetails).filter(Boolean);
     const supplementSales = daySales.filter(sale => sale.category === 'Supplement');
     const merchSales = daySales.filter(sale => sale.category === 'Merch');
     const sumIncome = items => items.reduce((sum, sale) => sum + Number(sale.total || 0), 0);
