@@ -382,10 +382,25 @@ label:has(input[name="wiPlan"]:checked) {
     gap: 6px;
 }
 
+/* Registration form field spacing */
+.register-body .registration-shell { width: min(100%, 900px); }
+.register-body .form-row { align-items: start; column-gap: 20px; row-gap: 16px; }
+.register-body .form-group { min-width: 0; }
+.register-body .form-group input,
+.register-body .form-group select,
+.register-body .form-group textarea { min-width: 0; }
+.register-body .form-row-three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
 @media (max-width: 640px) {
     .customer-hero { padding: 20px; }
     .customer-hero h2 { font-size: 1.25rem; }
     .supplement-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 700px) {
+    .register-body .registration-shell { padding: 22px !important; }
+    .register-body .form-row,
+    .register-body .form-row-three { grid-template-columns: minmax(0, 1fr) !important; gap: 14px; }
 }
 
 /* ===== MEMBER DASHBOARD: PROGRESS & VIEW-ONLY STORE ===== */
