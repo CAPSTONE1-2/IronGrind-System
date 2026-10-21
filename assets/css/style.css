@@ -248,6 +248,32 @@ label:has(input[name="wiPlan"]:checked) {
 .modal-sub { color: #8b95a9; font-size: 0.85rem; margin-bottom: 20px; }
 .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
 .modal-actions button { flex: 1; justify-content: center; }
+.member-onboarding { padding: 6px 2px 2px; text-align: center; }
+.onboarding-mark { display: grid; place-items: center; width: 58px; height: 58px; margin: 0 auto 14px; border: 1px solid rgba(211,18,18,0.3); border-radius: 18px; background: rgba(211,18,18,0.1); color: #ef2929; font-size: 1.35rem; }
+.onboarding-eyebrow { margin-bottom: 8px; color: #d31212; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.12em; }
+.member-onboarding h2 { color: #f1f3f7; font-size: 1.35rem; }
+.onboarding-copy { max-width: 380px; margin: 10px auto 22px; color: #a4adc2; font-size: 0.9rem; line-height: 1.65; }
+.onboarding-actions { display: flex; justify-content: center; gap: 10px; }
+.onboarding-actions button { min-width: 132px; justify-content: center; }
+.onboarding-progress { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin: 0 0 22px; color: #6a748b; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.08em; }
+.onboarding-progress div { display: flex; gap: 5px; }
+.onboarding-progress div span { width: 22px; height: 3px; border-radius: 99px; background: #2d3548; }
+.onboarding-progress div span.current { background: #d31212; }
+.onboarding-skip { margin-top: 15px; padding: 5px 10px; border: 0; background: transparent; color: #6a748b; font: inherit; font-size: 0.75rem; cursor: pointer; }
+.onboarding-skip:hover { color: #e8edf5; }
+.member-tour-layer { position: fixed; inset: 0; z-index: 2500; pointer-events: none; }
+.member-tour-shield { position: absolute; inset: 0; z-index: 1; background: transparent; pointer-events: auto; }
+.member-tour-spotlight { position: fixed; z-index: 2; border: 2px solid #ef2929; border-radius: 18px; box-shadow: 0 0 0 100vmax rgba(3,5,9,0.78), 0 0 28px rgba(211,18,18,0.45); pointer-events: none; transition: left 0.42s cubic-bezier(0.2,0.75,0.25,1), top 0.42s cubic-bezier(0.2,0.75,0.25,1), width 0.42s ease, height 0.42s ease; animation: tour-spotlight-pulse 2.1s ease-in-out infinite; }
+.member-tour-tooltip { position: fixed; z-index: 3; width: min(360px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow-y: auto; padding: 20px; border: 1px solid rgba(190,201,220,0.16); border-radius: 20px; background: #11161f; box-shadow: 0 18px 60px rgba(0,0,0,0.5); pointer-events: auto; transition: left 0.32s ease, top 0.32s ease; }
+.member-tour-card { text-align: left; }
+.tour-card-icon { display: grid; place-items: center; width: 42px; height: 42px; margin: 0 0 12px; border: 1px solid rgba(211,18,18,0.28); border-radius: 13px; background: rgba(211,18,18,0.1); color: #ef2929; }
+.member-tour-card h2 { color: #f1f3f7; font-size: 1.1rem; }
+.member-tour-card .onboarding-copy { margin: 8px 0 16px; font-size: 0.83rem; }
+.member-tour-card .onboarding-progress { margin-bottom: 14px; }
+.member-tour-card .onboarding-actions { justify-content: space-between; }
+.member-tour-card .onboarding-actions button { min-width: 0; }
+@keyframes tour-spotlight-pulse { 0%, 100% { box-shadow: 0 0 0 100vmax rgba(3,5,9,0.78), 0 0 18px rgba(211,18,18,0.28); } 50% { box-shadow: 0 0 0 100vmax rgba(3,5,9,0.78), 0 0 32px rgba(211,18,18,0.62); } }
+@media (prefers-reduced-motion: reduce) { .member-tour-spotlight, .member-tour-tooltip { transition: none; } .member-tour-spotlight { animation: none; } }
 
 /* ========== TOAST ========== */
 .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #1a1f2b; border: 1px solid #2d3548; border-left: 4px solid #d31212; padding: 14px 22px; border-radius: 14px; font-size: 0.9rem; font-weight: 500; z-index: 2000; box-shadow: 0 10px 40px rgba(0,0,0,0.5); max-width: 90%; }

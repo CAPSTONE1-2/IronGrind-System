@@ -59,8 +59,160 @@ function openModal(html) {
     document.getElementById('modalOverlay').classList.remove('hidden');
 }
 function closeModal() {
+    if (memberTourActive) finishMemberTour();
     document.getElementById('modalOverlay').classList.add('hidden');
 }
+
+// ===== FIRST-VISIT MEMBER TOUR =====
+let memberTourActive = false;
+let memberTourStep = -1;
+const memberTourSteps = [
+    {
+        icon: 'fa-qrcode',
+        target: '.customer-hero',
+        title: 'Your member QR code',
+        text: 'Use the Show QR Code button when you arrive. Gym staff can scan it to record your visit.'
+    },
+    {
+        icon: 'fa-chart-line',
+        target: '#member-progress',
+        title: 'Track your membership',
+        text: 'Check your current plan and how much time is left in your membership here.'
+    },
+    {
+        icon: 'fa-calendar-check',
+        target: '#member-attendance',
+        title: 'Review your visits',
+        text: 'Your attendance history shows the dates and times you have visited the gym.'
+    },
+    {
+        icon: 'fa-id-card',
+        target: '#member-request > summary',
+        title: 'Request a renewal',
+        text: 'Open Membership Registration / Renewal to fill out a request and send it to the gym admin.'
+    },
+    {
+        icon: 'fa-store',
+        target: '#member-store > summary',
+        title: 'Browse the gym store',
+        text: 'Open this section to see supplements and gym merchandise available for purchase in person.'
+    }
+];
+
+function escapeHTML(value) {
+    return String(value).replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[char]);
+}
+
+function memberTourStorageKey() {
+    return `ig_member_tour_seen_${String(session?.username || 'member').toLowerCase()}`;
+}
+
+function showMemberWelcome() {
+    let alreadySeen = false;
+    try { alreadySeen = localStorage.getItem(memberTourStorageKey()) === 'true'; }
+    catch { alreadySeen = true; }
+    if (alreadySeen) return;
+    memberTourActive = true;
+    memberTourStep = -1;
+    renderMemberTourStep();
+}
+
+function renderMemberTourStep() {
+    const firstName = escapeHTML((session?.fullName || session?.username || 'Member').trim().split(/\s+/)[0]);
+    if (memberTourStep < 0) {
+        document.getElementById('memberTourLayer')?.classList.add('hidden');
+        openModal(`<section class="member-onboarding" role="dialog" aria-modal="true" aria-labelledby="memberTourTitle">
+            <div class="onboarding-mark"><i class="fas fa-dumbbell"></i></div>
+            <p class="onboarding-eyebrow">IRON GRIND MEMBER PORTAL</p>
+            <h2 id="memberTourTitle">Welcome, ${firstName}!</h2>
+            <p class="onboarding-copy">Here’s a quick tour to help you get started. It only takes a moment.</p>
+            <div class="onboarding-actions"><button class="btn-sm" onclick="finishMemberTour()">Skip tour</button><button class="btn-primary" onclick="startMemberTour()">Start tour <i class="fas fa-arrow-right"></i></button></div>
+        </section>`);
+        return;
+    }
+
+    const step = memberTourSteps[memberTourStep];
+    const progress = memberTourSteps.map((_, index) => `<span class="${index <= memberTourStep ? 'current' : ''}"></span>`).join('');
+    const isLast = memberTourStep === memberTourSteps.length - 1;
+    document.getElementById('modalOverlay').classList.add('hidden');
+    const layer = document.getElementById('memberTourLayer');
+    const tooltip = document.getElementById('memberTourTooltip');
+    tooltip.innerHTML = `<section class="member-tour-card" role="dialog" aria-modal="false" aria-labelledby="memberTourTitle">
+        <div class="onboarding-progress"><span>STEP ${memberTourStep + 1} OF ${memberTourSteps.length}</span><div>${progress}</div></div>
+        <div class="tour-card-icon"><i class="fas ${step.icon}"></i></div>
+        <h2 id="memberTourTitle">${step.title}</h2>
+        <p class="onboarding-copy">${step.text}</p>
+        <div class="onboarding-actions"><button class="btn-sm" onclick="previousMemberTourStep()"><i class="fas fa-arrow-left"></i> Back</button><button class="btn-primary" onclick="${isLast ? 'finishMemberTour()' : 'nextMemberTourStep()'}">${isLast ? 'Finish' : 'Next'} <i class="fas ${isLast ? 'fa-check' : 'fa-arrow-right'}"></i></button></div>
+        <button class="onboarding-skip" onclick="finishMemberTour()">Skip tour</button>
+    </section>`;
+    layer.classList.remove('hidden');
+    repositionMemberTour();
+    document.querySelector(step.target)?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+    window.setTimeout(repositionMemberTour, 320);
+}
+
+function repositionMemberTour() {
+    if (!memberTourActive || memberTourStep < 0) return;
+    const step = memberTourSteps[memberTourStep];
+    const target = document.querySelector(step.target);
+    const spotlight = document.getElementById('memberTourSpotlight');
+    const tooltip = document.getElementById('memberTourTooltip');
+    if (!target || !spotlight || !tooltip) return;
+
+    const rect = target.getBoundingClientRect();
+    const pad = 7;
+    spotlight.style.left = `${Math.max(4, rect.left - pad)}px`;
+    spotlight.style.top = `${Math.max(4, rect.top - pad)}px`;
+    spotlight.style.width = `${Math.min(window.innerWidth - 8, rect.width + pad * 2)}px`;
+    spotlight.style.height = `${Math.min(window.innerHeight - 8, rect.height + pad * 2)}px`;
+
+    const tipRect = tooltip.getBoundingClientRect();
+    const margin = 16;
+    const left = Math.max(margin, Math.min(rect.left + rect.width / 2 - tipRect.width / 2, window.innerWidth - tipRect.width - margin));
+    const below = rect.bottom + 16;
+    const above = rect.top - tipRect.height - 16;
+    const top = below + tipRect.height <= window.innerHeight - margin
+        ? below
+        : above >= margin
+            ? above
+            : Math.max(margin, Math.min(rect.top + rect.height / 2 - tipRect.height / 2, window.innerHeight - tipRect.height - margin));
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
+}
+
+function startMemberTour() {
+    memberTourStep = 0;
+    renderMemberTourStep();
+}
+
+function nextMemberTourStep() {
+    if (memberTourStep < 0) return startMemberTour();
+    if (memberTourStep >= memberTourSteps.length - 1) return finishMemberTour();
+    memberTourStep += 1;
+    renderMemberTourStep();
+}
+
+function previousMemberTourStep() {
+    if (memberTourStep <= 0) {
+        memberTourStep = -1;
+        document.getElementById('memberTourLayer')?.classList.add('hidden');
+    } else {
+        memberTourStep -= 1;
+    }
+    renderMemberTourStep();
+}
+
+function finishMemberTour() {
+    memberTourActive = false;
+    try { localStorage.setItem(memberTourStorageKey(), 'true'); } catch {}
+    document.getElementById('modalOverlay').classList.add('hidden');
+    document.getElementById('memberTourLayer')?.classList.add('hidden');
+}
+
+window.addEventListener('resize', repositionMemberTour);
+window.addEventListener('scroll', repositionMemberTour, true);
 
 function printQRCode() {
     document.body.classList.add('print-qr-only');
@@ -449,6 +601,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderMembershipProgress();
     renderAttendanceHistory();
     renderStore();
+    window.setTimeout(showMemberWelcome, 2600);
 });
 
 window.addEventListener('load', () => {
