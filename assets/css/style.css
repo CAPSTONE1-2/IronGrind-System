@@ -288,15 +288,9 @@ label:has(input[name="wiPlan"]:checked) {
 .customer-view.active { display: flex; flex-direction: column; gap: 20px; }
 .customer-main { width: 100%; }
 .customer-main > * { scroll-margin-top: 20px; }
-.member-shortcuts { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; padding: 4px 2px; }
-.shortcuts-label { margin-right: 5px; color: #6a748b; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
-.member-shortcuts a { display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px; color: #a4adc2; text-decoration: none; background: rgba(17,22,31,0.52); border: 1px solid #252d3c; border-radius: 999px; font-size: 0.8rem; transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease; }
-.member-shortcuts a i { color: #d31212; }
-.member-shortcuts a:hover { color: #fff; background: rgba(30,37,51,0.8); border-color: #454f63; }
 .member-insights-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 20px; }
 .member-insights-grid > .panel { height: 100%; }
 .member-tools-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 16px; }
-.member-tools-grid > .member-collapsible[open] { grid-column: 1 / -1; }
 .member-collapsible > summary { list-style: none; cursor: pointer; }
 .member-collapsible > summary::-webkit-details-marker { display: none; }
 .member-collapse-summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
@@ -547,5 +541,4 @@ label:has(input[name="wiPlan"]:checked) {
 @media (max-width: 1024px) {
     .member-insights-grid { grid-template-columns: 1fr; }
     .member-tools-grid { grid-template-columns: 1fr; }
-    .member-tools-grid > .member-collapsible[open] { grid-column: auto; }
 }
