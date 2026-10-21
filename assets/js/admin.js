@@ -315,6 +315,7 @@ function completeApproval(id) {
         startDate: p.startDate,
         expiry: p.endDate,
         status: 'active',
+        registrationSource: 'Online application',
         paid: true,
         goal: p.goals[0] || 'General Fitness',
         contact: p.mobile,
@@ -645,6 +646,7 @@ function submitNewMember() {
         id: memberId,
         name,
         username,
+        registrationSource: 'Walk-in',
         plan,
         startDate: startDate,
         expiry: endDate || addDays(startDate, days),
@@ -1103,9 +1105,17 @@ function printSaleReceipt(id) {
     window.setTimeout(() => { printWindow.focus(); printWindow.print(); }, 350);
 }
 
+function getMemberActivityStatus(member) {
+    const savedStatus = String(member.status || '').toLowerCase();
+    const explicitlyInactive = ['inactive', 'disabled', 'suspended', 'expired'].includes(savedStatus);
+    const membershipExpired = Boolean(member.expiry && member.expiry < todayStr());
+    return explicitlyInactive || membershipExpired ? 'Inactive' : 'Active';
+}
+
 function renderReports() {
     const reports = [
         { id: 'membership', name: 'Membership Report' },
+        { id: 'member-status', name: 'Active / Inactive Members' },
         { id: 'payment', name: 'Payment Report' },
         { id: 'attendance', name: 'Attendance Report' },
         { id: 'inventory', name: 'Inventory Report' },
@@ -1125,6 +1135,14 @@ function viewReport(type) {
     if (type === 'membership') {
         body = `<table class="attendance-table"><thead><tr><th>Name</th><th>Plan</th><th>Started</th><th>Expires</th></tr></thead><tbody>
             ${members.map(m => `<tr><td>${m.name}</td><td>${m.plan}</td><td>${m.startDate || '—'}</td><td>${m.expiry}</td></tr>`).join('')}</tbody></table>`;
+    } else if (type === 'member-status') {
+        const activeMembers = members.filter(member => getMemberActivityStatus(member) === 'Active');
+        const inactiveMembers = members.filter(member => getMemberActivityStatus(member) === 'Inactive');
+        const statusTable = (items, status) => `<h4 style="margin:18px 0 8px; color:${status === 'Active' ? '#2ecc71' : '#ff6b6b'};">${status} Members (${items.length})</h4>
+            <table class="attendance-table"><thead><tr><th>Name</th><th>Username</th><th>Registration Source</th><th>Plan</th><th>Expires</th></tr></thead><tbody>
+            ${items.map(member => `<tr><td>${escapeHTML(member.name)}</td><td>${escapeHTML(member.username || '—')}</td><td>${escapeHTML(member.registrationSource || 'Not recorded')}</td><td>${escapeHTML(member.plan || '—')}</td><td>${escapeHTML(member.expiry || '—')}</td></tr>`).join('') || '<tr><td colspan="5">No members in this group.</td></tr>'}</tbody></table>`;
+        body = `<p class="modal-sub">Active means the membership has not expired. Inactive includes expired, suspended, or disabled memberships.</p>
+            ${statusTable(activeMembers, 'Active')}${statusTable(inactiveMembers, 'Inactive')}`;
     } else if (type === 'payment' || type === 'sales') {
         body = `<table class="attendance-table"><thead><tr><th>Receipt</th><th>Customer</th><th>Total</th><th>Date</th></tr></thead><tbody>
             ${sales.map(s => `<tr><td>${s.id}</td><td>${s.customer}</td><td>${formatPeso(s.total)}</td><td>${s.date}</td></tr>`).join('')}</tbody></table>`;
@@ -1135,7 +1153,8 @@ function viewReport(type) {
         body = `<table class="attendance-table"><thead><tr><th>Product</th><th>Price</th><th>Stock</th></tr></thead><tbody>
             ${products.map(p => `<tr><td>${p.name}${p.size ? ' (' + p.size + ')' : ''}</td><td>${formatPeso(p.price)}</td><td>${p.stock}</td></tr>`).join('')}</tbody></table>`;
     }
-    openModal(`<h3><i class="fas fa-chart-bar"></i> ${type.charAt(0).toUpperCase() + type.slice(1)} Report</h3>
+    const title = type === 'member-status' ? 'Active / Inactive Members Report' : `${type.charAt(0).toUpperCase() + type.slice(1)} Report`;
+    openModal(`<h3><i class="fas fa-chart-bar"></i> ${title}</h3>
         <div style="max-height:60vh; overflow:auto; margin-top:16px;">${body}</div>
         <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Close</button><button class="btn-primary" onclick="printReportPDF('${type}')"><i class="fas fa-file-pdf"></i> Print / Save PDF</button></div>`);
 }
@@ -1147,7 +1166,7 @@ function printReportPDF(type) {
         return;
     }
 
-    const reportNames = { membership: 'Membership', payment: 'Payment', attendance: 'Attendance', inventory: 'Inventory', sales: 'Sales' };
+    const reportNames = { membership: 'Membership', 'member-status': 'Active / Inactive Members', payment: 'Payment', attendance: 'Attendance', inventory: 'Inventory', sales: 'Sales' };
     const reportTitle = `${reportNames[type] || 'Gym'} Report`;
     let columns = [];
     let rows = [];
@@ -1160,6 +1179,12 @@ function printReportPDF(type) {
             date: member.startDate || member.registeredAt
         }));
         dateForRow = row => row.date;
+    } else if (type === 'member-status') {
+        columns = ['Member', 'Username', 'Registration Source', 'Plan', 'Expires'];
+        rows = members.map(member => ({
+            cells: [member.name, member.username || '—', member.registrationSource || 'Not recorded', member.plan || '—', member.expiry || '—'],
+            status: getMemberActivityStatus(member)
+        }));
     } else if (type === 'payment' || type === 'sales') {
         columns = ['Receipt', 'Customer', 'Total', 'Date'];
         rows = sales.map(sale => ({ cells: [sale.id, sale.customer, formatPeso(sale.total), sale.date], date: sale.date }));
@@ -1185,6 +1210,11 @@ function printReportPDF(type) {
     let reportContent;
     if (type === 'inventory') {
         reportContent = `<section class="report-section"><div class="section-heading"><h2>Current Inventory Snapshot</h2><span>${rows.length} products</span></div>${rows.length ? tableHTML(rows) : '<p class="empty">No inventory records.</p>'}</section>`;
+    } else if (type === 'member-status') {
+        reportContent = ['Active', 'Inactive'].map(status => {
+            const groupRows = rows.filter(row => row.status === status);
+            return `<section class="report-section"><div class="section-heading"><h2>${status} Members</h2><span>${groupRows.length} ${groupRows.length === 1 ? 'member' : 'members'}</span></div>${groupRows.length ? tableHTML(groupRows) : '<p class="empty">No members in this group.</p>'}</section>`;
+        }).join('');
     } else {
         const monthGroups = new Map();
         rows.forEach(row => {
