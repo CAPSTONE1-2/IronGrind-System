@@ -1000,6 +1000,7 @@ function productCard(p) {
     const low = p.stock <= 4;
     return `
         <div class="product-card">
+            ${p.image ? `<div class="product-img-wrap"><img src="${p.image}" alt="${escapeHTML(p.name)}" loading="lazy"></div>` : ''}
             <span class="cat">${p.category}</span>
             <h4>${p.name}${p.size ? ' — ' + p.size : ''}</h4>
             <div class="price">${formatPeso(p.price)}</div>
@@ -1014,6 +1015,7 @@ function productCard(p) {
 function openAddProductModal() {
     openModal(`
         <h3><i class="fas fa-plus"></i> Add Product</h3>
+        <div class="form-group product-photo-field"><label for="apImage">Product photo (optional)</label><input type="file" id="apImage" accept="image/*" onchange="previewProductPhoto(this, 'apImagePreview')"><div id="apImagePreview" class="product-photo-preview"><span>No photo selected</span></div><small>Images are resized before saving.</small></div>
         <div class="form-group" style="margin-bottom:14px;"><label>Name</label><input type="text" id="apName" placeholder="Whey Protein — Vanilla"></div>
         <div class="form-group" style="margin-bottom:14px;"><label>Category</label><select id="apCat"><option value="Supplement">Supplement</option><option value="Merch">Merchandise</option></select></div>
         <div class="form-group" style="margin-bottom:14px;"><label>Size (optional)</label><input type="text" id="apSize" placeholder="Large"></div>
@@ -1025,15 +1027,18 @@ function openAddProductModal() {
     `);
 }
 
-function submitAddProduct() {
+async function submitAddProduct() {
     const name = document.getElementById('apName').value.trim();
     const category = document.getElementById('apCat').value;
     const size = document.getElementById('apSize').value.trim();
     const price = Number(document.getElementById('apPrice').value);
     const stock = Number(document.getElementById('apStock').value);
     if (!name || !price) { toast('Fill all required fields.', 'error'); return; }
-    products.push({ id: uid('P'), name, category, price, stock, size });
-    saveDB('products', products);
+    const image = await getProductPhoto('apImage');
+    if (image === false) return;
+    products.push({ id: uid('P'), name, category, price, stock, size, ...(image ? { image } : {}) });
+    try { saveDB('products', products); }
+    catch { products.pop(); toast('Could not save product photo. Try a smaller image or remove photos from other products.', 'error'); return; }
     closeModal();
     renderStore();
     renderDashboard();
@@ -1046,6 +1051,7 @@ function editProduct(id) {
     openModal(`
         <h3><i class="fas fa-edit"></i> Edit Product</h3>
         <p class="modal-sub">Password required to change price.</p>
+        <div class="form-group product-photo-field"><label for="epImage">Product photo (optional)</label><input type="file" id="epImage" accept="image/*" onchange="previewProductPhoto(this, 'epImagePreview')"><div id="epImagePreview" class="product-photo-preview">${p.image ? `<img src="${p.image}" alt="Current product photo">` : '<span>No photo selected</span>'}</div><label class="product-photo-remove"><input type="checkbox" id="epRemoveImage"> Remove current photo</label><small>Choose a new image to replace the current one.</small></div>
         <div class="form-group" style="margin-bottom:14px;"><label>Name</label><input type="text" id="epName" value="${p.name}"></div>
         <div class="form-group" style="margin-bottom:14px;"><label>Size</label><input type="text" id="epSize" value="${p.size || ''}"></div>
         <div class="form-row">
@@ -1057,21 +1063,62 @@ function editProduct(id) {
     `);
 }
 
-function submitEditProduct(id) {
+async function submitEditProduct(id) {
     const p = products.find(x => x.id === id);
     if (!p) return;
     const newPrice = Number(document.getElementById('epPrice').value);
     const pw = document.getElementById('epPassword').value;
     if (newPrice !== p.price && pw !== 'irongrind2025') { toast('Wrong password.', 'error'); return; }
+    const image = await getProductPhoto('epImage');
+    if (image === false) return;
+    const oldProduct = { ...p };
     p.name = document.getElementById('epName').value.trim();
     p.size = document.getElementById('epSize').value.trim();
     p.price = newPrice;
     p.stock = Number(document.getElementById('epStock').value);
-    saveDB('products', products);
+    if (image) p.image = image;
+    else if (document.getElementById('epRemoveImage').checked) delete p.image;
+    try { saveDB('products', products); }
+    catch { Object.assign(p, oldProduct); toast('Could not save product photo. Try a smaller image or remove photos from other products.', 'error'); return; }
     closeModal();
     renderStore();
     renderDashboard();
     toast(`✅ Updated ${p.name}.`, 'success');
+}
+
+function previewProductPhoto(input, previewId) {
+    const preview = document.getElementById(previewId);
+    const file = input.files && input.files[0];
+    if (!preview || !file) return;
+    if (!file.type.startsWith('image/')) { input.value = ''; toast('Choose an image file.', 'error'); return; }
+    const reader = new FileReader();
+    reader.onload = () => { preview.innerHTML = `<img src="${reader.result}" alt="Selected product photo preview">`; };
+    reader.onerror = () => toast('Could not read that image.', 'error');
+    reader.readAsDataURL(file);
+}
+
+function getProductPhoto(inputId) {
+    const file = document.getElementById(inputId)?.files?.[0];
+    if (!file) return Promise.resolve('');
+    if (!file.type.startsWith('image/')) { toast('Choose an image file.', 'error'); return Promise.resolve(false); }
+    return new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onerror = () => { toast('Could not read that image.', 'error'); resolve(false); };
+        reader.onload = () => {
+            const img = new Image();
+            img.onerror = () => { toast('Could not process that image.', 'error'); resolve(false); };
+            img.onload = () => {
+                const scale = Math.min(1, 900 / Math.max(img.width, img.height));
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.max(1, Math.round(img.width * scale));
+                canvas.height = Math.max(1, Math.round(img.height * scale));
+                canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                resolve(canvas.toDataURL('image/jpeg', 0.78));
+            };
+            img.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+    });
 }
 
 function deleteProduct(id) {
