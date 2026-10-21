@@ -277,7 +277,7 @@ function renderApprovals() {
                     </div>
                 </div>
             </div>
-            ${p.signature ? `<div style="background:#11161f; border-radius:14px; padding:16px; margin-bottom:16px;"><div style="font-size:0.68rem; text-transform:uppercase; color:#6a748b; font-weight:600; margin-bottom:8px;">Member Signature over Printed Name</div><img src="${p.signature}" alt="${p.fullName}'s digital signature" style="display:block; max-width:100%; width:360px; height:120px; object-fit:contain; background:#fff; border-radius:8px;"><div style="margin-top:8px; color:#e8edf5; font-size:0.85rem;">${escapeHTML(p.signatureName || p.fullName)}</div></div>` : ''}
+            ${p.signature ? `<div style="background:#11161f; border-radius:14px; padding:16px; margin-bottom:16px;"><div style="font-size:0.68rem; text-transform:uppercase; color:#6a748b; font-weight:600; margin-bottom:8px;">Member Signature</div><img src="${p.signature}" alt="${p.fullName}'s digital signature" style="display:block; max-width:100%; width:360px; height:120px; object-fit:contain; background:#fff; border-radius:8px;"></div>` : ''}
             <div style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;">
                 <button class="btn-sm" onclick="rejectApplication('${p.id}')"><i class="fas fa-times"></i> Reject</button>
                 <button class="btn-primary" onclick="approveApplication('${p.id}')"><i class="fas fa-check-circle"></i> Approve &amp; Create Account</button>
@@ -325,7 +325,6 @@ function completeApproval(id) {
         healthConditions: p.healthConditions || [],
         otherMedicalConditions: p.otherMedicalConditions || '',
         signature: p.signature || null,
-        signatureName: p.signatureName || p.fullName,
         qrCode: 'IRONGRIND|' + p.username
     };
     members.push(newMember);

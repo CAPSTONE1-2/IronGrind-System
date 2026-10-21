@@ -80,7 +80,6 @@ function submitRegistration(event) {
     const ecName = document.getElementById('regEcName').value.trim();
     const ecRelation = document.getElementById('regEcRelation').value.trim();
     const ecContact = document.getElementById('regEcContact').value.trim();
-    const signatureName = document.getElementById('regSignatureName').value.trim();
 
     const planInput = document.querySelector('input[name="regPlan"]:checked');
     if (!planInput) { showError('Please select a membership plan.'); return; }
@@ -105,7 +104,6 @@ function submitRegistration(event) {
     if (!document.getElementById('agreeWaiver').checked) { showError('You must accept the Liability Waiver.'); return; }
     if (otherMedicalChoice.checked && !otherMedicalConditions) { showError('Please specify your other medical condition details.'); return; }
     if (!registrationSignature || registrationSignature.isEmpty()) { showError('Please add your digital signature.'); return; }
-    if (!signatureName) { showError('Please enter the printed name for your signature.'); return; }
 
     const username = document.getElementById('regUsername').value.trim().toLowerCase();
     const password = document.getElementById('regPassword').value;
@@ -135,7 +133,6 @@ function submitRegistration(event) {
         startDate, endDate,
         healthConditions, otherMedicalConditions, goals,
         signature: registrationSignature.toDataURL(),
-        signatureName,
         username, password,
         submittedAt: new Date().toISOString(),
         status: 'pending'
