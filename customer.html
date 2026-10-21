@@ -18,17 +18,7 @@
         </div>
     </header>
 
-    <div class="dashboard customer-layout customer-view active">
-        <aside class="sidebar customer-sidebar" aria-label="Member dashboard navigation">
-            <div class="nav-section-label">Member portal</div>
-            <a class="nav-item active" href="#member-overview"><i class="fas fa-th-large"></i> Overview</a>
-            <a class="nav-item" href="#member-progress"><i class="fas fa-chart-line"></i> Membership</a>
-            <a class="nav-item" href="#member-attendance"><i class="fas fa-calendar-check"></i> Attendance</a>
-            <a class="nav-item" href="#member-request"><i class="fas fa-id-card"></i> Renewal Request</a>
-            <a class="nav-item" href="#member-store"><i class="fas fa-store"></i> Gym Store</a>
-        </aside>
-
-        <main class="main-content customer-main">
+    <main class="customer-view active customer-main">
         <!-- HERO -->
         <div class="customer-hero" id="member-overview">
             <div>
@@ -38,7 +28,16 @@
             <button class="btn-primary" onclick="showQRCode()"><i class="fas fa-qrcode"></i> Show QR Code</button>
         </div>
 
+        <nav class="member-shortcuts" aria-label="Member dashboard sections">
+            <span class="shortcuts-label">Quick access</span>
+            <a href="#member-progress"><i class="fas fa-chart-line"></i> Membership</a>
+            <a href="#member-attendance"><i class="fas fa-calendar-check"></i> Attendance</a>
+            <a href="#member-request"><i class="fas fa-id-card"></i> Renewal</a>
+            <a href="#member-store"><i class="fas fa-store"></i> Gym store</a>
+        </nav>
+
         <!-- MEMBERSHIP PROGRESS -->
+        <div class="member-insights-grid">
         <div class="panel" id="member-progress">
             <div class="panel-header">
                 <h2><i class="fas fa-chart-line"></i> Membership Progress</h2>
@@ -53,6 +52,7 @@
                 <span class="stat-sub" id="attendanceSummary"></span>
             </div>
             <div id="attendanceHistory"></div>
+        </div>
         </div>
 
         <!-- MEMBERSHIP REGISTRATION / RENEWAL -->
@@ -94,8 +94,7 @@
             <h3 class="store-section-label">Gym Merchandise</h3>
             <div class="product-grid view-only" id="customerMerchGrid"></div>
         </div>
-        </main>
-    </div>
+    </main>
 </div>
 
 <div id="modalOverlay" class="modal-overlay hidden" onclick="if(event.target===this) closeModal()"><div class="modal-content" id="modalContent"></div></div>
