@@ -514,6 +514,19 @@ function openAddMemberModal() {
             </div>
         </div>
 
+        <!-- MEMBER PORTAL ACCOUNT -->
+        <div style="background:#0d1219; border:1px solid #1e2533; border-radius:14px; padding:18px; margin-bottom:16px;">
+            <div style="display:flex; align-items:center; gap:8px; font-size:0.85rem; font-weight:600; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid #1e2533;">
+                <i class="fas fa-key" style="color:#ff6b2b;"></i><span>Member Portal Account</span>
+            </div>
+            <p style="font-size:0.75rem; color:#8b95a9; margin-bottom:12px;">Create login credentials so the member can access their portal.</p>
+            <div class="form-row">
+                <div class="form-group"><label>Username *</label><input type="text" id="wiUsername" placeholder="juan.delacruz" autocomplete="username"></div>
+                <div class="form-group"><label>Password *</label><input type="password" id="wiPassword" placeholder="At least 6 characters" autocomplete="new-password"></div>
+            </div>
+            <div class="form-group" style="margin-bottom:0;"><label>Confirm Password *</label><input type="password" id="wiConfirmPassword" placeholder="Re-enter the password" autocomplete="new-password"></div>
+        </div>
+
         <!-- ACTIONS -->
         <div class="modal-actions" style="position:sticky; bottom:0; background:#11161f; padding-top:12px;">
             <button class="btn-sm" onclick="closeModal()">Cancel</button>
@@ -570,6 +583,9 @@ function submitNewMember() {
     const age = Number(document.getElementById('wiAge').value);
     const sex = document.getElementById('wiSex').value;
     const contact = document.getElementById('wiContact').value.trim();
+    const username = document.getElementById('wiUsername').value.trim().toLowerCase();
+    const password = document.getElementById('wiPassword').value;
+    const confirmPassword = document.getElementById('wiConfirmPassword').value;
     const height = document.getElementById('wiHeight').value;
     const weight = document.getElementById('wiWeight').value;
 
@@ -602,6 +618,16 @@ function submitNewMember() {
     if (age < 12) { toast('Member must be at least 12 years old.', 'error'); return; }
     if (!contact) { toast('Mobile Number is required.', 'error'); return; }
     if (!ecName || !ecRelation || !ecContact) { toast('Emergency contact is required.', 'error'); return; }
+    if (username.length < 4 || !/^[a-z0-9_.]+$/.test(username)) {
+        toast('Username must be 4+ characters and use only letters, numbers, dots, or underscores.', 'error');
+        return;
+    }
+    if (password.length < 6) { toast('Password must be at least 6 characters.', 'error'); return; }
+    if (password !== confirmPassword) { toast('Passwords do not match.', 'error'); return; }
+    if (users.some(user => user.username?.toLowerCase() === username) || members.some(member => member.username?.toLowerCase() === username) || pendingApprovals.some(application => application.username?.toLowerCase() === username)) {
+        toast('That username is already in use.', 'error');
+        return;
+    }
 
     // ---- SIGNATURE VALIDATION ----
     if (!signaturePad || signaturePad.isEmpty()) {
@@ -613,9 +639,12 @@ function submitNewMember() {
     // ---- Create Member ----
     const memberId = uid('M');
     const saleId = 'IG-' + Date.now().toString().slice(-4);
+    users.push({ username, password, fullName: name, role: 'customer', createdAt: new Date().toISOString() });
+    saveDB('users', users);
     members.push({
         id: memberId,
         name,
+        username,
         plan,
         startDate: startDate,
         expiry: endDate || addDays(startDate, days),
@@ -684,12 +713,14 @@ function completeMemberRenewal(id) {
 function showMemberQR(id) {
     const m = members.find(x => x.id === id);
     if (!m) return;
+    const account = users.find(user => user.username?.toLowerCase() === m.username?.toLowerCase());
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('IRONGRIND|' + m.id + '|' + m.name)}`;
     openModal(`
         <h3><i class="fas fa-qrcode"></i> Member QR</h3>
         <p class="modal-sub">${m.name} · ${m.id}</p>
         <div style="text-align:center; padding:20px; background:#fff; border-radius:20px;"><img src="${qrUrl}" style="width:200px;height:200px;"></div>
         <div class="qr-print-card"><div class="qr-print-gym">Iron Grind Fitness Gym</div><img src="${qrUrl}" alt="Member QR code"></div>
+        ${account ? `<div style="margin-top:14px; padding:14px; background:#0d1219; border:1px solid #1e2533; border-radius:14px;"><strong style="display:block; margin-bottom:8px; color:#f1f3f7;">Member Portal Login</strong><div style="font-size:0.82rem; color:#a4adc2;">Username: <code style="color:#ff6b2b;">${escapeHTML(account.username)}</code></div><div style="margin-top:5px; font-size:0.82rem; color:#a4adc2;">Password: <code style="color:#ff6b2b;">${escapeHTML(account.password)}</code></div><small style="display:block; margin-top:8px; color:#6a748b;">Share these credentials privately with the member.</small></div>` : ''}
         <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Close</button>${m.receiptId ? `<button class="btn-sm" onclick="showSaleReceipt(decodeURIComponent('${encodeURIComponent(String(m.receiptId))}'))"><i class="fas fa-receipt"></i> Receipt</button>` : ''}<button class="btn-primary" onclick="printQRCode()"><i class="fas fa-print"></i> Print QR</button></div>
     `);
 }
