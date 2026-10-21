@@ -35,6 +35,13 @@ function addDays(dateStr, days) {
 }
 function formatPeso(n) { return '₱' + Number(n).toLocaleString('en-PH'); }
 function uid(prefix) { return prefix + Math.floor(Math.random() * 9000 + 1000); }
+function nextSaleReceiptId() {
+    const highest = sales.reduce((max, sale) => {
+        const match = String(sale.id || '').match(/^IG-(\d+)$/);
+        return match ? Math.max(max, Number(match[1])) : max;
+    }, 0);
+    return `IG-${String(highest + 1).padStart(4, '0')}`;
+}
 function initials(name) { return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase(); }
 function escapeHTML(value) {
     return String(value).replace(/[&<>"']/g, char => ({
@@ -368,7 +375,7 @@ function completeApproval(id) {
         saveDB('members', members);
         saveDB('membershipArchives', membershipArchives);
         sales.unshift({
-            id: 'IG-' + Date.now().toString().slice(-4),
+            id: nextSaleReceiptId(),
             customer: member.name,
             items: member.plan + ' Renewal',
             total: member.planPrice,
@@ -420,7 +427,7 @@ function completeApproval(id) {
     saveDB('members', members);
 
     sales.unshift({
-        id: 'IG-' + Date.now().toString().slice(-4),
+        id: nextSaleReceiptId(),
         customer: p.fullName,
         items: p.plan + ' Membership',
         total: p.planPrice,
@@ -727,7 +734,7 @@ function submitNewMember() {
 
     // ---- Create Member ----
     const memberId = uid('M');
-    const saleId = 'IG-' + Date.now().toString().slice(-4);
+    const saleId = nextSaleReceiptId();
     users.push({ username, password, fullName: name, role: 'customer', createdAt: new Date().toISOString() });
     saveDB('users', users);
     members.push({
@@ -854,7 +861,7 @@ function submitMemberPlanChange(encodedId) {
     member.paid = true;
     member.status = 'active';
 
-    const saleId = 'IG-' + Date.now().toString().slice(-4);
+    const saleId = nextSaleReceiptId();
     sales.unshift({
         id: saleId,
         customer: member.name,
@@ -901,7 +908,7 @@ function completeMemberRenewal(id) {
     m.paid = true;
     saveDB('members', members);
     saveDB('membershipArchives', membershipArchives);
-    sales.unshift({ id: 'IG-' + Date.now().toString().slice(-4), customer: m.name, items: m.plan + ' Renewal', total: price, date: todayStr(), status: 'Paid' });
+    sales.unshift({ id: nextSaleReceiptId(), customer: m.name, items: m.plan + ' Renewal', total: price, date: todayStr(), status: 'Paid' });
     saveDB('sales', sales);
     renderMembers();
     renderDashboard();
@@ -1236,7 +1243,7 @@ function openNewSaleModal() {
     }
     openModal(`
         <h3><i class="fas fa-cash-register"></i> New Sale</h3>
-        <div class="form-group" style="margin-bottom:14px;"><label>Customer</label><input type="text" id="nsCustomer" placeholder="Walk-in name"></div>
+        <div class="form-group" style="margin-bottom:14px;"><label for="nsCustomer">Customer name</label><input type="text" id="nsCustomer" placeholder="Enter customer name" required></div>
         <div class="form-group" style="margin-bottom:14px;"><label>Product</label><select id="nsProduct" onchange="updateSaleQuantityMode()">
             ${available.map(p => `<option value="${p.id}">${p.name}${p.category === 'Merch' && p.size ? ' (' + p.size + ')' : ''} — ${formatPeso(p.price)}${p.category === 'Supplement' ? ' / g' : ''}</option>`).join('')}
         </select></div>
@@ -1273,15 +1280,16 @@ function updateSaleTotalPreview() {
 }
 
 function submitNewSale() {
-    const customer = document.getElementById('nsCustomer').value.trim() || 'Walk-in';
+    const customer = document.getElementById('nsCustomer').value.trim();
     const pid = document.getElementById('nsProduct').value;
     const qty = Number(document.getElementById('nsQty').value);
     const p = products.find(x => x.id === pid);
     const supplement = p?.category === 'Supplement';
+    if (!customer) { toast('Enter the walk-in customer name.', 'error'); document.getElementById('nsCustomer').focus(); return; }
     if (!p || !Number.isFinite(qty) || qty <= 0 || (!supplement && (!Number.isInteger(qty) || qty > p.stock))) { toast('Enter a valid amount within available stock.', 'error'); return; }
     if (!supplement) p.stock -= qty;
     const total = p.price * qty;
-    const saleId = 'IG-' + Date.now().toString().slice(-4);
+    const saleId = nextSaleReceiptId();
     const quantityUnit = supplement ? 'g' : 'item';
     sales.unshift({
         id: saleId,
@@ -1384,18 +1392,24 @@ function renderWalkinSalesReport() {
         : '<div class="empty-state">No merchandise sales for this date.</div>';
 }
 
+function isWalkinProductSale(sale) {
+    return sale.source === 'walk-in' || sale.customer === 'Walk-in'
+        || ['Supplement', 'Merch'].includes(sale.category)
+        || sale.lineItems?.some(item => ['Supplement', 'Merch'].includes(item.category));
+}
+
 function renderSales() {
     const el = document.getElementById('salesTable');
     if (sales.length === 0) { el.innerHTML = '<div class="empty-state">No sales.</div>'; return; }
-    el.innerHTML = `
-        <table class="attendance-table">
-            <thead><tr><th>Receipt</th><th>Customer</th><th>Items</th><th>Total</th><th>Date</th><th>Status</th><th>Action</th></tr></thead>
-            <tbody>${sales.map(s => `
-                <tr><td>#${s.id}</td><td>${s.customer}</td><td>${s.items}</td><td>${formatPeso(s.total)}</td><td>${s.date}</td>
-                <td>${s.status === 'Paid' ? '<span class="badge-status paid">Paid</span>' : '<span class="badge-status reserved">Reserved</span>'}</td>
-                <td><button class="btn-sm" onclick="showSaleReceipt(decodeURIComponent('${encodeURIComponent(String(s.id))}'))" aria-label="View or print receipt"><i class="fas fa-receipt"></i> Receipt</button></td></tr>
-            `).join('')}</tbody>
-        </table>`;
+    const table = rows => rows.length ? `<div class="table-scroll"><table class="attendance-table">
+        <thead><tr><th>Receipt</th><th>Customer</th><th>Items</th><th>Total</th><th>Date</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody>${rows.map(s => `<tr><td>#${escapeHTML(s.id)}</td><td>${escapeHTML(s.customer === 'Walk-in' ? 'Name not recorded' : (s.customer || 'Name not recorded'))}</td><td>${escapeHTML(s.items || '')}</td><td>${formatPeso(s.total)}</td><td>${escapeHTML(s.date || '')}</td>
+            <td>${s.status === 'Paid' ? '<span class="badge-status paid">Paid</span>' : '<span class="badge-status reserved">Reserved</span>'}</td>
+            <td><button class="btn-sm" onclick="showSaleReceipt(decodeURIComponent('${encodeURIComponent(String(s.id))}'))" aria-label="View or print receipt"><i class="fas fa-receipt"></i> Receipt</button></td></tr>`).join('')}</tbody></table></div>` : '<div class="empty-state">No transactions recorded.</div>';
+    const walkinSales = sales.filter(isWalkinProductSale);
+    const otherSales = sales.filter(sale => !isWalkinProductSale(sale));
+    el.innerHTML = `<section class="sales-transaction-group"><h3><i class="fas fa-cash-register"></i> Walk-in Product Sales</h3>${table(walkinSales)}</section>
+        <section class="sales-transaction-group"><h3><i class="fas fa-id-card"></i> Membership &amp; Other Transactions</h3>${table(otherSales)}</section>`;
 }
 
 function getSaleReceiptMarkup(sale) {
@@ -1415,7 +1429,7 @@ function getSaleReceiptMarkup(sale) {
         </header>
         <div class="pos-receipt-meta"><span>Receipt</span><strong>#${escapeHTML(sale.id)}</strong></div>
         <div class="pos-receipt-meta"><span>Date</span><strong>${escapeHTML(sale.date || todayStr())}${timeLabel ? ` · ${escapeHTML(timeLabel)}` : ''}</strong></div>
-        <div class="pos-receipt-meta"><span>Customer</span><strong>${escapeHTML(sale.customer || 'Walk-in')}</strong></div>
+        <div class="pos-receipt-meta"><span>Customer</span><strong>${escapeHTML(sale.customer === 'Walk-in' ? 'Name not recorded' : (sale.customer || 'Name not recorded'))}</strong></div>
         <div class="pos-receipt-rule"></div>
         <div class="pos-receipt-items">${items.map(item => `<div class="pos-receipt-item">
             <div><strong>${escapeHTML(item.name || 'Item')}</strong><span>${Number(item.quantity) || 1}${item.quantityUnit === 'g' ? ' g' : ''} × ${formatPeso(item.unitPrice ?? item.total ?? 0)}${item.quantityUnit === 'g' ? ' / g' : ''}</span></div>
@@ -1431,9 +1445,23 @@ function getSaleReceiptMarkup(sale) {
 function showSaleReceipt(id) {
     const sale = sales.find(item => String(item.id) === String(id));
     if (!sale) { toast('Receipt could not be found.', 'error'); return; }
+    const needsCustomerName = isWalkinProductSale(sale) && (!sale.customer || sale.customer === 'Walk-in');
     openModal(`<h3><i class="fas fa-receipt"></i> Sale Receipt</h3>
+        ${needsCustomerName ? `<div class="form-group"><label for="saleCustomerName">Customer name was not recorded on this older sale</label><input type="text" id="saleCustomerName" placeholder="Enter customer name" required><button class="btn-sm" style="margin-top:8px;" onclick="saveWalkinSaleCustomer('${encodeURIComponent(String(sale.id))}')">Save customer name</button></div>` : ''}
         <div class="pos-receipt-preview">${getSaleReceiptMarkup(sale)}</div>
         <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Close</button><button class="btn-primary" onclick="printSaleReceipt(decodeURIComponent('${encodeURIComponent(String(sale.id))}'))"><i class="fas fa-print"></i> Print Receipt</button></div>`);
+}
+
+function saveWalkinSaleCustomer(encodedId) {
+    const id = decodeURIComponent(encodedId);
+    const sale = sales.find(item => String(item.id) === String(id));
+    const customer = document.getElementById('saleCustomerName')?.value.trim();
+    if (!sale || !customer) { toast('Enter the customer name.', 'error'); return; }
+    sale.customer = customer;
+    saveDB('sales', sales);
+    renderSales();
+    renderWalkinSalesReport();
+    showSaleReceipt(id);
 }
 
 function printSaleReceipt(id) {
