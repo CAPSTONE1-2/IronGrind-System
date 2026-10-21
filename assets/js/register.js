@@ -28,6 +28,8 @@ function openModal(html) {
 }
 function closeModal() { document.getElementById('modalOverlay').classList.add('hidden'); }
 
+const registrationSignature = initDigitalSignature('registrationSignature', 'clearRegistrationSignature');
+
 document.getElementById('regDob').addEventListener('change', function() {
     const dob = new Date(this.value);
     if (isNaN(dob)) return;
@@ -84,6 +86,7 @@ function submitRegistration(event) {
 
     if (!document.getElementById('agreeRules').checked) { showError('You must agree to the Rules and Agreement.'); return; }
     if (!document.getElementById('agreeWaiver').checked) { showError('You must accept the Liability Waiver.'); return; }
+    if (!registrationSignature || registrationSignature.isEmpty()) { showError('Please add your digital signature.'); return; }
 
     const username = document.getElementById('regUsername').value.trim().toLowerCase();
     const password = document.getElementById('regPassword').value;
@@ -111,6 +114,7 @@ function submitRegistration(event) {
         plan: planName, planPrice: Number(planPrice),
         startDate, endDate,
         healthConditions, goals,
+        signature: registrationSignature.toDataURL(),
         username, password,
         submittedAt: new Date().toISOString(),
         status: 'pending'

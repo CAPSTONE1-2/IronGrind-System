@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IronGrind · Membership Registration</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body class="register-body" style="padding:24px; background: radial-gradient(circle at 20% 20%, #1a1207, #0b0e14 60%);">
     <div style="max-width:900px; margin:0 auto; background:#11161f; border:1px solid #1e2533; border-radius:24px; padding:32px;">
@@ -134,6 +134,15 @@
             </div>
 
             <div style="background:#0d1219; border:1px solid #1e2533; border-radius:18px; padding:22px; margin-bottom:20px;">
+                <div style="display:flex; align-items:center; gap:10px; font-size:0.95rem; font-weight:600; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid #1e2533;">
+                    <i class="fas fa-signature" style="color:#d31212;"></i><span>Digital Signature *</span>
+                </div>
+                <p style="font-size:0.8rem; color:#8b95a9; margin-bottom:12px;">Sign below using your finger or mouse to confirm your membership application and waiver.</p>
+                <div style="background:#fff; border-radius:10px; overflow:hidden;"><canvas id="registrationSignature" class="signature-canvas" aria-label="Membership applicant signature"></canvas></div>
+                <div class="signature-actions"><small>A signature is required before submitting.</small><button type="button" class="btn-sm" id="clearRegistrationSignature"><i class="fas fa-eraser"></i> Clear</button></div>
+            </div>
+
+            <div style="background:#0d1219; border:1px solid #1e2533; border-radius:18px; padding:22px; margin-bottom:20px;">
                 <div style="display:flex; align-items:center; gap:10px; font-size:0.95rem; font-weight:600; margin-bottom:18px; padding-bottom:12px; border-bottom:1px solid #1e2533;">
                     <i class="fas fa-lock" style="color:#d31212;"></i><span>Create Your Account</span>
                 </div>
@@ -178,6 +187,7 @@
     <div id="modalOverlay" class="modal-overlay hidden" onclick="if(event.target===this) closeModal()">
         <div class="modal-content" id="modalContent"></div>
     </div>
-    <script src="register.js"></script>
+    <script src="assets/js/signature.js"></script>
+    <script src="assets/js/register.js"></script>
 </body>
 </html>

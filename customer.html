@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IronGrind · Member Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
 <div id="page-loader" class="page-loader" aria-label="Loading dashboard" role="status"><div class="loader-content"><div class="loader-brand">Iron<span>Grind</span></div><div class="loader-track"><span></span></div></div></div>
@@ -45,6 +45,34 @@
             <div id="attendanceHistory"></div>
         </div>
 
+        <!-- MEMBERSHIP REGISTRATION / RENEWAL -->
+        <div class="membership-form-card">
+            <h3><i class="fas fa-id-card"></i> Membership Registration / Renewal</h3>
+            <form id="membershipForm" onsubmit="submitMembershipForm(event)">
+                <div class="form-row">
+                    <div class="form-group"><label for="mfName">Full Name</label><input type="text" id="mfName" placeholder="Juan Dela Cruz" required></div>
+                    <div class="form-group"><label for="mfContact">Contact Number</label><input type="tel" id="mfContact" placeholder="0917 123 4567" required></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="mfPlan">Membership Plan</label>
+                        <select id="mfPlan"><option value="Monthly|800">Monthly — ₱800</option><option value="Half Month|400">Half Month — ₱400</option><option value="Walk-in|80">Walk-in — ₱80</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="mfGoal">Fitness Goal</label>
+                        <select id="mfGoal"><option>Weight Loss</option><option>Muscle Gain</option><option>Strength</option><option>General Fitness</option></select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="membershipSignature">Digital Signature *</label>
+                    <p class="signature-help">Sign below using your finger or mouse to confirm this membership request.</p>
+                    <div class="signature-surface"><canvas id="membershipSignature" class="signature-canvas" aria-label="Member signature"></canvas></div>
+                    <div class="signature-actions"><small>A signature is required before submitting.</small><button type="button" class="btn-sm" id="clearMembershipSignature"><i class="fas fa-eraser"></i> Clear</button></div>
+                </div>
+                <button type="submit" class="btn-submit"><i class="fas fa-paper-plane"></i> Submit Membership Form</button>
+            </form>
+        </div>
+
         <!-- STORE (VIEW ONLY) -->
         <div class="panel">
             <div class="panel-header">
@@ -61,6 +89,7 @@
 
 <div id="modalOverlay" class="modal-overlay hidden" onclick="if(event.target===this) closeModal()"><div class="modal-content" id="modalContent"></div></div>
 <div id="toast" class="toast hidden"></div>
-<script src="customer.js"></script>
+<script src="assets/js/signature.js"></script>
+<script src="assets/js/customer.js"></script>
 </body>
 </html>

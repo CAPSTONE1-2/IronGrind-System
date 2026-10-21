@@ -305,6 +305,123 @@ function showQRCode() {
     `);
 }
 
+<<<<<<< HEAD:customer.js
+=======
+// ===== RENEW MEMBERSHIP =====
+function renewMembership() {
+    openModal(`
+        <h3><i class="fas fa-sync-alt"></i> Renew Membership</h3>
+        <p class="modal-sub">Choose a plan to renew your membership.</p>
+        <div class="form-group" style="margin-bottom:14px;">
+            <label>Plan</label>
+            <select id="renewPlan">
+                <option value="Monthly|800">Monthly — ₱800</option>
+                <option value="Half Month|400">Half Month — ₱400</option>
+                <option value="Walk-in|80">Walk-in — ₱80</option>
+            </select>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-sm" onclick="closeModal()">Cancel</button>
+            <button class="btn-primary" onclick="confirmRenew()">
+                <i class="fas fa-check"></i> Confirm Renewal
+            </button>
+        </div>
+    `);
+}
+
+function confirmRenew() {
+    const m = getCurrentMember();
+    if (!m) {
+        toast('No membership record found. Please contact admin.', 'error');
+        closeModal();
+        return;
+    }
+
+    const [plan, price] = document.getElementById('renewPlan').value.split('|');
+    const days = plan === 'Monthly' ? 30 : plan === 'Half Month' ? 15 : 1;
+    const expiry = addDays(todayStr(), days);
+
+    // Update the member record (match by id)
+    const members = loadDB('members');
+    const idx = members.findIndex(x => x.id === m.id);
+    if (idx !== -1) {
+        members[idx].plan = plan;
+        members[idx].startDate = todayStr();
+        members[idx].expiry = expiry;
+        members[idx].paid = true;
+        saveDB('members', members);
+    }
+
+    // Record sale
+    const sales = loadDB('sales');
+    sales.unshift({
+        id: 'IG-' + Date.now().toString().slice(-4),
+        customer: session.fullName || session.username,
+        items: plan + ' Renewal',
+        total: Number(price),
+        date: todayStr(),
+        status: 'Paid'
+    });
+    saveDB('sales', sales);
+
+    updateMemberStatus();
+    closeModal();
+    toast(`✅ Membership renewed until ${expiry}.`, 'success');
+}
+
+// ===== MEMBERSHIP FORM (for renewals/updates from dashboard) =====
+const membershipSignature = initDigitalSignature('membershipSignature', 'clearMembershipSignature');
+
+function submitMembershipForm(event) {
+    event.preventDefault();
+    const name = document.getElementById('mfName').value.trim();
+    const contact = document.getElementById('mfContact').value.trim();
+    const planInput = document.getElementById('mfPlan');
+    const [plan, planPriceStr] = planInput ? planInput.value.split('|') : ['Renewal', '0'];
+    const planPrice = Number(planPriceStr) || 0;
+    const goal = document.getElementById('mfGoal')?.value || 'General Fitness';
+
+    if (!membershipSignature || membershipSignature.isEmpty()) {
+        toast('Please add your digital signature.', 'error');
+        return;
+    }
+
+    if (!name || !contact) { toast('Please fill in all fields.', 'error'); return; }
+
+    if (!/^[0-9]+$/.test(contact)) {
+        toast('Contact number must contain numbers only.', 'error');
+        document.getElementById('mfContact').classList.add('input-error');
+        return;
+    }
+    if (!isValidPhoneNumber(contact)) {
+        toast('Enter a valid PH mobile number (e.g. 09171234567).', 'error');
+        document.getElementById('mfContact').classList.add('input-error');
+        return;
+    }
+
+    // Push to pending approvals
+    const pending = loadDB('pendingApprovals');
+    pending.push({
+        id: 'APP' + Date.now(),
+        fullName: name,
+        mobile: contact,
+        plan,
+        planPrice,
+        goals: [goal],
+        signature: membershipSignature.toDataURL(),
+        username: session.username,
+        submittedAt: new Date().toISOString(),
+        status: 'pending',
+        source: 'dashboard-renewal'
+    });
+    saveDB('pendingApprovals', pending);
+
+    toast('✅ Form submitted! Awaiting admin approval.', 'success');
+    document.getElementById('mfContact').value = '';
+    membershipSignature.clear();
+}
+
+>>>>>>> f5116e963896d9a675d2e6b2f2e482f032bed41d:assets/js/customer.js
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
     updateMemberStatus();
