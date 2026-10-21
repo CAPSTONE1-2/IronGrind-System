@@ -340,10 +340,10 @@ label:has(input[name="wiPlan"]:checked) {
 @media (max-width: 1024px) {
     .dashboard { grid-template-columns: 1fr; }
     .customer-view.active { grid-template-columns: 1fr; }
-    .sidebar { position: static; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 46px; padding: 12px; }
+    .sidebar { position: static; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: minmax(46px, auto); padding: 12px; }
     .sidebar .nav-item,
     .sidebar .nav-item:hover,
-    .sidebar .nav-item.active { width: 100%; min-width: 0; height: 46px; padding: 10px 12px; white-space: nowrap; background: rgba(30,37,51,0.5); }
+    .sidebar .nav-item.active { width: 100%; min-width: 0; min-height: 46px; height: auto; padding: 9px 12px; white-space: normal; line-height: 1.2; overflow-wrap: anywhere; background: rgba(30,37,51,0.5); }
     .sidebar .nav-item { color: #a4adc2; }
     .sidebar .nav-item.active { color: #fff; }
     .nav-section-label { display: none; }
@@ -541,6 +541,12 @@ label:has(input[name="wiPlan"]:checked) {
 .register-body .form-group select,
 .register-body .form-group textarea { min-width: 0; }
 .register-body .form-row-three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.registration-quick-nav { position: sticky; top: 10px; z-index: 20; display: flex; align-items: center; gap: 8px; overflow-x: auto; margin: 0 0 20px; padding: 10px 12px; border: 1px solid rgba(190,201,220,0.14); border-radius: 14px; background: rgba(17,22,31,0.94); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); scrollbar-width: thin; }
+.registration-quick-nav > span { flex: 0 0 auto; margin-right: 3px; color: #6a748b; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+.registration-quick-nav a { flex: 0 0 auto; padding: 7px 11px; border: 1px solid #2d3548; border-radius: 999px; color: #a4adc2; font-size: 0.75rem; font-weight: 600; text-decoration: none; transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease; }
+.registration-quick-nav a:hover, .registration-quick-nav a:focus-visible { border-color: #d31212; background: rgba(211,18,18,0.1); color: #fff; outline: none; }
+.registration-section { scroll-margin-top: 88px; }
+.registration-contact-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 
 @media (max-width: 640px) {
     .customer-view { gap: 16px; }
@@ -553,6 +559,13 @@ label:has(input[name="wiPlan"]:checked) {
     .register-body .registration-shell { padding: 22px !important; }
     .register-body .form-row,
     .register-body .form-row-three { grid-template-columns: minmax(0, 1fr) !important; gap: 14px; }
+}
+@media (max-width: 520px) {
+    .registration-quick-nav { top: 6px; gap: 6px; margin-inline: -6px; }
+    .registration-quick-nav a { padding: 7px 9px; font-size: 0.7rem; }
+    .registration-contact-grid { grid-template-columns: 1fr; gap: 12px; text-align: left !important; }
+    .registration-contact-grid > div { padding-bottom: 10px; border-bottom: 1px solid rgba(190,201,220,0.08); }
+    .registration-contact-grid > div:last-child { padding-bottom: 0; border-bottom: 0; }
 }
 
 /* ===== MEMBER DASHBOARD: PROGRESS & VIEW-ONLY STORE ===== */

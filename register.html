@@ -26,7 +26,15 @@
         </div>
 
         <form id="registrationForm" onsubmit="submitRegistration(event)">
-            <div style="background:#0d1219; border:1px solid #1e2533; border-radius:18px; padding:22px; margin-bottom:20px;">
+            <nav class="registration-quick-nav" aria-label="Registration form sections">
+                <span>Jump to</span>
+                <a href="#reg-section-personal">Personal</a>
+                <a href="#reg-section-plan">Plan</a>
+                <a href="#reg-section-health">Health</a>
+                <a href="#reg-section-agreement">Agreement</a>
+                <a href="#reg-section-account">Account</a>
+            </nav>
+            <div id="reg-section-personal" class="registration-section" style="background:#0d1219; border:1px solid #1e2533; border-radius:18px; padding:22px; margin-bottom:20px;">
                 <div style="display:flex; align-items:center; gap:10px; font-size:0.95rem; font-weight:600; margin-bottom:18px; padding-bottom:12px; border-bottom:1px solid #1e2533;">
                     <i class="fas fa-user" style="color:#d31212;"></i><span>Personal Information</span>
                 </div>
@@ -51,7 +59,7 @@
                 </div>
             </div>
 
-            <div style="background:#0d1219; border:1px solid #1e2533; border-radius:18px; padding:22px; margin-bottom:20px;">
+            <div class="registration-section" style="background:#0d1219; border:1px solid #1e2533; border-radius:18px; padding:22px; margin-bottom:20px;">
                 <div style="display:flex; align-items:center; gap:10px; font-size:0.95rem; font-weight:600; margin-bottom:18px; padding-bottom:12px; border-bottom:1px solid #1e2533;">
                     <i class="fas fa-phone" style="color:#d31212;"></i><span>Emergency Contact</span>
                 </div>
@@ -62,7 +70,7 @@
                 </div>
             </div>
 
-            <div style="background:#0d1219; border:1px solid #1e2533; border-radius:18px; padding:22px; margin-bottom:20px;">
+            <div id="reg-section-plan" class="registration-section" style="background:#0d1219; border:1px solid #1e2533; border-radius:18px; padding:22px; margin-bottom:20px;">
                 <div style="display:flex; align-items:center; gap:10px; font-size:0.95rem; font-weight:600; margin-bottom:18px; padding-bottom:12px; border-bottom:1px solid #1e2533;">
                     <i class="fas fa-id-card" style="color:#d31212;"></i><span>Membership Details</span>
                 </div>
@@ -89,7 +97,7 @@
                 </div>
             </div>
 
-            <div style="background:#0d1219; border:1px solid #1e2533; border-radius:18px; padding:22px; margin-bottom:20px;">
+            <div id="reg-section-health" class="registration-section" style="background:#0d1219; border:1px solid #1e2533; border-radius:18px; padding:22px; margin-bottom:20px;">
                 <div style="display:flex; align-items:center; gap:10px; font-size:0.95rem; font-weight:600; margin-bottom:18px; padding-bottom:12px; border-bottom:1px solid #1e2533;">
                     <i class="fas fa-heartbeat" style="color:#d31212;"></i><span>Health Declaration</span>
                 </div>
@@ -108,7 +116,7 @@
                 </div>
             </div>
 
-            <div style="background:#0d1219; border:1px solid #1e2533; border-radius:18px; padding:22px; margin-bottom:20px;">
+            <div class="registration-section" style="background:#0d1219; border:1px solid #1e2533; border-radius:18px; padding:22px; margin-bottom:20px;">
                 <div style="display:flex; align-items:center; gap:10px; font-size:0.95rem; font-weight:600; margin-bottom:18px; padding-bottom:12px; border-bottom:1px solid #1e2533;">
                     <i class="fas fa-bullseye" style="color:#d31212;"></i><span>Fitness Goal <small style="font-size:0.75rem; color:#8b95a9; font-weight:400;">(Optional)</small></span>
                 </div>
@@ -120,7 +128,7 @@
                 </div>
             </div>
 
-            <div style="background:#0d1219; border:1px solid #1e2533; border-radius:18px; padding:22px; margin-bottom:20px;">
+            <div id="reg-section-agreement" class="registration-section" style="background:#0d1219; border:1px solid #1e2533; border-radius:18px; padding:22px; margin-bottom:20px;">
                 <div style="display:flex; align-items:center; gap:10px; font-size:0.95rem; font-weight:600; margin-bottom:18px; padding-bottom:12px; border-bottom:1px solid #1e2533;">
                     <i class="fas fa-scroll" style="color:#d31212;"></i><span>Rules and Agreement</span>
                 </div>
@@ -139,7 +147,7 @@
                 </label>
             </div>
 
-            <div style="background:#0d1219; border:1px solid #1e2533; border-radius:18px; padding:22px; margin-bottom:20px;">
+            <div class="registration-section" style="background:#0d1219; border:1px solid #1e2533; border-radius:18px; padding:22px; margin-bottom:20px;">
                 <div style="display:flex; align-items:center; gap:10px; font-size:0.95rem; font-weight:600; margin-bottom:18px; padding-bottom:12px; border-bottom:1px solid #1e2533;">
                     <i class="fas fa-file-signature" style="color:#d31212;"></i><span>Liability Waiver</span>
                 </div>
@@ -151,7 +159,7 @@
                 </label>
             </div>
 
-            <div style="background:#0d1219; border:1px solid #1e2533; border-radius:18px; padding:22px; margin-bottom:20px;">
+            <div class="registration-section" style="background:#0d1219; border:1px solid #1e2533; border-radius:18px; padding:22px; margin-bottom:20px;">
                 <div style="display:flex; align-items:center; gap:10px; font-size:0.95rem; font-weight:600; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid #1e2533;">
                     <i class="fas fa-signature" style="color:#d31212;"></i><span>Member Signature *</span>
                 </div>
@@ -162,7 +170,7 @@
                 <div class="signature-actions"><small>A signature is required before submitting.</small><button type="button" class="btn-sm" id="clearRegistrationSignature"><i class="fas fa-eraser"></i> Clear</button></div>
             </div>
 
-            <div style="background:#0d1219; border:1px solid #1e2533; border-radius:18px; padding:22px; margin-bottom:20px;">
+            <div id="reg-section-account" class="registration-section" style="background:#0d1219; border:1px solid #1e2533; border-radius:18px; padding:22px; margin-bottom:20px;">
                 <div style="display:flex; align-items:center; gap:10px; font-size:0.95rem; font-weight:600; margin-bottom:18px; padding-bottom:12px; border-bottom:1px solid #1e2533;">
                     <i class="fas fa-lock" style="color:#d31212;"></i><span>Create Your Account</span>
                 </div>
@@ -198,7 +206,7 @@
             </p>
         </form>
 
-        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; margin-top:32px; padding-top:24px; border-top:1px solid #1e2533; text-align:center;">
+        <div class="registration-contact-grid" style="margin-top:32px; padding-top:24px; border-top:1px solid #1e2533; text-align:center;">
             <div><strong style="font-size:0.75rem; text-transform:uppercase; color:#6a748b;">Our Contact</strong><p style="font-size:0.85rem; margin-top:6px;">09476337525</p></div>
             <div><strong style="font-size:0.75rem; text-transform:uppercase; color:#6a748b;">Facebook</strong><p style="font-size:0.85rem; margin-top:6px;">IRON GRIND Fitness Gym</p></div>
             <div><strong style="font-size:0.75rem; text-transform:uppercase; color:#6a748b;">Address</strong><p style="font-size:0.85rem; margin-top:6px;">Purok Mangga, Sulangon, Dapitan City</p></div>
