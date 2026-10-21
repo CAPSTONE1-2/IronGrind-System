@@ -151,7 +151,7 @@
                 </div>
             </div>
 
-            <!-- STORE (VIEW ONLY) -->
+            -- STORE (VIEW ONLY) --
             <div id="section-store" class="admin-section hidden">
                 <div class="panel">
                     <div class="panel-header">
