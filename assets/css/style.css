@@ -185,6 +185,26 @@ label:has(input[name="wiPlan"]:checked) {
 .qr-reader__dashboard_section_csr button,
 .qr-reader__dashboard_section_fsr button { background: #1e2533 !important; color: #e8edf5 !important; border: 1px solid #2d3548 !important; border-radius: 8px !important; padding: 8px 12px !important; cursor: pointer; }
 
+/* POS RECEIPT PREVIEW */
+.pos-receipt-preview { display: flex; justify-content: center; max-height: 62vh; margin-top: 16px; padding: 18px; overflow: auto; border: 1px solid #242a35; border-radius: 16px; background: #090c11; }
+.pos-receipt { width: min(100%, 340px); padding: 22px; color: #171a20; background: #fff; font-family: Arial, sans-serif; box-shadow: 0 12px 32px rgba(0,0,0,0.3); }
+.pos-receipt-header { display: flex; flex-direction: column; align-items: center; text-align: center; padding-bottom: 14px; border-bottom: 3px solid #d31212; }
+.pos-receipt-header img { width: 50px; height: 50px; margin-bottom: 7px; object-fit: contain; }
+.pos-receipt-brand { color: #151922; font-size: 18px; font-weight: 900; letter-spacing: 1.2px; }
+.pos-receipt-brand span { display: block; margin-top: 2px; color: #737987; font-size: 9px; letter-spacing: 3px; }
+.pos-receipt-label { margin-top: 10px; color: #d31212; font-size: 9px; font-weight: 800; letter-spacing: 2px; }
+.pos-receipt-meta { display: flex; justify-content: space-between; gap: 10px; margin-top: 10px; font-size: 11px; }
+.pos-receipt-meta span { color: #666d79; }
+.pos-receipt-meta strong { text-align: right; overflow-wrap: anywhere; }
+.pos-receipt-rule { margin: 13px 0; border-top: 1px dashed #aeb3bc; }
+.pos-receipt-item { display: flex; justify-content: space-between; gap: 10px; margin: 11px 0; font-size: 11px; }
+.pos-receipt-item > div { display: flex; flex-direction: column; gap: 4px; }
+.pos-receipt-item span { color: #666d79; font-size: 10px; }
+.pos-receipt-total { display: flex; justify-content: space-between; align-items: baseline; font-size: 11px; font-weight: 800; }
+.pos-receipt-total strong { color: #d31212; font-size: 18px; }
+.pos-receipt-paid { margin-top: 12px; color: #287a4b; font-size: 10px; font-weight: 700; text-align: center; text-transform: uppercase; }
+.pos-receipt-thanks { margin-top: 20px; padding-top: 12px; border-top: 1px solid #e1e3e8; color: #555d69; font-size: 10px; line-height: 1.6; text-align: center; }
+
 /* ========== STORE ========== */
 .store-lock { display: flex; flex-direction: column; align-items: center; padding: 40px; text-align: center; background: #0d1219; border-radius: 20px; border: 1px solid #1e2533; }
 .store-lock i { font-size: 3rem; color: #d31212; margin-bottom: 16px; }

@@ -966,13 +966,24 @@ function submitNewSale() {
     if (!p || qty < 1 || qty > p.stock) { toast('Invalid quantity.', 'error'); return; }
     p.stock -= qty;
     const total = p.price * qty;
-    sales.unshift({ id: 'IG-' + Date.now().toString().slice(-4), customer, items: `${p.name} x${qty}`, total, date: todayStr(), status: 'Paid' });
+    const saleId = 'IG-' + Date.now().toString().slice(-4);
+    sales.unshift({
+        id: saleId,
+        customer,
+        items: `${p.name} x${qty}`,
+        lineItems: [{ name: p.name, quantity: qty, unitPrice: p.price, total }],
+        total,
+        date: todayStr(),
+        createdAt: new Date().toISOString(),
+        status: 'Paid'
+    });
     saveDB('products', products);
     saveDB('sales', sales);
     closeModal();
     renderStore();
     renderSales();
     renderDashboard();
+    showSaleReceipt(saleId);
     toast(`✅ Sale complete — ${formatPeso(total)}.`, 'success');
 }
 
@@ -981,12 +992,90 @@ function renderSales() {
     if (sales.length === 0) { el.innerHTML = '<div class="empty-state">No sales.</div>'; return; }
     el.innerHTML = `
         <table class="attendance-table">
-            <thead><tr><th>Receipt</th><th>Customer</th><th>Items</th><th>Total</th><th>Date</th><th>Status</th></tr></thead>
+            <thead><tr><th>Receipt</th><th>Customer</th><th>Items</th><th>Total</th><th>Date</th><th>Status</th><th>Action</th></tr></thead>
             <tbody>${sales.map(s => `
                 <tr><td>#${s.id}</td><td>${s.customer}</td><td>${s.items}</td><td>${formatPeso(s.total)}</td><td>${s.date}</td>
-                <td>${s.status === 'Paid' ? '<span class="badge-status paid">Paid</span>' : '<span class="badge-status reserved">Reserved</span>'}</td></tr>
+                <td>${s.status === 'Paid' ? '<span class="badge-status paid">Paid</span>' : '<span class="badge-status reserved">Reserved</span>'}</td>
+                <td><button class="btn-sm" onclick="showSaleReceipt(decodeURIComponent('${encodeURIComponent(String(s.id))}'))" aria-label="View or print receipt"><i class="fas fa-receipt"></i> Receipt</button></td></tr>
             `).join('')}</tbody>
         </table>`;
+}
+
+function getSaleReceiptMarkup(sale) {
+    const items = Array.isArray(sale.lineItems) && sale.lineItems.length
+        ? sale.lineItems
+        : [{ name: sale.items || 'Sale', quantity: 1, unitPrice: sale.total, total: sale.total }];
+    const created = sale.createdAt ? new Date(sale.createdAt) : null;
+    const timeLabel = created && !Number.isNaN(created.getTime())
+        ? created.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        : '';
+
+    return `<article class="pos-receipt">
+        <header class="pos-receipt-header">
+            <img src="assets/images/iron-grind-mark.png" alt="">
+            <div class="pos-receipt-brand">IRON GRIND<span>FITNESS GYM</span></div>
+            <div class="pos-receipt-label">SALES RECEIPT</div>
+        </header>
+        <div class="pos-receipt-meta"><span>Receipt</span><strong>#${escapeHTML(sale.id)}</strong></div>
+        <div class="pos-receipt-meta"><span>Date</span><strong>${escapeHTML(sale.date || todayStr())}${timeLabel ? ` · ${escapeHTML(timeLabel)}` : ''}</strong></div>
+        <div class="pos-receipt-meta"><span>Customer</span><strong>${escapeHTML(sale.customer || 'Walk-in')}</strong></div>
+        <div class="pos-receipt-rule"></div>
+        <div class="pos-receipt-items">${items.map(item => `<div class="pos-receipt-item">
+            <div><strong>${escapeHTML(item.name || 'Item')}</strong><span>${Number(item.quantity) || 1} × ${formatPeso(item.unitPrice ?? item.total ?? 0)}</span></div>
+            <strong>${formatPeso(item.total ?? sale.total)}</strong>
+        </div>`).join('')}</div>
+        <div class="pos-receipt-rule"></div>
+        <div class="pos-receipt-total"><span>TOTAL PAID</span><strong>${formatPeso(sale.total)}</strong></div>
+        <div class="pos-receipt-paid"><i class="fas fa-check-circle"></i> ${escapeHTML(sale.status || 'Paid')}</div>
+        <footer class="pos-receipt-thanks">Thank you for choosing Iron Grind.<br>Train hard. Stay strong.</footer>
+    </article>`;
+}
+
+function showSaleReceipt(id) {
+    const sale = sales.find(item => String(item.id) === String(id));
+    if (!sale) { toast('Receipt could not be found.', 'error'); return; }
+    openModal(`<h3><i class="fas fa-receipt"></i> Sale Receipt</h3>
+        <div class="pos-receipt-preview">${getSaleReceiptMarkup(sale)}</div>
+        <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Close</button><button class="btn-primary" onclick="printSaleReceipt(decodeURIComponent('${encodeURIComponent(String(sale.id))}'))"><i class="fas fa-print"></i> Print Receipt</button></div>`);
+}
+
+function printSaleReceipt(id) {
+    const sale = sales.find(item => String(item.id) === String(id));
+    if (!sale) { toast('Receipt could not be found.', 'error'); return; }
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+        toast('Allow pop-ups to print the receipt.', 'error');
+        return;
+    }
+
+    const logoURL = new URL('assets/images/iron-grind-mark.png', window.location.href).href;
+    const receiptMarkup = getSaleReceiptMarkup(sale).replace('src="assets/images/iron-grind-mark.png"', `src="${logoURL}"`);
+    printWindow.document.open();
+    printWindow.document.write(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Receipt ${escapeHTML(sale.id)}</title>
+        <style>
+            @page { size: 80mm auto; margin: 4mm; }
+            * { box-sizing: border-box; }
+            body { width: 72mm; margin: 0 auto; padding: 0; color: #171a20; font: 11px Arial, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .pos-receipt { width: 100%; padding: 3mm 1mm; background: #fff; }
+            .pos-receipt-header { display: flex; flex-direction: column; align-items: center; text-align: center; padding-bottom: 12px; border-bottom: 2px solid #d31212; }
+            .pos-receipt-header img { width: 42px; height: 42px; margin-bottom: 5px; object-fit: contain; }
+            .pos-receipt-brand { color: #151922; font-size: 16px; font-weight: 900; letter-spacing: 1.2px; }
+            .pos-receipt-brand span { display: block; margin-top: 2px; color: #737987; font-size: 8px; letter-spacing: 3px; }
+            .pos-receipt-label { margin-top: 9px; color: #d31212; font-size: 9px; font-weight: 800; letter-spacing: 2px; }
+            .pos-receipt-meta { display: flex; justify-content: space-between; gap: 8px; margin-top: 8px; font-size: 9px; }
+            .pos-receipt-meta span { color: #666d79; }
+            .pos-receipt-meta strong { text-align: right; }
+            .pos-receipt-rule { margin: 11px 0; border-top: 1px dashed #aeb3bc; }
+            .pos-receipt-item { display: flex; justify-content: space-between; gap: 8px; margin: 9px 0; font-size: 10px; }
+            .pos-receipt-item > div { display: flex; flex-direction: column; gap: 3px; }
+            .pos-receipt-item span { color: #666d79; font-size: 9px; }
+            .pos-receipt-total { display: flex; justify-content: space-between; align-items: baseline; font-size: 10px; font-weight: 800; }
+            .pos-receipt-total strong { color: #d31212; font-size: 16px; }
+            .pos-receipt-paid { margin-top: 10px; color: #287a4b; font-size: 9px; font-weight: 700; text-align: center; text-transform: uppercase; }
+            .pos-receipt-thanks { margin-top: 17px; padding-top: 10px; border-top: 1px solid #e1e3e8; color: #555d69; font-size: 9px; line-height: 1.6; text-align: center; }
+        </style></head><body>${receiptMarkup}</body></html>`);
+    printWindow.document.close();
+    window.setTimeout(() => { printWindow.focus(); printWindow.print(); }, 350);
 }
 
 function renderReports() {
