@@ -377,9 +377,12 @@ function completeApproval(id) {
         sales.unshift({
             id: nextSaleReceiptId(),
             customer: member.name,
+            source: 'dashboard-renewal',
             items: member.plan + ' Renewal',
+            lineItems: [{ name: member.plan + ' Membership Renewal', quantity: 1, unitPrice: member.planPrice, total: member.planPrice }],
             total: member.planPrice,
             date: todayStr(),
+            createdAt: new Date().toISOString(),
             status: 'Paid'
         });
         saveDB('sales', sales);
@@ -886,33 +889,77 @@ function submitMemberPlanChange(encodedId) {
 }
 
 function renewMember(id) {
-    const m = members.find(x => x.id === id);
-    if (!m) return;
-    if (m.plan === 'Weekly') {
-        toast('Weekly plans are no longer offered. Use Change Plan to select an available plan.', 'error');
-        return;
-    }
-    const days = getPlanDurationDays(m.plan);
-    const price = getPlanPrice(m.plan, m);
-    askConfirmation('Renew membership?', `Renew ${m.name}'s ${m.plan} membership for ${formatPeso(price)}?`, 'Renew', () => completeMemberRenewal(id), false);
+    const member = members.find(item => item.id === id);
+    if (!member) return;
+    const selectedPlan = ['Monthly', 'Half Month', 'Walk-in'].includes(member.plan) ? member.plan : 'Monthly';
+    openModal(`
+        <h3><i class="fas fa-sync-alt"></i> Counter Membership Renewal</h3>
+        <p class="modal-sub">Choose the renewal plan and record the counter payment.</p>
+        <div class="form-row">
+            <div class="form-group"><label for="crName">Full Name *</label><input type="text" id="crName" value="${escapeHTML(member.name || '')}" required></div>
+            <div class="form-group"><label for="crContact">Contact Number *</label><input type="tel" id="crContact" value="${escapeHTML(member.contact || '')}" placeholder="09171234567" required></div>
+        </div>
+        <div class="form-group"><label for="crPlan">Membership Plan</label><select id="crPlan">
+            <option value="Monthly|800" ${selectedPlan === 'Monthly' ? 'selected' : ''}>Monthly — ₱800</option>
+            <option value="Half Month|400" ${selectedPlan === 'Half Month' ? 'selected' : ''}>Half Month — ₱400</option>
+            <option value="Walk-in|80" ${selectedPlan === 'Walk-in' ? 'selected' : ''}>Walk-in — ₱80</option>
+        </select></div>
+        <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="completeMemberRenewal('${member.id}')"><i class="fas fa-receipt"></i> Complete Renewal</button></div>
+    `);
 }
 
 function completeMemberRenewal(id) {
-    const m = members.find(x => x.id === id);
-    if (!m) return;
-    const days = getPlanDurationDays(m.plan);
-    const price = getPlanPrice(m.plan, m);
-    archiveExpiredMembership(m, true);
-    m.startDate = todayStr();
-    m.expiry = addDays(todayStr(), days);
-    m.paid = true;
+    const member = members.find(item => item.id === id);
+    if (!member) return;
+    const name = document.getElementById('crName').value.trim();
+    const contact = document.getElementById('crContact').value.trim();
+    const [plan, priceText] = document.getElementById('crPlan').value.split('|');
+    const price = Number(priceText);
+    if (!name || !contact) { toast('Enter the member name and contact number.', 'error'); return; }
+    if (!/^\d+$/.test(contact) || !/^09\d{9}$/.test(contact)) { toast('Enter a valid PH mobile number using digits only (e.g. 09171234567).', 'error'); return; }
+
+    const changedAt = new Date().toISOString();
+    const startDate = todayStr();
+    const expiry = addDays(startDate, getPlanDurationDays(plan));
+    const previous = {
+        plan: member.plan || '—', startDate: member.startDate || null, expiry: member.expiry || null,
+        planPrice: Number(member.planPrice || getPlanPrice(member.plan, member)) || 0
+    };
+    archiveExpiredMembership(member, true);
+    if (plan !== previous.plan) {
+        planArchives.unshift({
+            id: 'PA-' + Date.now().toString().slice(-8), memberId: member.id, memberName: member.name,
+            previousPlan: previous.plan, previousStartDate: previous.startDate, previousExpiry: previous.expiry,
+            previousPrice: previous.planPrice, newPlan: plan, newStartDate: startDate, newExpiry: expiry,
+            newPrice: price, refundIssued: false, refundAmount: 0,
+            refundPolicy: 'No refund for the previous plan, including unused days.', changedAt, changedBy: 'admin-counter-renewal'
+        });
+    }
+    member.name = name;
+    member.contact = contact;
+    member.plan = plan;
+    member.planPrice = price;
+    member.startDate = startDate;
+    member.expiry = expiry;
+    member.paid = true;
+    member.status = 'active';
+    const saleId = nextSaleReceiptId();
+    sales.unshift({
+        id: saleId, customer: name, source: 'counter-renewal', items: `${plan} Membership Renewal`,
+        lineItems: [{ name: `${plan} Membership Renewal`, quantity: 1, unitPrice: price, total: price }],
+        total: price, date: todayStr(), createdAt: changedAt, status: 'Paid'
+    });
     saveDB('members', members);
     saveDB('membershipArchives', membershipArchives);
-    sales.unshift({ id: nextSaleReceiptId(), customer: m.name, items: m.plan + ' Renewal', total: price, date: todayStr(), status: 'Paid' });
+    saveDB('planArchives', planArchives);
     saveDB('sales', sales);
+    closeModal();
     renderMembers();
     renderDashboard();
-    toast(`✅ ${m.name} renewed until ${m.expiry}.`, 'success');
+    renderSales();
+    renderReports();
+    toast(`${name}'s membership renewed until ${expiry}.`, 'success');
+    showSaleReceipt(saleId);
 }
 
 function showMemberQR(id) {
@@ -1544,6 +1591,7 @@ function renderReports() {
         { id: 'archives', name: 'Membership Archives' },
         { id: 'payment', name: 'Payment Report' },
         { id: 'attendance', name: 'Attendance Report' },
+        { id: 'renewals', name: 'Membership Renewal Report' },
         { id: 'inventory', name: 'Inventory Report' },
         { id: 'sales', name: 'Sales Report' }
     ];
@@ -1554,6 +1602,24 @@ function renderReports() {
             <button class="btn-sm" style="width:100%; justify-content:center; margin-top:12px;">View</button>
         </div>
     `).join('');
+}
+
+function isRenewalSale(sale) {
+    return ['counter-renewal', 'dashboard-renewal', 'member-portal-renewal'].includes(sale.source)
+        || /\brenewal\b/i.test(sale.items || '')
+        || sale.lineItems?.some(item => /\brenewal\b/i.test(item.name || ''));
+}
+
+function getRenewalChannel(sale) {
+    if (sale.source === 'counter-renewal') return 'Counter';
+    if (sale.source === 'dashboard-renewal') return 'Member portal approval';
+    if (sale.source === 'member-portal-renewal') return 'Member portal';
+    return 'Previously recorded';
+}
+
+function getRenewalPlan(sale) {
+    const text = sale.items || sale.lineItems?.[0]?.name || '';
+    return text.replace(/\s+membership\s+renewal$/i, '').replace(/\s+renewal$/i, '') || '—';
 }
 
 function viewReport(type) {
@@ -1584,6 +1650,13 @@ function viewReport(type) {
     } else if (type === 'payment' || type === 'sales') {
         body = `<table class="attendance-table"><thead><tr><th>Receipt</th><th>Customer</th><th>Total</th><th>Date</th></tr></thead><tbody>
             ${sales.map(s => `<tr><td>${s.id}</td><td>${s.customer}</td><td>${formatPeso(s.total)}</td><td>${s.date}</td></tr>`).join('')}</tbody></table>`;
+    } else if (type === 'renewals') {
+        const renewals = sales.filter(isRenewalSale).sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+        const income = renewals.reduce((total, sale) => total + Number(sale.total || 0), 0);
+        body = `<p class="modal-sub">${renewals.length} completed renewal${renewals.length === 1 ? '' : 's'} · Total collected: <strong>${formatPeso(income)}</strong></p>
+            ${renewals.length ? `<div class="table-scroll"><table class="attendance-table"><thead><tr><th>Receipt</th><th>Member</th><th>Renewed Plan</th><th>Channel</th><th>Amount</th><th>Date</th></tr></thead><tbody>
+                ${renewals.map(sale => `<tr><td>#${escapeHTML(sale.id)}</td><td>${escapeHTML(sale.customer || 'Name not recorded')}</td><td>${escapeHTML(getRenewalPlan(sale))}</td><td>${escapeHTML(getRenewalChannel(sale))}</td><td>${formatPeso(sale.total)}</td><td>${escapeHTML(sale.date || '—')}</td></tr>`).join('')}
+            </tbody></table></div>` : '<div class="empty-state">No completed membership renewals recorded.</div>'}`;
     } else if (type === 'attendance') {
         body = `<table class="attendance-table"><thead><tr><th>Member</th><th>Date</th><th>In</th><th>Out</th></tr></thead><tbody>
             ${attendance.map(a => `<tr><td>${a.memberName}</td><td>${a.date}</td><td>${a.timeIn}</td><td>${a.timeOut || '—'}</td></tr>`).join('')}</tbody></table>`;
@@ -1596,6 +1669,8 @@ function viewReport(type) {
         ? 'Active / Inactive Members Report'
         : type === 'archives'
             ? 'Membership Archives'
+            : type === 'renewals'
+                ? 'Membership Renewal Report'
             : `${type.charAt(0).toUpperCase() + type.slice(1)} Report`;
     openModal(`<h3><i class="fas fa-chart-bar"></i> ${title}</h3>
         <div style="max-height:60vh; overflow:auto; margin-top:16px;">${body}</div>
@@ -1609,7 +1684,7 @@ function printReportPDF(type) {
         return;
     }
 
-    const reportNames = { membership: 'Membership', 'member-status': 'Active / Inactive Members', archives: 'Membership Archives', payment: 'Payment', attendance: 'Attendance', inventory: 'Inventory', sales: 'Sales' };
+    const reportNames = { membership: 'Membership', 'member-status': 'Active / Inactive Members', archives: 'Membership Archives', payment: 'Payment', attendance: 'Attendance', renewals: 'Membership Renewal', inventory: 'Inventory', sales: 'Sales' };
     const reportTitle = `${reportNames[type] || 'Gym'} Report`;
     let columns = [];
     let rows = [];
@@ -1645,6 +1720,13 @@ function printReportPDF(type) {
     } else if (type === 'payment' || type === 'sales') {
         columns = ['Receipt', 'Customer', 'Total', 'Date'];
         rows = sales.map(sale => ({ cells: [sale.id, sale.customer, formatPeso(sale.total), sale.date], date: sale.date }));
+        dateForRow = row => row.date;
+    } else if (type === 'renewals') {
+        columns = ['Receipt', 'Member', 'Renewed Plan', 'Channel', 'Amount', 'Date'];
+        rows = sales.filter(isRenewalSale).map(sale => ({
+            cells: [sale.id, sale.customer || 'Name not recorded', getRenewalPlan(sale), getRenewalChannel(sale), formatPeso(sale.total), sale.date || '—'],
+            date: sale.date
+        }));
         dateForRow = row => row.date;
     } else if (type === 'attendance') {
         columns = ['Member', 'Date', 'Time in', 'Time out'];

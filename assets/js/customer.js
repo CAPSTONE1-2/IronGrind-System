@@ -592,9 +592,12 @@ function confirmRenew() {
     sales.unshift({
         id: 'IG-' + Date.now().toString().slice(-4),
         customer: session.fullName || session.username,
+        source: 'member-portal-renewal',
         items: plan + ' Renewal',
+        lineItems: [{ name: plan + ' Membership Renewal', quantity: 1, unitPrice: Number(price), total: Number(price) }],
         total: Number(price),
         date: todayStr(),
+        createdAt: new Date().toISOString(),
         status: 'Paid'
     });
     saveDB('sales', sales);
