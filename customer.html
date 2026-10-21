@@ -18,9 +18,19 @@
         </div>
     </header>
 
-    <div class="customer-view active">
+    <div class="dashboard customer-layout customer-view active">
+        <aside class="sidebar customer-sidebar" aria-label="Member dashboard navigation">
+            <div class="nav-section-label">Member portal</div>
+            <a class="nav-item active" href="#member-overview"><i class="fas fa-th-large"></i> Overview</a>
+            <a class="nav-item" href="#member-progress"><i class="fas fa-chart-line"></i> Membership</a>
+            <a class="nav-item" href="#member-attendance"><i class="fas fa-calendar-check"></i> Attendance</a>
+            <a class="nav-item" href="#member-request"><i class="fas fa-id-card"></i> Renewal Request</a>
+            <a class="nav-item" href="#member-store"><i class="fas fa-store"></i> Gym Store</a>
+        </aside>
+
+        <main class="main-content customer-main">
         <!-- HERO -->
-        <div class="customer-hero">
+        <div class="customer-hero" id="member-overview">
             <div>
                 <h2>Welcome, <span id="heroName">Member!</span></h2>
                 <p id="memberStatus">Membership active.</p>
@@ -29,7 +39,7 @@
         </div>
 
         <!-- MEMBERSHIP PROGRESS -->
-        <div class="panel">
+        <div class="panel" id="member-progress">
             <div class="panel-header">
                 <h2><i class="fas fa-chart-line"></i> Membership Progress</h2>
             </div>
@@ -37,7 +47,7 @@
         </div>
 
         <!-- ATTENDANCE -->
-        <div class="panel">
+        <div class="panel" id="member-attendance">
             <div class="panel-header">
                 <h2><i class="fas fa-calendar-check"></i> My Attendance</h2>
                 <span class="stat-sub" id="attendanceSummary"></span>
@@ -46,7 +56,7 @@
         </div>
 
         <!-- MEMBERSHIP REGISTRATION / RENEWAL -->
-        <div class="membership-form-card">
+        <div class="membership-form-card" id="member-request">
             <h3><i class="fas fa-id-card"></i> Membership Registration / Renewal</h3>
             <form id="membershipForm" onsubmit="submitMembershipForm(event)">
                 <div class="form-row">
@@ -74,7 +84,7 @@
         </div>
 
         <!-- STORE (VIEW ONLY) -->
-        <div class="panel">
+        <div class="panel" id="member-store">
             <div class="panel-header">
                 <h2><i class="fas fa-store"></i> Available at the Gym</h2>
                 <span class="stat-sub"><i class="fas fa-info-circle"></i> Purchase in-store only</span>
@@ -84,6 +94,7 @@
             <h3 class="store-section-label">Gym Merchandise</h3>
             <div class="product-grid view-only" id="customerMerchGrid"></div>
         </div>
+        </main>
     </div>
 </div>
 

@@ -254,6 +254,7 @@ label:has(input[name="wiPlan"]:checked) {
 /* ========== RESPONSIVE ========== */
 @media (max-width: 1024px) {
     .dashboard { grid-template-columns: 1fr; }
+    .customer-view.active { grid-template-columns: 1fr; }
     .sidebar { position: static; flex-direction: row; flex-wrap: wrap; padding: 12px; }
     .sidebar .nav-item { width: auto; padding: 10px 16px; }
     .nav-section-label { display: none; }
@@ -272,11 +273,17 @@ label:has(input[name="wiPlan"]:checked) {
     .panel { padding: 18px; }
     .stat-card { min-height: 120px; padding: 18px; }
     .admin-section, .customer-view { gap: 16px; }
+    .customer-sidebar { gap: 4px; }
+    .customer-sidebar .nav-item { padding: 9px 11px; font-size: 0.8rem; }
 }
 
 /* ========== CUSTOMER DASHBOARD ========== */
-.customer-view { display: none; flex-direction: column; gap: 20px; min-width: 0; }
-.customer-view.active { display: flex; }
+.customer-view { display: none; min-width: 0; }
+.customer-view.active { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 24px; align-items: start; }
+.customer-sidebar { width: 100%; }
+.customer-sidebar .nav-item { text-decoration: none; }
+.customer-main { gap: 20px; }
+.customer-main > * { scroll-margin-top: 20px; }
 
 .customer-hero {
     background: linear-gradient(135deg, #1a0f08 0%, #11161f 60%);
@@ -504,4 +511,8 @@ label:has(input[name="wiPlan"]:checked) {
 @media (max-width: 640px) {
     .progress-stats { grid-template-columns: repeat(2, 1fr); }
     .product-grid.view-only { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 1024px) {
+    .customer-view.active { grid-template-columns: 1fr; }
 }
