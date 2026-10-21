@@ -32,7 +32,7 @@
             <span class="shortcuts-label">Quick access</span>
             <a href="#member-progress"><i class="fas fa-chart-line"></i> Membership</a>
             <a href="#member-attendance"><i class="fas fa-calendar-check"></i> Attendance</a>
-            <a href="#member-request"><i class="fas fa-id-card"></i> Renewal</a>
+            <a href="#member-request"><i class="fas fa-id-card"></i> Renewal options</a>
             <a href="#member-store"><i class="fas fa-store"></i> Gym store</a>
         </nav>
 
@@ -56,8 +56,9 @@
         </div>
 
         <!-- MEMBERSHIP REGISTRATION / RENEWAL -->
-        <div class="membership-form-card" id="member-request">
-            <h3><i class="fas fa-id-card"></i> Membership Registration / Renewal</h3>
+        <details class="membership-form-card member-collapsible" id="member-request">
+            <summary class="member-collapse-summary"><span><i class="fas fa-id-card"></i> Membership Registration / Renewal</span><i class="fas fa-chevron-down collapse-chevron" aria-hidden="true"></i></summary>
+            <div class="member-collapse-content">
             <form id="membershipForm" onsubmit="submitMembershipForm(event)">
                 <div class="form-row">
                     <div class="form-group"><label for="mfName">Full Name</label><input type="text" id="mfName" placeholder="Juan Dela Cruz" required></div>
@@ -81,19 +82,25 @@
                 </div>
                 <button type="submit" class="btn-submit"><i class="fas fa-paper-plane"></i> Submit Membership Form</button>
             </form>
-        </div>
+            </div>
+        </details>
 
         <!-- STORE (VIEW ONLY) -->
-        <div class="panel" id="member-store">
-            <div class="panel-header">
-                <h2><i class="fas fa-store"></i> Available at the Gym</h2>
+        <details class="panel member-collapsible" id="member-store">
+            <summary class="panel-header member-collapse-summary">
+                <span class="member-store-title">
+                <span class="member-store-heading"><i class="fas fa-store"></i> Available at the Gym</span>
                 <span class="stat-sub"><i class="fas fa-info-circle"></i> Purchase in-store only</span>
-            </div>
+                </span>
+                <i class="fas fa-chevron-down collapse-chevron" aria-hidden="true"></i>
+            </summary>
+            <div class="member-collapse-content">
             <h3 class="store-section-label">Supplements</h3>
             <div class="product-grid view-only" id="customerSupplementsGrid"></div>
             <h3 class="store-section-label">Gym Merchandise</h3>
             <div class="product-grid view-only" id="customerMerchGrid"></div>
-        </div>
+            </div>
+        </details>
     </main>
 </div>
 

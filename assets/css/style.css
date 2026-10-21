@@ -291,6 +291,24 @@ label:has(input[name="wiPlan"]:checked) {
 .member-shortcuts a:hover { color: #fff; background: rgba(30,37,51,0.8); border-color: #454f63; }
 .member-insights-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 20px; }
 .member-insights-grid > .panel { height: 100%; }
+.member-collapsible > summary { list-style: none; cursor: pointer; }
+.member-collapsible > summary::-webkit-details-marker { display: none; }
+.member-collapse-summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.member-collapse-summary > span:first-child { display: flex; align-items: center; gap: 10px; }
+.member-collapse-summary > span:first-child > i,
+.member-store-heading i { color: #d31212; }
+.member-store-heading { display: flex; align-items: center; gap: 10px; font-size: 1.1rem; font-weight: 600; }
+.member-collapse-summary .collapse-chevron { flex: 0 0 auto; color: #788399; font-size: 0.85rem; transition: transform 0.2s ease; }
+.member-collapsible[open] > .member-collapse-summary .collapse-chevron { transform: rotate(180deg); }
+.membership-form-card.member-collapsible { padding: 18px 24px; }
+.membership-form-card.member-collapsible > .member-collapse-summary { min-height: 30px; }
+.membership-form-card.member-collapsible .member-collapse-summary > span:first-child { font-size: 1.05rem; font-weight: 600; }
+.member-collapse-content { padding-top: 18px; }
+.member-collapsible:not([open]) > .member-collapse-summary { margin-bottom: 0; }
+.member-store-title { align-items: flex-start !important; flex-direction: column; gap: 5px !important; }
+.member-store-title .stat-sub { margin: 0; }
+.member-collapsible > .panel-header { margin-bottom: 0; }
+.member-collapsible > summary:focus-visible { outline: 2px solid #d31212; outline-offset: 4px; border-radius: 8px; }
 
 .customer-hero {
     background: linear-gradient(135deg, #1a0f08 0%, #11161f 60%);
