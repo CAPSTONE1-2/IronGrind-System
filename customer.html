@@ -8,29 +8,58 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="page-loader" class="page-loader" aria-label="Loading dashboard" role="status"><div class="loader-content"><div class="loader-brand">Iron<span>Grind</span></div><div class="loader-track"><span></span></div></div></div>
+<div id="page-loader"><div class="loader-logo">IronGrind</div><div class="loader-bar"></div></div>
 <div class="app">
     <header class="app-header">
         <div class="logo-area"><div class="logo-icon">IG</div><div class="logo-text"><h1>Iron<span>Grind</span></h1><p>Member Dashboard</p></div></div>
-        <div class="header-actions"><div class="user-chip"><i class="fas fa-user"></i><span id="currentUserName">Member</span></div><button class="btn-logout" onclick="logout()">Logout</button></div>
+        <div class="header-actions">
+            <div class="user-chip"><i class="fas fa-user"></i><span id="currentUserName">Member</span></div>
+            <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
     </header>
 
     <div class="customer-view active">
+        <!-- HERO -->
         <div class="customer-hero">
-            <div><h2>Welcome, <span id="heroName">Member!</span></h2><p id="memberStatus">Membership active.</p></div>
-            <button class="btn-primary" onclick="toast('QR shown')">Show QR Code</button>
+            <div>
+                <h2>Welcome, <span id="heroName">Member!</span></h2>
+                <p id="memberStatus">Membership active.</p>
+            </div>
+            <button class="btn-primary" onclick="showQRCode()"><i class="fas fa-qrcode"></i> Show QR Code</button>
         </div>
-        <div class="panel"><div class="panel-header"><h2><i class="fas fa-store"></i> Store</h2></div><div class="supplement-grid" id="customerStoreGrid"></div></div>
-        <div class="membership-form-card">
-            <h3>Renew Membership</h3>
-            <form onsubmit="submitMembershipForm(event)">
-                <div class="form-row"><div class="form-group"><label>Name</label><input type="text" id="mfName" required></div><div class="form-group"><label>Contact</label><input type="tel" id="mfContact" required></div></div>
-                <button type="submit" class="btn-submit">Submit</button>
-            </form>
+
+        <!-- MEMBERSHIP PROGRESS -->
+        <div class="panel">
+            <div class="panel-header">
+                <h2><i class="fas fa-chart-line"></i> Membership Progress</h2>
+            </div>
+            <div id="membershipProgress"></div>
+        </div>
+
+        <!-- ATTENDANCE -->
+        <div class="panel">
+            <div class="panel-header">
+                <h2><i class="fas fa-calendar-check"></i> My Attendance</h2>
+                <span class="stat-sub" id="attendanceSummary"></span>
+            </div>
+            <div id="attendanceHistory"></div>
+        </div>
+
+        <!-- STORE (VIEW ONLY) -->
+        <div class="panel">
+            <div class="panel-header">
+                <h2><i class="fas fa-store"></i> Available at the Gym</h2>
+                <span class="stat-sub"><i class="fas fa-info-circle"></i> Purchase in-store only</span>
+            </div>
+            <h3 class="store-section-label">Supplements</h3>
+            <div class="product-grid view-only" id="customerSupplementsGrid"></div>
+            <h3 class="store-section-label">Gym Merchandise</h3>
+            <div class="product-grid view-only" id="customerMerchGrid"></div>
         </div>
     </div>
 </div>
-<div id="modalOverlay" class="modal-overlay hidden"><div class="modal-content" id="modalContent"></div></div>
+
+<div id="modalOverlay" class="modal-overlay hidden" onclick="if(event.target===this) closeModal()"><div class="modal-content" id="modalContent"></div></div>
 <div id="toast" class="toast hidden"></div>
 <script src="customer.js"></script>
 </body>
