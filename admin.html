@@ -8,202 +8,88 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<div id="page-loader"><div class="loader-logo">IronGrind</div><div class="loader-bar"></div></div>
 <div class="app">
     <header class="app-header">
         <div class="logo-area">
             <div class="logo-icon">IG</div>
-            <div class="logo-text">
-                <h1>Iron<span>Grind</span></h1>
-                <p>Gym Management &amp; Fitness Monitoring</p>
-            </div>
+            <div class="logo-text"><h1>Iron<span>Grind</span></h1><p>Admin Dashboard</p></div>
         </div>
         <div class="header-actions">
-            <div class="user-chip">
-                <i class="fas fa-user-shield"></i>
-                <span id="currentUserName">Admin</span>
-            </div>
-            <button class="btn-logout" onclick="logout()">
-                <i class="fas fa-sign-out-alt"></i> Logout
-            </button>
+            <div class="user-chip"><i class="fas fa-user-shield"></i><span id="currentUserName">Admin</span></div>
+            <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
         </div>
     </header>
 
     <div class="dashboard">
         <aside class="sidebar">
-            <button class="nav-item active" data-section="dashboard" onclick="showAdminSection('dashboard', event)">
-                <i class="fas fa-th-large"></i> Dashboard
-            </button>
+            <button class="nav-item active" data-section="dashboard" onclick="showAdminSection('dashboard', event)"><i class="fas fa-th-large"></i> Dashboard</button>
             <div class="nav-section-label">Management</div>
-            <button class="nav-item" data-section="membership" onclick="showAdminSection('membership', event)">
-                <i class="fas fa-users"></i> Membership <span class="badge" id="pendingBadge">0</span>
-            </button>
-            <button class="nav-item" data-section="attendance" onclick="showAdminSection('attendance', event)">
-                <i class="fas fa-qrcode"></i> Attendance &amp; QR
-            </button>
-            <button class="nav-item" data-section="store" onclick="showAdminSection('store', event)">
-                <i class="fas fa-store"></i> Store &amp; Inventory
-            </button>
-            <button class="nav-item" data-section="sales" onclick="showAdminSection('sales', event)">
-                <i class="fas fa-receipt"></i> Sales Transaction
-            </button>
-            <button class="nav-item" data-section="reports" onclick="showAdminSection('reports', event)">
-                <i class="fas fa-chart-bar"></i> Reports
-            </button>
+            <button class="nav-item" data-section="membership" onclick="showAdminSection('membership', event)"><i class="fas fa-users"></i> Membership <span class="badge" id="pendingBadge">0</span></button>
+            <button class="nav-item" data-section="attendance" onclick="showAdminSection('attendance', event)"><i class="fas fa-qrcode"></i> Attendance</button>
+            <button class="nav-item" data-section="store" onclick="showAdminSection('store', event)"><i class="fas fa-store"></i> Store</button>
+            <button class="nav-item" data-section="sales" onclick="showAdminSection('sales', event)"><i class="fas fa-receipt"></i> Sales</button>
+            <button class="nav-item" data-section="reports" onclick="showAdminSection('reports', event)"><i class="fas fa-chart-bar"></i> Reports</button>
         </aside>
 
         <main class="main-content">
             <div id="section-dashboard" class="admin-section">
                 <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-label">Total Members</div>
-                        <div class="stat-value" id="statTotalMembers">0</div>
-                        <div class="stat-sub"><i class="fas fa-users"></i> Registered accounts</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Today's Check-ins</div>
-                        <div class="stat-value" id="statCheckins">0</div>
-                        <div class="stat-sub"><i class="fas fa-clock"></i> <span id="statInside">0</span> currently inside</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Today's Sales</div>
-                        <div class="stat-value" id="statSales">₱0</div>
-                        <div class="stat-sub"><i class="fas fa-receipt"></i> Completed transactions</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Low Stock Items</div>
-                        <div class="stat-value" id="statLowStock" style="color:#e74c3c;">0</div>
-                        <div class="stat-sub danger"><i class="fas fa-exclamation-triangle"></i> Needs restocking</div>
-                    </div>
+                    <div class="stat-card"><div class="stat-label">Total Members</div><div class="stat-value" id="statTotalMembers">0</div></div>
+                    <div class="stat-card"><div class="stat-label">Today's Check-ins</div><div class="stat-value" id="statCheckins">0</div></div>
+                    <div class="stat-card"><div class="stat-label">Today's Sales</div><div class="stat-value" id="statSales">₱0</div></div>
+                    <div class="stat-card"><div class="stat-label">Low Stock Items</div><div class="stat-value" id="statLowStock" style="color:#ff4d1a;">0</div></div>
                 </div>
-                <div class="panel">
-                    <div class="panel-header">
-                        <h2><i class="fas fa-clock"></i> Today's Attendance — Time In / Out</h2>
-                        <button class="btn-sm" onclick="exportAttendance()"><i class="fas fa-download"></i> Export</button>
-                    </div>
-                    <div id="dashboardAttendanceTable"></div>
-                </div>
-                <div class="panel">
-                    <div class="panel-header">
-                        <h2><i class="fas fa-exclamation-triangle" style="color:#e74c3c;"></i> Low Stock Items</h2>
-                        <button class="btn-sm" onclick="showAdminSection('store', {target: document.querySelector('[data-section=store]')})">Manage Inventory</button>
-                    </div>
-                    <div class="low-stock-list" id="lowStockList"></div>
-                </div>
+                <div class="panel"><div class="panel-header"><h2><i class="fas fa-clock"></i> Today's Attendance</h2></div><div id="dashboardAttendanceTable"></div></div>
+                <div class="panel"><div class="panel-header"><h2><i class="fas fa-exclamation-triangle" style="color:#ff4d1a;"></i> Low Stock</h2></div><div class="low-stock-list" id="lowStockList"></div></div>
             </div>
 
             <div id="section-membership" class="admin-section hidden">
                 <div class="panel">
-                    <div class="panel-header">
-                        <h2><i class="fas fa-users"></i> Membership Management</h2>
-                        <button class="btn-primary" onclick="openWalkInModal()"><i class="fas fa-plus"></i> Walk-in Reservation</button>
-                    </div>
+                    <div class="panel-header"><h2><i class="fas fa-users"></i> Membership</h2><button class="btn-primary" onclick="openWalkInModal()"><i class="fas fa-plus"></i> Walk-in</button></div>
                     <div class="admin-tabs">
-                        <button class="admin-tab active" data-tab="members" onclick="switchMemberTab('members')">
-                            <i class="fas fa-users"></i> Active Members
-                        </button>
-                        <button class="admin-tab" data-tab="approvals" onclick="switchMemberTab('approvals')">
-                            <i class="fas fa-clock"></i> Pending Applications
-                            <span class="badge" id="approvalsCount">0</span>
-                        </button>
+                        <button class="admin-tab active" data-tab="members" onclick="switchMemberTab('members')">Active Members</button>
+                        <button class="admin-tab" data-tab="approvals" onclick="switchMemberTab('approvals')">Pending <span class="badge" id="approvalsCount">0</span></button>
                     </div>
-                    <div id="tab-members">
-                        <div class="membership-controls">
-                            <div class="search">
-                                <i class="fas fa-search"></i>
-                                <input type="text" id="memberSearch" placeholder="Search members by name..." oninput="renderMembers()">
-                            </div>
-                            <div class="plan-pills" id="planPills">
-                                <span class="pill active" data-plan="all" onclick="filterPlan('all')">All</span>
-                                <span class="pill" data-plan="Monthly" onclick="filterPlan('Monthly')">Monthly</span>
-                                <span class="pill" data-plan="Half Month" onclick="filterPlan('Half Month')">Half Month</span>
-                                <span class="pill" data-plan="Walk-in" onclick="filterPlan('Walk-in')">Walk-in</span>
-                            </div>
-                        </div>
-                        <div id="membersList"></div>
-                    </div>
-                    <div id="tab-approvals" class="hidden">
-                        <p style="font-size:0.85rem; color:#8b95a9; margin-bottom:16px;">
-                            <i class="fas fa-info-circle"></i> New registrations from the public membership form appear here.
-                        </p>
-                        <div id="approvalsList"></div>
-                    </div>
+                    <div id="tab-members"><div id="membersList"></div></div>
+                    <div id="tab-approvals" class="hidden"><div id="approvalsList"></div></div>
                 </div>
             </div>
 
             <div id="section-attendance" class="admin-section hidden">
                 <div class="panel">
-                    <div class="panel-header">
-                        <h2><i class="fas fa-qrcode"></i> QR Code Attendance</h2>
-                        <button class="btn-sm" onclick="simulateQRScan()"><i class="fas fa-camera"></i> Simulate Scan</button>
-                    </div>
-                    <div class="qr-scanner-box" onclick="simulateQRScan()">
-                        <i class="fas fa-camera"></i>
-                        <h3>Tap to Scan QR Code</h3>
-                        <p>Click to simulate scanning a random member's QR code</p>
-                    </div>
-                    <h3 style="font-size:0.95rem; font-weight:600; margin-bottom:12px;">
-                        <i class="fas fa-list" style="color:#ff6b2b;"></i> Today's Attendance Log
-                    </h3>
+                    <div class="panel-header"><h2><i class="fas fa-qrcode"></i> Attendance</h2><button class="btn-sm" onclick="simulateQRScan()"><i class="fas fa-camera"></i> Simulate Scan</button></div>
+                    <div class="qr-scanner-box" onclick="simulateQRScan()"><i class="fas fa-camera"></i><h3>Tap to Scan QR</h3></div>
                     <div id="attendanceLogTable"></div>
                 </div>
             </div>
 
             <div id="section-store" class="admin-section hidden">
                 <div id="storeLocked" class="store-lock">
-                    <i class="fas fa-lock"></i>
-                    <h3>Store &amp; Inventory is Locked</h3>
-                    <p>Enter the security password to manage products, edit prices, and process sales.</p>
-                    <div class="password-input-group">
-                        <input type="password" id="storePasswordInput" placeholder="Enter security password...">
-                        <button class="btn-primary" onclick="unlockStore()"><i class="fas fa-unlock"></i></button>
-                    </div>
-                    <p style="font-size:0.7rem; color:#4d566b; margin-top:12px;">Hint: Try "irongrind2025"</p>
+                    <i class="fas fa-lock"></i><h3>Store Locked</h3>
+                    <div class="password-input-group"><input type="password" id="storePasswordInput" placeholder="Password"><button class="btn-primary" onclick="unlockStore()"><i class="fas fa-unlock"></i></button></div>
                 </div>
                 <div id="storeUnlocked" class="hidden">
                     <div class="panel">
-                        <div class="panel-header">
-                            <h2><i class="fas fa-store"></i> Store &amp; Inventory</h2>
-                            <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                                <button class="btn-sm" onclick="openAddProductModal()"><i class="fas fa-plus"></i> Add Product</button>
-                                <button class="btn-primary" onclick="openNewSaleModal()"><i class="fas fa-cash-register"></i> New Sale / Walk-in</button>
-                            </div>
-                        </div>
-                        <h3 style="font-size:0.9rem; font-weight:600; margin-bottom:12px; color:#8b95a9;">Supplements</h3>
+                        <div class="panel-header"><h2><i class="fas fa-store"></i> Inventory</h2><div style="display:flex; gap:8px;"><button class="btn-sm" onclick="openAddProductModal()">Add Product</button><button class="btn-primary" onclick="openNewSaleModal()">New Sale</button></div></div>
                         <div class="product-grid" id="supplementsGrid"></div>
-                        <h3 style="font-size:0.9rem; font-weight:600; margin:24px 0 12px; color:#8b95a9;">Gym Merchandise</h3>
                         <div class="product-grid" id="merchGrid"></div>
                     </div>
                 </div>
             </div>
 
             <div id="section-sales" class="admin-section hidden">
-                <div class="panel">
-                    <div class="panel-header">
-                        <h2><i class="fas fa-receipt"></i> Sales Transactions</h2>
-                        <button class="btn-primary" onclick="openNewSaleModal()"><i class="fas fa-plus"></i> New Sale</button>
-                    </div>
-                    <div id="salesTable"></div>
-                </div>
+                <div class="panel"><div class="panel-header"><h2><i class="fas fa-receipt"></i> Sales</h2></div><div id="salesTable"></div></div>
             </div>
 
             <div id="section-reports" class="admin-section hidden">
-                <div class="panel">
-                    <div class="panel-header">
-                        <h2><i class="fas fa-chart-bar"></i> Reports</h2>
-                        <button class="btn-sm" onclick="exportAllReports()"><i class="fas fa-download"></i> Export All</button>
-                    </div>
-                    <div class="product-grid" id="reportsGrid"></div>
-                </div>
+                <div class="panel"><div class="panel-header"><h2><i class="fas fa-chart-bar"></i> Reports</h2></div><div class="product-grid" id="reportsGrid"></div></div>
             </div>
         </main>
     </div>
 </div>
-
-<div id="modalOverlay" class="modal-overlay hidden" onclick="if(event.target===this) closeModal()">
-    <div class="modal-content" id="modalContent"></div>
-</div>
+<div id="modalOverlay" class="modal-overlay hidden" onclick="if(event.target===this) closeModal()"><div class="modal-content" id="modalContent"></div></div>
 <div id="toast" class="toast hidden"></div>
-
 <script src="admin.js"></script>
 </body>
 </html>
