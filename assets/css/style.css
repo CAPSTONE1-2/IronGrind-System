@@ -253,6 +253,12 @@ label:has(input[name="wiPlan"]:checked) {
 .developer-credit p { max-width: 420px; margin: 7px auto 0; line-height: 1.5; }
 .login-form-panel { padding: 48px 44px; display: flex; flex-direction: column; justify-content: center; }
 .login-form-header h2 { font-size: 1.8rem; font-weight: 700; margin-bottom: 6px; }
+.login-form-header h2.welcome-heading { position: relative; width: fit-content; margin-bottom: 12px; padding-bottom: 8px; animation: welcome-arrive 0.55s ease-out both; }
+.welcome-heading > span { color: #d31212; }
+.welcome-heading::after { content: ''; position: absolute; left: 0; bottom: 0; width: 38px; height: 3px; border-radius: 4px; background: #d31212; animation: welcome-accent 0.7s 0.12s ease-out both; transform-origin: left; }
+@keyframes welcome-arrive { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes welcome-accent { from { transform: scaleX(0.25); opacity: 0.35; } to { transform: scaleX(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .login-form-header h2.welcome-heading, .welcome-heading::after { animation: none; } }
 .login-form-header p { color: #8b95a9; font-size: 0.9rem; margin-bottom: 28px; }
 .login-role-tabs { display: flex; background: #0d1219; border: 1px solid #1e2533; border-radius: 40px; padding: 5px; margin-bottom: 24px; }
 .login-tab { flex: 1; padding: 12px; border: none; background: transparent; border-radius: 40px; color: #8b95a9; font-weight: 600; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: inherit; }
