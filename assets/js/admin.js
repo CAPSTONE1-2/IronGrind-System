@@ -31,6 +31,11 @@ function addDays(dateStr, days) {
 function formatPeso(n) { return '₱' + Number(n).toLocaleString('en-PH'); }
 function uid(prefix) { return prefix + Math.floor(Math.random() * 9000 + 1000); }
 function initials(name) { return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase(); }
+function escapeHTML(value) {
+    return String(value).replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[char]);
+}
 
 function loadDB(key) {
     try { return JSON.parse(localStorage.getItem('ig_' + key)) || []; }
@@ -222,6 +227,10 @@ function renderApprovals() {
                         <span style="font-size:0.68rem; text-transform:uppercase; color:#6a748b; font-weight:600;">Username</span>
                         <span><code style="color:#ff6b2b;">${p.username}</code></span>
                     </div>
+                    <div style="display:flex; flex-direction:column; gap:4px; font-size:0.82rem;">
+                        <span style="font-size:0.68rem; text-transform:uppercase; color:#6a748b; font-weight:600;">Other Medical Conditions</span>
+                        <span>${p.otherMedicalConditions ? escapeHTML(p.otherMedicalConditions) : 'None reported'}</span>
+                    </div>
                 </div>
             </div>
             ${p.signature ? `<div style="background:#11161f; border-radius:14px; padding:16px; margin-bottom:16px;"><div style="font-size:0.68rem; text-transform:uppercase; color:#6a748b; font-weight:600; margin-bottom:8px;">Digital Signature</div><img src="${p.signature}" alt="${p.fullName}'s digital signature" style="display:block; max-width:100%; width:360px; height:120px; object-fit:contain; background:#fff; border-radius:8px;"></div>` : ''}
@@ -261,6 +270,8 @@ function approveApplication(id) {
         goal: p.goals[0] || 'General Fitness',
         contact: p.mobile,
         username: p.username,
+        healthConditions: p.healthConditions || [],
+        otherMedicalConditions: p.otherMedicalConditions || '',
         signature: p.signature || null,
         qrCode: 'IRONGRIND|' + p.username
     };
