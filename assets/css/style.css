@@ -6,12 +6,17 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
 body { background: #0b0e14; color: #e8edf5; padding: 20px; min-height: 100vh; }
+body.dashboard-body { position: relative; isolation: isolate; }
+body.dashboard-body::before { content: ''; position: fixed; inset: 0; z-index: -1; background: url('../images/iron-grind-logo.jpg') right 4vw bottom 3vh / min(62vw, 68vh, 620px) auto no-repeat; opacity: 0.065; mix-blend-mode: screen; pointer-events: none; }
+body.dashboard-body::after { content: ''; position: fixed; inset: 0; z-index: -1; background: radial-gradient(ellipse at 82% 82%, rgba(211,18,18,0.09), transparent 44%); pointer-events: none; }
 .app { max-width: 1600px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
 
 /* ========== DASHBOARD LOADER ========== */
-#page-loader { position: fixed; inset: 0; z-index: 3000; display: grid; place-items: center; padding: 24px; background: #0b0e14; opacity: 1; visibility: visible; transition: opacity 0.35s ease, visibility 0.35s ease; }
+#page-loader { position: fixed; inset: 0; z-index: 3000; display: grid; place-items: center; overflow: hidden; padding: 24px; background: radial-gradient(ellipse at 50% 48%, rgba(211,18,18,0.15), transparent 42%), #050506; opacity: 1; visibility: visible; transition: opacity 0.45s ease, visibility 0.45s ease; }
+#page-loader::before { content: ''; position: absolute; inset: 0; background: url('../images/iron-grind-logo.jpg') center / min(78vw, 78vh, 620px) no-repeat; opacity: 0.24; mix-blend-mode: screen; filter: saturate(0.85); pointer-events: none; }
+#page-loader::after { content: ''; position: absolute; width: min(75vw, 600px); aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, rgba(211,18,18,0.16), transparent 68%); filter: blur(18px); pointer-events: none; }
 #page-loader.hidden-loader { opacity: 0; visibility: hidden; pointer-events: none; }
-.loader-content { width: min(100%, 220px); text-align: center; }
+.loader-content { position: relative; z-index: 1; width: min(100%, 220px); text-align: center; }
 .loader-mark { display: block; width: 42px; height: 42px; margin: 0 auto 10px; border-radius: 10px; object-fit: cover; background: #000; }
 .loader-brand { color: #e8edf5; font-size: 1.45rem; font-weight: 700; letter-spacing: -0.5px; }
 .loader-brand span { color: #ef2929; }
