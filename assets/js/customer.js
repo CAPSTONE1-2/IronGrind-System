@@ -32,10 +32,17 @@ function loadDB(key) {
 }
 function saveDB(key, data) { localStorage.setItem('ig_' + key, JSON.stringify(data)); }
 
-function saveExpiredMembershipSnapshot(member) {
+function saveExpiredMembershipSnapshot(member, renewed = false) {
     if (!member?.expiry || member.expiry >= todayStr()) return;
     const archives = loadDB('membershipArchives');
-    if (archives.some(record => record.memberId === member.id && record.expiry === member.expiry && record.plan === member.plan)) return;
+    const existing = archives.find(record => record.memberId === member.id && record.expiry === member.expiry && record.plan === member.plan);
+    if (existing) {
+        if (renewed && !existing.renewedAt) {
+            existing.renewedAt = new Date().toISOString();
+            saveDB('membershipArchives', archives);
+        }
+        return;
+    }
     archives.unshift({
         id: `EA-${member.id}-${member.expiry}-${member.plan}`,
         memberId: member.id,
@@ -45,7 +52,8 @@ function saveExpiredMembershipSnapshot(member) {
         startDate: member.startDate || '',
         expiry: member.expiry,
         price: Number(member.planPrice) || 0,
-        archivedAt: new Date().toISOString()
+        archivedAt: new Date().toISOString(),
+        ...(renewed ? { renewedAt: new Date().toISOString() } : {})
     });
     saveDB('membershipArchives', archives);
 }
@@ -570,7 +578,7 @@ function confirmRenew() {
     const members = loadDB('members');
     const idx = members.findIndex(x => x.id === m.id);
     if (idx !== -1) {
-        saveExpiredMembershipSnapshot(members[idx]);
+        saveExpiredMembershipSnapshot(members[idx], true);
         members[idx].plan = plan;
         members[idx].startDate = todayStr();
         members[idx].expiry = expiry;

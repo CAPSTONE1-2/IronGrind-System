@@ -192,18 +192,32 @@ function getPlanPrice(plan, member = null) {
     return 80;
 }
 
+function isPastMembershipArchiveGrace(member) {
+    return Boolean(member?.expiry && member.expiry < todayStr() && todayStr() >= addDays(member.expiry, 10));
+}
+
+function isMembershipArchiveReady(record) {
+    return Boolean(record?.renewedAt || (record?.expiry && todayStr() >= addDays(record.expiry, 10)));
+}
+
 function renderMembers() {
     const searchEl = document.getElementById('memberSearch');
     const query = searchEl ? searchEl.value.toLowerCase() : '';
 
-    let filtered = members.filter(m => {
+    let filtered = members.filter(m => !isPastMembershipArchiveGrace(m)).filter(m => {
         if (currentPlanFilter !== 'all' && m.plan !== currentPlanFilter) return false;
         if (query && !m.name.toLowerCase().includes(query)) return false;
         return true;
     });
 
     const listEl = document.getElementById('membersList');
-    if (filtered.length === 0) { listEl.innerHTML = '<div class="empty-state">No members found.</div>'; return; }
+    if (filtered.length === 0) {
+        const hasArchived = members.some(isPastMembershipArchiveGrace);
+        listEl.innerHTML = hasArchived
+            ? '<div class="empty-state">No members found. Expired memberships beyond the 10-day grace period are in <button class="btn-sm" onclick="viewReport(\'archives\')">Membership Archives</button>.</div>'
+            : '<div class="empty-state">No members found.</div>';
+        return;
+    }
 
     const today = todayStr();
     listEl.innerHTML = filtered.map(m => {
@@ -253,10 +267,10 @@ function renderApprovals() {
                     <div class="member-avatar">${initials(p.fullName)}</div>
                     <div class="member-details">
                         <h4>${p.fullName}</h4>
-                        <p>Applied ${new Date(p.submittedAt).toLocaleString()}</p>
+                        <p><strong>${p.source === 'dashboard-renewal' ? 'Renewal application' : 'New member registration'}</strong> · Applied ${new Date(p.submittedAt).toLocaleString()}</p>
                     </div>
                 </div>
-                <span class="badge-status reserved">Pending</span>
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;"><span class="badge-status reserved">${p.source === 'dashboard-renewal' ? 'Renewal' : 'Registration'}</span><span class="badge-status reserved">Pending</span></div>
             </div>
             <div style="background:#11161f; border-radius:14px; padding:16px; margin-bottom:16px;">
                 <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px;">
@@ -297,7 +311,7 @@ function renderApprovals() {
             ${p.signature ? `<div style="background:#11161f; border-radius:14px; padding:16px; margin-bottom:16px;"><div style="font-size:0.68rem; text-transform:uppercase; color:#6a748b; font-weight:600; margin-bottom:8px;">Member Signature</div><img src="${p.signature}" alt="${p.fullName}'s digital signature" style="display:block; max-width:100%; width:360px; height:120px; object-fit:contain; background:#fff; border-radius:8px;"></div>` : ''}
             <div style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;">
                 <button class="btn-sm" onclick="rejectApplication('${p.id}')"><i class="fas fa-times"></i> Reject</button>
-                <button class="btn-primary" onclick="approveApplication('${p.id}')"><i class="fas fa-check-circle"></i> Approve &amp; Create Account</button>
+                <button class="btn-primary" onclick="approveApplication('${p.id}')"><i class="fas fa-check-circle"></i> ${p.source === 'dashboard-renewal' ? 'Approve Renewal' : 'Approve &amp; Create Account'}</button>
             </div>
         </div>
     `).join('');
@@ -308,7 +322,8 @@ function approveApplication(id) {
     const idx = pendingApprovals.findIndex(x => x.id === id);
     if (idx === -1) return;
     const p = pendingApprovals[idx];
-    askConfirmation('Approve application?', `Approve ${p.fullName}? This will create their account and generate their QR code.`, 'Approve', () => completeApproval(id));
+    const isRenewal = p.source === 'dashboard-renewal';
+    askConfirmation(isRenewal ? 'Approve renewal?' : 'Approve application?', isRenewal ? `Approve ${p.fullName}'s renewal and reactivate the membership?` : `Approve ${p.fullName}? This will create their account and generate their QR code.`, isRenewal ? 'Approve Renewal' : 'Approve', () => completeApproval(id));
 }
 
 function completeApproval(id) {
@@ -321,7 +336,7 @@ function completeApproval(id) {
     if (p.source === 'dashboard-renewal') {
         const member = members.find(item => item.id === p.memberId || item.username?.toLowerCase() === p.username?.toLowerCase());
         if (!member) { toast('Could not find the member for this renewal request.', 'error'); return; }
-        archiveExpiredMembership(member);
+        archiveExpiredMembership(member, true);
         const duration = getPlanDurationDays(p.plan);
         const startDate = todayStr();
         member.plan = p.plan || member.plan;
@@ -750,7 +765,6 @@ function openChangePlanModal(id) {
         <div class="form-group" style="margin-bottom:14px;"><label>New Plan</label><select id="changePlanSelect" onchange="updatePlanChangePrice()">
             <option value="Monthly" data-days="30" data-price="800">Monthly — ₱800 / 30 days</option>
             <option value="Half Month" data-days="15" data-price="400">Half Month — ₱400 / 15 days</option>
-            <option value="Weekly" data-days="7" data-price="">Weekly — set fee / 7 days</option>
             <option value="Walk-in" data-days="1" data-price="80">Walk-in — ₱80 / day</option>
         </select></div>
         <div class="form-group"><label>New Plan Charge (₱)</label><input type="number" id="changePlanPrice" min="0" step="0.01" placeholder="Enter amount"></div>
@@ -792,7 +806,7 @@ function submitMemberPlanChange(encodedId) {
         expiry: member.expiry || null,
         planPrice: Number(member.planPrice || getPlanPrice(member.plan, member)) || 0
     };
-    archiveExpiredMembership(member);
+    archiveExpiredMembership(member, true);
     const archiveRecord = {
         id: 'PA-' + Date.now().toString().slice(-8),
         memberId: member.id,
@@ -842,12 +856,15 @@ function submitMemberPlanChange(encodedId) {
     renderSales();
     renderReports();
     toast(`${member.name}'s plan changed to ${newPlan}. Previous plan archived.`, 'success');
-    showSaleReceipt(saleId);
 }
 
 function renewMember(id) {
     const m = members.find(x => x.id === id);
     if (!m) return;
+    if (m.plan === 'Weekly') {
+        toast('Weekly plans are no longer offered. Use Change Plan to select an available plan.', 'error');
+        return;
+    }
     const days = getPlanDurationDays(m.plan);
     const price = getPlanPrice(m.plan, m);
     askConfirmation('Renew membership?', `Renew ${m.name}'s ${m.plan} membership for ${formatPeso(price)}?`, 'Renew', () => completeMemberRenewal(id), false);
@@ -858,7 +875,7 @@ function completeMemberRenewal(id) {
     if (!m) return;
     const days = getPlanDurationDays(m.plan);
     const price = getPlanPrice(m.plan, m);
-    archiveExpiredMembership(m);
+    archiveExpiredMembership(m, true);
     m.startDate = todayStr();
     m.expiry = addDays(todayStr(), days);
     m.paid = true;
@@ -1318,10 +1335,13 @@ function getMemberActivityStatus(member) {
     return explicitlyInactive || membershipExpired ? 'Inactive' : 'Active';
 }
 
-function archiveExpiredMembership(member) {
+function archiveExpiredMembership(member, renewed = false) {
     if (!member?.expiry || member.expiry >= todayStr()) return;
-    const exists = membershipArchives.some(record => record.memberId === member.id && record.expiry === member.expiry && record.plan === member.plan);
-    if (exists) return;
+    const exists = membershipArchives.find(record => record.memberId === member.id && record.expiry === member.expiry && record.plan === member.plan);
+    if (exists) {
+        if (renewed && !exists.renewedAt) exists.renewedAt = new Date().toISOString();
+        return;
+    }
     membershipArchives.unshift({
         id: `EA-${member.id}-${member.expiry}-${member.plan}`,
         memberId: member.id,
@@ -1331,7 +1351,8 @@ function archiveExpiredMembership(member) {
         startDate: member.startDate || '',
         expiry: member.expiry,
         price: Number(member.planPrice || getPlanPrice(member.plan, member)) || 0,
-        archivedAt: new Date().toISOString()
+        archivedAt: new Date().toISOString(),
+        ...(renewed ? { renewedAt: new Date().toISOString() } : {})
     });
 }
 
@@ -1363,8 +1384,9 @@ function renderReports() {
 function viewReport(type) {
     let body = '';
     if (type === 'membership') {
+        const currentMembers = members.filter(member => !isPastMembershipArchiveGrace(member));
         body = `<table class="attendance-table"><thead><tr><th>Name</th><th>Plan</th><th>Started</th><th>Expires</th></tr></thead><tbody>
-            ${members.map(m => `<tr><td>${m.name}</td><td>${m.plan}</td><td>${m.startDate || '—'}</td><td>${m.expiry}</td></tr>`).join('')}</tbody></table>`;
+            ${currentMembers.map(m => `<tr><td>${m.name}</td><td>${m.plan}</td><td>${m.startDate || '—'}</td><td>${m.expiry}</td></tr>`).join('')}</tbody></table>`;
     } else if (type === 'member-status') {
         const activeMembers = members.filter(member => getMemberActivityStatus(member) === 'Active');
         const inactiveMembers = members.filter(member => getMemberActivityStatus(member) === 'Inactive');
@@ -1376,7 +1398,7 @@ function viewReport(type) {
     } else if (type === 'archives') {
         captureExpiredMemberships();
         const archivedPlans = [...planArchives].sort((a, b) => String(b.changedAt || '').localeCompare(String(a.changedAt || '')));
-        const expiredMembers = [...membershipArchives].sort((a, b) => String(b.expiry || '').localeCompare(String(a.expiry || '')));
+        const expiredMembers = membershipArchives.filter(isMembershipArchiveReady).sort((a, b) => String(b.expiry || '').localeCompare(String(a.expiry || '')));
         const expiredTable = expiredMembers.length
             ? `<table class="attendance-table"><thead><tr><th>Member</th><th>Username</th><th>Plan</th><th>Started</th><th>Expired</th><th>Fee</th></tr></thead><tbody>${expiredMembers.map(record => `<tr><td>${escapeHTML(record.memberName)}</td><td>${escapeHTML(record.username || '—')}</td><td>${escapeHTML(record.plan)}</td><td>${escapeHTML(record.startDate || '—')}</td><td>${escapeHTML(record.expiry)}</td><td>${formatPeso(record.price || 0)}</td></tr>`).join('')}</tbody></table>`
             : '<div class="empty-state">No expired subscriptions have been archived.</div>';
@@ -1419,7 +1441,7 @@ function printReportPDF(type) {
 
     if (type === 'membership') {
         columns = ['Member', 'Plan', 'Started', 'Expires'];
-        rows = members.map(member => ({
+        rows = members.filter(member => !isPastMembershipArchiveGrace(member)).map(member => ({
             cells: [member.name, member.plan, member.startDate || '—', member.expiry || '—'],
             date: member.startDate || member.registeredAt
         }));
@@ -1434,7 +1456,7 @@ function printReportPDF(type) {
         captureExpiredMemberships();
         columns = ['Record Type', 'Member', 'Username', 'Plan', 'Previous Plan', 'New Plan', 'Started', 'Expired', 'New Expiry', 'Fee', 'New Fee', 'Recorded'];
         rows = [
-            ...membershipArchives.map(record => ({
+            ...membershipArchives.filter(isMembershipArchiveReady).map(record => ({
                 cells: ['Expired subscription', record.memberName, record.username || '—', record.plan, '—', '—', record.startDate || '—', record.expiry, '—', formatPeso(record.price || 0), '—', record.expiry],
                 date: record.expiry
             })),
@@ -1588,6 +1610,8 @@ document.addEventListener('DOMContentLoaded', () => {
     pendingApprovals = loadDB('pendingApprovals');
     users = loadDB('users');
     planArchives = loadDB('planArchives');
+    membershipArchives = loadDB('membershipArchives');
+    captureExpiredMemberships();
 
     renderDashboard();
     renderMembers();
@@ -1595,6 +1619,11 @@ document.addEventListener('DOMContentLoaded', () => {
     renderAttendance();
     renderSales();
     renderReports();
+
+    window.setInterval(() => {
+        captureExpiredMemberships();
+        renderMembers();
+    }, 60 * 1000);
 
     const pwInput = document.getElementById('storePasswordInput');
     if (pwInput) pwInput.addEventListener('keydown', e => { if (e.key === 'Enter') unlockStore(); });
