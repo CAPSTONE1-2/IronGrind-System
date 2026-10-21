@@ -796,22 +796,6 @@ function recordMemberCheckIn(member) {
     toast(`${member.name} checked in at ${timeIn}.`, 'success');
 }
 
-function simulateQRScan() {
-    const active = members.filter(m => m.expiry >= todayStr());
-    if (active.length === 0) { toast('No active members.', 'error'); return; }
-    const random = active[Math.floor(Math.random() * active.length)];
-    const today = todayStr();
-    if (attendance.find(a => a.memberId === random.id && a.date === today && !a.timeOut)) {
-        toast(`${random.name} is already inside.`, 'error'); return;
-    }
-    const timeIn = new Date().toTimeString().slice(0, 5);
-    attendance.push({ id: uid('A'), memberId: random.id, memberName: random.name, date: today, timeIn, timeOut: null });
-    saveDB('attendance', attendance);
-    renderAttendance();
-    renderDashboard();
-    toast(`✅ ${random.name} checked in at ${timeIn}.`, 'success');
-}
-
 function checkOut(id) {
     const a = attendance.find(x => x.id === id);
     if (!a) return;
