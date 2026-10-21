@@ -12,6 +12,7 @@ body { background: #0b0e14; color: #e8edf5; padding: 20px; min-height: 100vh; }
 #page-loader { position: fixed; inset: 0; z-index: 3000; display: grid; place-items: center; padding: 24px; background: #0b0e14; opacity: 1; visibility: visible; transition: opacity 0.35s ease, visibility 0.35s ease; }
 #page-loader.hidden-loader { opacity: 0; visibility: hidden; pointer-events: none; }
 .loader-content { width: min(100%, 220px); text-align: center; }
+.loader-mark { display: block; width: 42px; height: 42px; margin: 0 auto 10px; border-radius: 10px; object-fit: cover; background: #000; }
 .loader-brand { color: #e8edf5; font-size: 1.45rem; font-weight: 700; letter-spacing: -0.5px; }
 .loader-brand span { color: #ef2929; }
 .loader-track { height: 2px; margin-top: 16px; overflow: hidden; border-radius: 99px; background: #272d39; }
@@ -23,6 +24,7 @@ body { background: #0b0e14; color: #e8edf5; padding: 20px; min-height: 100vh; }
 .app-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 0 16px; border-bottom: 1px solid #262d3d; flex-wrap: wrap; gap: 12px; }
 .logo-area { display: flex; align-items: center; gap: 12px; }
 .logo-icon { background: #d31212; width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: #0b0e14; }
+.logo-image { display: block; flex: 0 0 auto; object-fit: cover; background: #000; }
 .logo-text h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.5px; }
 .logo-text span { color: #d31212; }
 .logo-text p { font-size: 0.8rem; color: #8b95a9; }
