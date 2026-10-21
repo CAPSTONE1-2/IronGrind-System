@@ -932,3 +932,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const pwInput = document.getElementById('storePasswordInput');
     if (pwInput) pwInput.addEventListener('keydown', e => { if (e.key === 'Enter') unlockStore(); });
 });
+
+window.addEventListener('load', () => {
+    window.setTimeout(() => document.getElementById('page-loader')?.classList.add('hidden-loader'), 300);
+});
