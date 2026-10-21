@@ -9,6 +9,16 @@ body { background: #0b0e14; color: #e8edf5; padding: 20px; min-height: 100vh; }
 body.dashboard-body { position: relative; isolation: isolate; }
 body.dashboard-body::before { content: ''; position: fixed; inset: 0; z-index: -1; background: url('../images/iron-grind-logo.jpg') right 4vw bottom 3vh / min(62vw, 68vh, 620px) auto no-repeat; opacity: 0.065; mix-blend-mode: screen; pointer-events: none; }
 body.dashboard-body::after { content: ''; position: fixed; inset: 0; z-index: -1; background: radial-gradient(ellipse at 82% 82%, rgba(211,18,18,0.09), transparent 44%); pointer-events: none; }
+body.dashboard-body .sidebar,
+body.dashboard-body .stat-card,
+body.dashboard-body .panel,
+body.dashboard-body .membership-form-card,
+body.dashboard-body .store-lock,
+body.dashboard-body .qr-scanner-box { background-color: rgba(17,22,31,0.64); border-color: rgba(190,201,220,0.12); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+body.dashboard-body .customer-hero { background: linear-gradient(135deg, rgba(26,15,8,0.72), rgba(17,22,31,0.64)); border-color: rgba(190,201,220,0.12); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+body.dashboard-body .product-card,
+body.dashboard-body .supplement-card,
+body.dashboard-body .low-stock-item { background-color: rgba(13,18,25,0.64); border-color: rgba(190,201,220,0.1); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
 .app { max-width: 1600px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
 
 /* ========== DASHBOARD LOADER ========== */
