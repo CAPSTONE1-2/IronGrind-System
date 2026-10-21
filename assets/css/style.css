@@ -245,7 +245,12 @@ label:has(input[name="wiPlan"]:checked) {
 .login-brand-content p { font-size: 0.95rem; opacity: 0.9; margin-bottom: 24px; }
 .feature-list { list-style: none; display: flex; flex-direction: column; gap: 12px; }
 .feature-list li { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; font-weight: 500; }
-.login-page-footer { width: 100%; padding: 14px 8px 0; color: #8b95a9; font-size: 0.75rem; text-align: center; }
+.login-page-footer,
+.auth-page-footer { width: 100%; padding: 14px 8px 0; color: #8b95a9; font-size: 0.75rem; text-align: center; }
+.developer-credit { margin: 7px auto 0; color: #697386; font-size: 0.68rem; }
+.developer-credit summary { display: inline-block; cursor: pointer; transition: color 0.2s ease; }
+.developer-credit summary:hover { color: #a4adc2; }
+.developer-credit p { max-width: 420px; margin: 7px auto 0; line-height: 1.5; }
 .login-form-panel { padding: 48px 44px; display: flex; flex-direction: column; justify-content: center; }
 .login-form-header h2 { font-size: 1.8rem; font-weight: 700; margin-bottom: 6px; }
 .login-form-header p { color: #8b95a9; font-size: 0.9rem; margin-bottom: 28px; }
