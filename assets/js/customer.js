@@ -339,14 +339,21 @@ function confirmRenew() {
 }
 
 // ===== MEMBERSHIP FORM (for renewals/updates from dashboard) =====
+const membershipSignature = initDigitalSignature('membershipSignature', 'clearMembershipSignature');
+
 function submitMembershipForm(event) {
     event.preventDefault();
     const name = document.getElementById('mfName').value.trim();
     const contact = document.getElementById('mfContact').value.trim();
-    const planValue = document.getElementById('mfPlan').value;
-    const [plan, planPriceStr] = planValue.split('|');
+    const planInput = document.getElementById('mfPlan');
+    const [plan, planPriceStr] = planInput ? planInput.value.split('|') : ['Renewal', '0'];
     const planPrice = Number(planPriceStr) || 0;
-    const goal = document.getElementById('mfGoal').value;
+    const goal = document.getElementById('mfGoal')?.value || 'General Fitness';
+
+    if (!membershipSignature || membershipSignature.isEmpty()) {
+        toast('Please add your digital signature.', 'error');
+        return;
+    }
 
     if (!name || !contact) { toast('Please fill in all fields.', 'error'); return; }
 
@@ -370,6 +377,7 @@ function submitMembershipForm(event) {
         plan,
         planPrice,
         goals: [goal],
+        signature: membershipSignature.toDataURL(),
         username: session.username,
         submittedAt: new Date().toISOString(),
         status: 'pending',
@@ -379,6 +387,7 @@ function submitMembershipForm(event) {
 
     toast('✅ Form submitted! Awaiting admin approval.', 'success');
     document.getElementById('mfContact').value = '';
+    membershipSignature.clear();
 }
 
 // ===== INIT =====
