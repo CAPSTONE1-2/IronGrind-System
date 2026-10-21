@@ -40,6 +40,20 @@ document.getElementById('regDob').addEventListener('change', function() {
     document.getElementById('regAge').value = age >= 0 ? age : '';
 });
 
+const otherMedicalChoice = document.getElementById('otherMedicalChoice');
+const otherMedicalDetailsGroup = document.getElementById('otherMedicalDetailsGroup');
+const otherMedicalDetailsInput = document.getElementById('otherMedicalDetails');
+
+function updateOtherMedicalDetails() {
+    const hasOtherCondition = otherMedicalChoice.value === 'yes';
+    otherMedicalDetailsGroup.classList.toggle('hidden', !hasOtherCondition);
+    otherMedicalDetailsInput.required = hasOtherCondition;
+    if (!hasOtherCondition) otherMedicalDetailsInput.value = '';
+}
+
+otherMedicalChoice.addEventListener('change', updateOtherMedicalDetails);
+updateOtherMedicalDetails();
+
 function updateDatesFromPlan() {
     const plan = document.querySelector('input[name="regPlan"]:checked');
     if (!plan) return;
@@ -81,11 +95,13 @@ function submitRegistration(event) {
     if (document.getElementById('hcHeart').checked) healthConditions.push('Heart Condition');
     if (document.getElementById('hcAsthma').checked) healthConditions.push('Asthma');
     if (document.getElementById('hcInjury').checked) healthConditions.push('Recent Injury');
+    const otherMedicalConditions = otherMedicalChoice.value === 'yes' ? otherMedicalDetailsInput.value.trim() : '';
 
     const goals = Array.from(document.querySelectorAll('input[name="goal"]:checked')).map(g => g.value);
 
     if (!document.getElementById('agreeRules').checked) { showError('You must agree to the Rules and Agreement.'); return; }
     if (!document.getElementById('agreeWaiver').checked) { showError('You must accept the Liability Waiver.'); return; }
+    if (otherMedicalChoice.value === 'yes' && !otherMedicalConditions) { showError('Please specify your other medical condition details.'); return; }
     if (!registrationSignature || registrationSignature.isEmpty()) { showError('Please add your digital signature.'); return; }
 
     const username = document.getElementById('regUsername').value.trim().toLowerCase();
@@ -113,7 +129,7 @@ function submitRegistration(event) {
         emergencyContact: { name: ecName, relationship: ecRelation, contact: ecContact },
         plan: planName, planPrice: Number(planPrice),
         startDate, endDate,
-        healthConditions, goals,
+        healthConditions, otherMedicalConditions, goals,
         signature: registrationSignature.toDataURL(),
         username, password,
         submittedAt: new Date().toISOString(),
