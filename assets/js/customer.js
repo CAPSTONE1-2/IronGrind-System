@@ -89,42 +89,8 @@ function closeModal() {
     document.getElementById('modalOverlay').classList.add('hidden');
 }
 
-// ===== FIRST-VISIT MEMBER TOUR =====
+// ===== FIRST-VISIT MEMBER WELCOME =====
 let memberTourActive = false;
-let memberTourStep = -1;
-const memberTourSteps = [
-    {
-        icon: 'fa-qrcode',
-        target: '.customer-hero',
-        title: 'Your member QR code',
-        text: 'Use the Show QR Code button when you arrive. Gym staff can scan it to record your visit.'
-    },
-    {
-        icon: 'fa-chart-line',
-        target: '#member-progress',
-        scrollBlock: 'start',
-        title: 'Track your membership',
-        text: 'Check your current plan and how much time is left in your membership here.'
-    },
-    {
-        icon: 'fa-calendar-check',
-        target: '#member-attendance',
-        title: 'Review your visits',
-        text: 'Your attendance history shows the dates and times you have visited the gym.'
-    },
-    {
-        icon: 'fa-id-card',
-        target: '#member-request > summary',
-        title: 'Request a renewal',
-        text: 'Open Membership Registration / Renewal to fill out a request and send it to the gym admin.'
-    },
-    {
-        icon: 'fa-store',
-        target: '#member-store > summary',
-        title: 'Browse the gym store',
-        text: 'Open this section to see supplements and gym merchandise available for purchase in person.'
-    }
-];
 
 function escapeHTML(value) {
     return String(value).replace(/[&<>"']/g, char => ({
@@ -142,136 +108,21 @@ function showMemberWelcome() {
     catch { alreadySeen = true; }
     if (alreadySeen) return;
     memberTourActive = true;
-    memberTourStep = -1;
-    renderMemberTourStep();
-}
-
-function renderMemberTourStep() {
     const firstName = escapeHTML((session?.fullName || session?.username || 'Member').trim().split(/\s+/)[0]);
-    if (memberTourStep < 0) {
-        document.getElementById('memberTourLayer')?.classList.add('hidden');
-        openModal(`<section class="member-onboarding" role="dialog" aria-modal="true" aria-labelledby="memberTourTitle">
-            <div class="onboarding-mark"><i class="fas fa-dumbbell"></i></div>
-            <p class="onboarding-eyebrow">IRON GRIND MEMBER PORTAL</p>
-            <h2 id="memberTourTitle">Welcome, ${firstName}!</h2>
-            <p class="onboarding-copy">Here’s a quick tour to help you get started. It only takes a moment.</p>
-            <div class="onboarding-actions"><button class="btn-sm" onclick="finishMemberTour()">Skip tour</button><button class="btn-primary" onclick="startMemberTour()">Start tour <i class="fas fa-arrow-right"></i></button></div>
-        </section>`);
-        return;
-    }
-
-    const step = memberTourSteps[memberTourStep];
-    const progress = memberTourSteps.map((_, index) => `<span class="${index <= memberTourStep ? 'current' : ''}"></span>`).join('');
-    const isLast = memberTourStep === memberTourSteps.length - 1;
-    document.getElementById('modalOverlay').classList.add('hidden');
-    const layer = document.getElementById('memberTourLayer');
-    const tooltip = document.getElementById('memberTourTooltip');
-    tooltip.innerHTML = `<section class="member-tour-card" role="dialog" aria-modal="false" aria-labelledby="memberTourTitle">
-        <div class="onboarding-progress"><span>STEP ${memberTourStep + 1} OF ${memberTourSteps.length}</span><div>${progress}</div></div>
-        <div class="tour-card-icon"><i class="fas ${step.icon}"></i></div>
-        <h2 id="memberTourTitle">${step.title}</h2>
-        <p class="onboarding-copy">${step.text}</p>
-        <div class="onboarding-actions"><button class="btn-sm" onclick="previousMemberTourStep()"><i class="fas fa-arrow-left"></i> Back</button><button class="btn-primary" onclick="${isLast ? 'finishMemberTour()' : 'nextMemberTourStep()'}">${isLast ? 'Finish' : 'Next'} <i class="fas ${isLast ? 'fa-check' : 'fa-arrow-right'}"></i></button></div>
-        <button class="onboarding-skip" onclick="finishMemberTour()">Skip tour</button>
-    </section>`;
-    layer.classList.remove('hidden');
-    const target = document.querySelector(step.target);
-    target?.scrollIntoView({
-        behavior: step.scrollBlock ? 'auto' : 'smooth',
-        block: step.scrollBlock || 'center',
-        inline: 'nearest'
-    });
-    repositionMemberTour();
-    window.setTimeout(repositionMemberTour, step.scrollBlock ? 0 : 320);
-}
-
-function repositionMemberTour() {
-    if (!memberTourActive || memberTourStep < 0) return;
-    const step = memberTourSteps[memberTourStep];
-    const target = document.querySelector(step.target);
-    const spotlight = document.getElementById('memberTourSpotlight');
-    const tooltip = document.getElementById('memberTourTooltip');
-    if (!target || !spotlight || !tooltip) return;
-
-    const rect = target.getBoundingClientRect();
-    const pad = 7;
-    spotlight.style.left = `${Math.max(4, rect.left - pad)}px`;
-    spotlight.style.top = `${Math.max(4, rect.top - pad)}px`;
-    spotlight.style.width = `${Math.min(window.innerWidth - 8, rect.width + pad * 2)}px`;
-    spotlight.style.height = `${Math.min(window.innerHeight - 8, rect.height + pad * 2)}px`;
-
-    const tipRect = tooltip.getBoundingClientRect();
-    const margin = 16;
-    const gap = 16;
-    const rightSpace = window.innerWidth - rect.right - margin;
-    const leftSpace = rect.left - margin;
-    let left;
-    let top;
-
-    // Keep the membership progress card unobstructed. That step scrolls the
-    // tracker near the top; on desktop, use the open space to its right.
-    if (step.scrollBlock === 'start') {
-        if (window.innerWidth >= 900 && rightSpace >= tipRect.width + gap) {
-            left = rect.right + gap;
-            top = Math.max(margin, Math.min(rect.top + rect.height / 2 - tipRect.height / 2, window.innerHeight - tipRect.height - margin));
-        } else {
-            left = Math.max(margin, Math.min(rect.left + rect.width / 2 - tipRect.width / 2, window.innerWidth - tipRect.width - margin));
-            top = rect.bottom + gap;
-        }
-        tooltip.style.left = `${left}px`;
-        tooltip.style.top = `${top}px`;
-        return;
-    }
-
-    if (rightSpace >= tipRect.width + gap) {
-        left = rect.right + gap;
-        top = Math.max(margin, Math.min(rect.top + rect.height / 2 - tipRect.height / 2, window.innerHeight - tipRect.height - margin));
-    } else if (leftSpace >= tipRect.width + gap) {
-        left = rect.left - tipRect.width - gap;
-        top = Math.max(margin, Math.min(rect.top + rect.height / 2 - tipRect.height / 2, window.innerHeight - tipRect.height - margin));
-    } else {
-        left = Math.max(margin, Math.min(rect.left + rect.width / 2 - tipRect.width / 2, window.innerWidth - tipRect.width - margin));
-        const below = rect.bottom + gap;
-        const above = rect.top - tipRect.height - gap;
-        if (below + tipRect.height <= window.innerHeight - margin) top = below;
-        else if (above >= margin) top = above;
-        else top = Math.max(margin, Math.min(rect.top + rect.height / 2 - tipRect.height / 2, window.innerHeight - tipRect.height - margin));
-    }
-    tooltip.style.left = `${left}px`;
-    tooltip.style.top = `${top}px`;
-}
-
-function startMemberTour() {
-    memberTourStep = 0;
-    renderMemberTourStep();
-}
-
-function nextMemberTourStep() {
-    if (memberTourStep < 0) return startMemberTour();
-    if (memberTourStep >= memberTourSteps.length - 1) return finishMemberTour();
-    memberTourStep += 1;
-    renderMemberTourStep();
-}
-
-function previousMemberTourStep() {
-    if (memberTourStep <= 0) {
-        memberTourStep = -1;
-        document.getElementById('memberTourLayer')?.classList.add('hidden');
-    } else {
-        memberTourStep -= 1;
-    }
-    renderMemberTourStep();
+    openModal(`<section class="member-onboarding" role="dialog" aria-modal="true" aria-labelledby="memberTourTitle">
+        <div class="onboarding-mark"><i class="fas fa-dumbbell"></i></div>
+        <p class="onboarding-eyebrow">IRON GRIND MEMBER PORTAL</p>
+        <h2 id="memberTourTitle">Welcome, ${firstName}!</h2>
+        <p class="onboarding-copy">Use your QR code at the gym, check your membership and visits, and send a renewal request here.</p>
+        <div class="onboarding-actions"><button class="btn-primary" onclick="finishMemberTour()">Got it</button></div>
+    </section>`);
 }
 
 function finishMemberTour() {
     memberTourActive = false;
     try { localStorage.setItem(memberTourStorageKey(), 'true'); } catch {}
     document.getElementById('modalOverlay').classList.add('hidden');
-    document.getElementById('memberTourLayer')?.classList.add('hidden');
 }
-
-window.addEventListener('resize', repositionMemberTour);
-window.addEventListener('scroll', repositionMemberTour, true);
 
 function printQRCode() {
     document.body.classList.add('print-qr-only');
@@ -607,9 +458,7 @@ function confirmRenew() {
     toast(`✅ Membership renewed until ${expiry}.`, 'success');
 }
 
-// ===== MEMBERSHIP FORM (for renewals/updates from dashboard) =====
-const membershipSignature = initDigitalSignature('membershipSignature', 'clearMembershipSignature');
-
+// ===== MEMBERSHIP RENEWAL REQUEST =====
 function submitMembershipForm(event) {
     event.preventDefault();
     const name = document.getElementById('mfName').value.trim();
@@ -617,13 +466,6 @@ function submitMembershipForm(event) {
     const planInput = document.getElementById('mfPlan');
     const [plan, planPriceStr] = planInput ? planInput.value.split('|') : ['Renewal', '0'];
     const planPrice = Number(planPriceStr) || 0;
-    const goal = document.getElementById('mfGoal')?.value || 'General Fitness';
-
-    if (!membershipSignature || membershipSignature.isEmpty()) {
-        toast('Please add your digital signature.', 'error');
-        return;
-    }
-
     if (!name || !contact) { toast('Please fill in all fields.', 'error'); return; }
 
     if (!/^[0-9]+$/.test(contact)) {
@@ -645,8 +487,6 @@ function submitMembershipForm(event) {
         mobile: contact,
         plan,
         planPrice,
-        goals: [goal],
-        signature: membershipSignature.toDataURL(),
         username: session.username,
         memberId: getCurrentMember()?.id || null,
         submittedAt: new Date().toISOString(),
@@ -655,9 +495,8 @@ function submitMembershipForm(event) {
     });
     saveDB('pendingApprovals', pending);
 
-    toast('✅ Form submitted! Awaiting admin approval.', 'success');
+    toast('✅ Renewal request submitted! Awaiting admin approval.', 'success');
     document.getElementById('mfContact').value = '';
-    membershipSignature.clear();
 }
 
 // ===== INIT =====

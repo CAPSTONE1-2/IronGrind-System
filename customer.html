@@ -50,30 +50,18 @@
         <div class="member-tools-grid">
         <!-- MEMBERSHIP REGISTRATION / RENEWAL -->
         <details class="membership-form-card member-collapsible" id="member-request">
-            <summary class="member-collapse-summary"><span><i class="fas fa-id-card"></i> Membership Registration / Renewal</span><i class="fas fa-chevron-down collapse-chevron" aria-hidden="true"></i></summary>
+            <summary class="member-collapse-summary"><span><i class="fas fa-id-card"></i> Membership Renewal</span><i class="fas fa-chevron-down collapse-chevron" aria-hidden="true"></i></summary>
             <div class="member-collapse-content">
             <form id="membershipForm" onsubmit="submitMembershipForm(event)">
                 <div class="form-row">
                     <div class="form-group"><label for="mfName">Full Name</label><input type="text" id="mfName" placeholder="Juan Dela Cruz" required></div>
                     <div class="form-group"><label for="mfContact">Contact Number</label><input type="tel" id="mfContact" placeholder="0917 123 4567" required></div>
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="mfPlan">Membership Plan</label>
-                        <select id="mfPlan"><option value="Monthly|800">Monthly — ₱800</option><option value="Half Month|400">Half Month — ₱400</option><option value="Walk-in|80">Walk-in — ₱80</option></select>
-                    </div>
-                    <div class="form-group">
-                        <label for="mfGoal">Fitness Goal</label>
-                        <select id="mfGoal"><option>Weight Loss</option><option>Muscle Gain</option><option>Strength</option><option>General Fitness</option></select>
-                    </div>
-                </div>
                 <div class="form-group">
-                    <label for="membershipSignature">Digital Signature *</label>
-                    <p class="signature-help">Sign below to confirm this membership request.</p>
-                    <div class="signature-surface"><canvas id="membershipSignature" class="signature-canvas" aria-label="Member signature"></canvas></div>
-                    <div class="signature-actions"><small>A signature is required before submitting.</small><button type="button" class="btn-sm" id="clearMembershipSignature"><i class="fas fa-eraser"></i> Clear</button></div>
+                    <label for="mfPlan">Membership Plan</label>
+                    <select id="mfPlan"><option value="Monthly|800">Monthly — ₱800</option><option value="Half Month|400">Half Month — ₱400</option><option value="Walk-in|80">Walk-in — ₱80</option></select>
                 </div>
-                <button type="submit" class="btn-submit"><i class="fas fa-paper-plane"></i> Submit Membership Form</button>
+                <button type="submit" class="btn-submit"><i class="fas fa-paper-plane"></i> Submit Renewal Request</button>
             </form>
             </div>
         </details>
@@ -100,13 +88,7 @@
 </div>
 
 <div id="modalOverlay" class="modal-overlay hidden" onclick="if(event.target===this) closeModal()"><div class="modal-content" id="modalContent"></div></div>
-<div id="memberTourLayer" class="member-tour-layer hidden" aria-live="polite">
-    <div class="member-tour-shield" aria-hidden="true"></div>
-    <div id="memberTourSpotlight" class="member-tour-spotlight" aria-hidden="true"></div>
-    <div id="memberTourTooltip" class="member-tour-tooltip"></div>
-</div>
 <div id="toast" class="toast hidden"></div>
-<script src="assets/js/signature.js"></script>
 <script src="assets/js/customer.js"></script>
 </body>
 </html>
