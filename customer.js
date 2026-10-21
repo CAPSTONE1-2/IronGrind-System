@@ -426,3 +426,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderMyReservations();
     }
 });
+
+window.addEventListener('load', () => {
+    window.setTimeout(() => document.getElementById('page-loader')?.classList.add('hidden-loader'), 300);
+});
