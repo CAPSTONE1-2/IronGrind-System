@@ -27,6 +27,10 @@ let currentMemberTab = 'members';
 let currentApprovalType = 'registration';
 let activeQRScanner = null;
 let qrScanHandled = false;
+let adminRealtimeChannel = null;
+let realtimeRefreshTimer = null;
+let realtimeRefreshBusy = false;
+let realtimeRefreshPending = false;
 
 /* ========== HELPERS ========== */
 function localDateStr(date = new Date()) {
@@ -51,6 +55,11 @@ function formatAttendanceClock(value) {
     const period = hour >= 12 ? 'PM' : 'AM';
     hour = hour % 12 || 12;
     return `${hour}:${minute} ${period}`;
+}
+function manilaClock(date = new Date()) {
+    return new Intl.DateTimeFormat('en-PH', {
+        timeZone: 'Asia/Manila', hour: '2-digit', minute: '2-digit', hour12: false
+    }).format(date);
 }
 function uid(prefix) { return prefix + Math.floor(Math.random() * 9000 + 1000); }
 function nextSaleReceiptId() {
@@ -877,11 +886,13 @@ async function loadSupabaseMembershipData() {
     renderApprovals();
 }
 
-async function loadSupabaseOperationalData() {
+async function loadSupabaseOperationalData(options = {}) {
     const client = window.ironGrindSupabase;
     if (!client) return;
-    const { error: archiveError } = await client.rpc('admin_capture_expired_memberships');
-    if (archiveError) console.error('Could not archive expired memberships:', archiveError);
+    if (options.captureExpiry !== false) {
+        const { error: archiveError } = await client.rpc('admin_capture_expired_memberships');
+        if (archiveError) console.error('Could not archive expired memberships:', archiveError);
+    }
     const [productsResult, salesResult, attendanceResult, renewalsResult, historyResult] = await Promise.all([
         client.from('products').select('*').order('name'),
         client.from('sales')
@@ -960,6 +971,53 @@ async function loadSupabaseOperationalData() {
     renderDashboard();
     renderReports();
     renderWalkinSalesReport();
+}
+
+function scheduleAdminRealtimeRefresh(refreshMemberships) {
+    if (refreshMemberships) realtimeRefreshPending = true;
+    clearTimeout(realtimeRefreshTimer);
+    realtimeRefreshTimer = setTimeout(async () => {
+        if (realtimeRefreshBusy) {
+            realtimeRefreshPending = true;
+            return;
+        }
+        realtimeRefreshBusy = true;
+        try {
+            do {
+                const includeMemberships = realtimeRefreshPending || refreshMemberships;
+                realtimeRefreshPending = false;
+                if (includeMemberships) await loadSupabaseMembershipData();
+                await loadSupabaseOperationalData({ captureExpiry: false });
+                refreshMemberships = false;
+            } while (realtimeRefreshPending);
+        } finally {
+            realtimeRefreshBusy = false;
+        }
+    }, 300);
+}
+
+function subscribeAdminRealtimeUpdates() {
+    const client = window.ironGrindSupabase;
+    if (!client || adminRealtimeChannel) return;
+
+    adminRealtimeChannel = client.channel('admin-live-application-and-attendance-updates')
+        .on('postgres_changes', {
+            event: '*', schema: 'public', table: 'membership_applications'
+        }, payload => {
+            console.info('Membership application changed in Supabase:', payload.eventType);
+            scheduleAdminRealtimeRefresh(true);
+        })
+        .on('postgres_changes', {
+            event: '*', schema: 'public', table: 'attendance'
+        }, payload => {
+            console.info('Attendance changed in Supabase:', payload.eventType);
+            scheduleAdminRealtimeRefresh(false);
+        })
+        .subscribe(status => {
+            if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                console.error(`Supabase Realtime subscription status: ${status}`);
+            }
+        });
 }
 
 function rejectApplication(id) {
@@ -1659,7 +1717,7 @@ async function recordMemberAttendanceScan(member) {
     }
     const today = todayStr();
     const now = new Date();
-    const timeIn = now.toTimeString().slice(0, 5);
+    const timeIn = manilaClock(now);
     if (window.ironGrindSupabase) {
         if (!isUUID(member.id)) {
             toast('This member is not linked to a Supabase member record, so attendance was not saved.', 'error');
@@ -1691,11 +1749,15 @@ async function checkOut(id) {
         const { data, error } = await window.ironGrindSupabase.from('attendance')
             .update({ time_out: now.toISOString() }).eq('id', id).is('time_out', null).select('id').maybeSingle();
         if (error) { toast(`Could not save check-out: ${error.message}`, 'error'); return; }
-        if (!data) { toast('This visit was already checked out. Refresh attendance to see the latest record.', 'error'); return; }
+        if (!data) {
+            await loadSupabaseOperationalData({ captureExpiry: false });
+            toast('This visit was already checked out. Attendance has been updated.', 'error');
+            return;
+        }
     } else {
         saveDB('attendance', attendance);
     }
-    a.timeOut = now.toTimeString().slice(0, 5);
+    a.timeOut = manilaClock(now);
     renderAttendance();
     renderDashboard();
     toast(`${a.memberName} checked out at ${formatAttendanceClock(a.timeOut)}.`, 'success');
@@ -2633,6 +2695,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderAttendance();
     renderSales();
     renderReports();
+    subscribeAdminRealtimeUpdates();
     loadSupabaseMembershipData().then(loadSupabaseOperationalData);
 
     window.setInterval(() => {

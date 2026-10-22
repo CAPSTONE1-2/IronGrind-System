@@ -7,6 +7,7 @@ let session;
 let supabaseMember = null;
 let supabaseAttendance = null;
 let supabaseProducts = null;
+let customerAttendanceChannel = null;
 (function guardCustomer() {
     session = JSON.parse(
         localStorage.getItem('irongrind_session') ||
@@ -920,6 +921,20 @@ async function loadSupabaseMember() {
         })
         .subscribe();
 
+    if (customerAttendanceChannel) client.removeChannel(customerAttendanceChannel);
+    customerAttendanceChannel = client.channel(`customer-attendance-${row.id}`)
+        .on('postgres_changes', {
+            event: '*',
+            schema: 'public',
+            table: 'attendance',
+            filter: `member_id=eq.${row.id}`
+        }, () => refreshCustomerAttendance(row.id))
+        .subscribe(status => {
+            if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                console.error(`Customer attendance Realtime status: ${status}`);
+            }
+        });
+
     const [attendanceResult, productsResult] = await Promise.all([
         client.from('attendance').select('*').eq('member_id', row.id).order('time_in', { ascending: false }),
         client.from('products').select('*').eq('is_active', true).order('name')
@@ -927,19 +942,8 @@ async function loadSupabaseMember() {
     if (attendanceResult.error) {
         console.error('Could not load member attendance from Supabase:', attendanceResult.error);
     } else {
-        supabaseAttendance = attendanceResult.data.map(record => {
-            const start = new Date(record.time_in);
-            const end = record.time_out ? new Date(record.time_out) : null;
-            const localDate = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-            const localTime = date => `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-            return {
-                id: record.id,
-                memberId: record.member_id,
-                date: localDate(start),
-                timeIn: localTime(start),
-                timeOut: end ? localTime(end) : null
-            };
-        });
+        supabaseAttendance = attendanceResult.data.map(mapCustomerAttendanceRecord);
+        renderAttendanceHistory();
     }
     if (productsResult.error) {
         console.error('Could not load products from Supabase:', productsResult.error);
@@ -954,6 +958,34 @@ async function loadSupabaseMember() {
             image: product.image_path || ''
         }));
     }
+}
+
+function mapCustomerAttendanceRecord(record) {
+    const start = new Date(record.time_in);
+    const end = record.time_out ? new Date(record.time_out) : null;
+    const localTime = date => new Intl.DateTimeFormat('en-PH', {
+        timeZone: 'Asia/Manila', hour: '2-digit', minute: '2-digit', hour12: false
+    }).format(date);
+    return {
+        id: record.id,
+        memberId: record.member_id,
+        date: localDateStr(start),
+        timeIn: localTime(start),
+        timeOut: end ? localTime(end) : null
+    };
+}
+
+async function refreshCustomerAttendance(memberId) {
+    const client = window.ironGrindSupabase;
+    if (!client) return;
+    const { data, error } = await client.from('attendance').select('*')
+        .eq('member_id', memberId).order('time_in', { ascending: false });
+    if (error) {
+        console.error('Could not refresh attendance from Supabase Realtime:', error);
+        return;
+    }
+    supabaseAttendance = data.map(mapCustomerAttendanceRecord);
+    renderAttendanceHistory();
 }
 
 window.addEventListener('load', () => {
