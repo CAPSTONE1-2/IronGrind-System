@@ -115,7 +115,7 @@ Deno.serve(async (request) => {
   if (saveError) {
     const { error: cleanupError } = await adminClient.auth.admin.deleteUser(userId);
     const cleanupMessage = cleanupError
-      ? ` The Auth account could not be removed automatically (${cleanupError.message}); delete it from Authentication → Users if needed.`
+      ? ` The Auth account could not be removed automatically (${cleanupError.message}); delete it from Auth > Users if needed.`
       : '';
     return response({ error: `${saveError.message}${cleanupMessage}` }, 400);
   }
