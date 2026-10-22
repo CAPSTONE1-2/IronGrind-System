@@ -92,6 +92,73 @@ begin
 end;
 $$;
 
+-- Protect sales data even when these tables existed before the base schema ran.
+alter table public.sales enable row level security;
+alter table public.sale_items enable row level security;
+
+revoke all on public.sales, public.sale_items from anon, authenticated;
+grant select, insert, update, delete on public.sales, public.sale_items to authenticated;
+
+do $$
+begin
+    if not exists (
+        select 1 from pg_catalog.pg_policies
+        where schemaname = 'public' and tablename = 'sales'
+          and policyname = 'sales_read_member_or_admin'
+    ) then
+        create policy "sales_read_member_or_admin" on public.sales
+            for select to authenticated
+            using (
+                (select private.is_admin())
+                or exists (
+                    select 1 from public.members m
+                    where m.id = member_id and m.auth_user_id = (select auth.uid())
+                )
+            );
+    end if;
+
+    if not exists (
+        select 1 from pg_catalog.pg_policies
+        where schemaname = 'public' and tablename = 'sales'
+          and policyname = 'sales_admin_manage'
+    ) then
+        create policy "sales_admin_manage" on public.sales
+            for all to authenticated
+            using ((select private.is_admin()))
+            with check ((select private.is_admin()));
+    end if;
+
+    if not exists (
+        select 1 from pg_catalog.pg_policies
+        where schemaname = 'public' and tablename = 'sale_items'
+          and policyname = 'sale_items_read_member_or_admin'
+    ) then
+        create policy "sale_items_read_member_or_admin" on public.sale_items
+            for select to authenticated
+            using (
+                (select private.is_admin())
+                or exists (
+                    select 1
+                    from public.sales s
+                    join public.members m on m.id = s.member_id
+                    where s.id = sale_id and m.auth_user_id = (select auth.uid())
+                )
+            );
+    end if;
+
+    if not exists (
+        select 1 from pg_catalog.pg_policies
+        where schemaname = 'public' and tablename = 'sale_items'
+          and policyname = 'sale_items_admin_manage'
+    ) then
+        create policy "sale_items_admin_manage" on public.sale_items
+            for all to authenticated
+            using ((select private.is_admin()))
+            with check ((select private.is_admin()));
+    end if;
+end;
+$$;
+
 do $$
 begin
     -- Preserve a legacy receipt value if the earlier table used a different name.
