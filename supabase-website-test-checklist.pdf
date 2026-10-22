@@ -1,0 +1,199 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [6 0 R 8 0 R 10 0 R] /Count 3 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>
+endobj
+5 0 obj
+<< /Length 5064 >>
+stream
+BT /F1 19 Tf 0.12 0.13 0.15 rg 48 750 Td (SUPABASE + WEBSITE TEST CHECKLIST) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 727 Td (Iron Grind Fitness Gym | Step-by-step verification guide) Tj ET
+BT /F1 13 Tf 0.12 0.13 0.15 rg 48 709.5 Td (Before you begin) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 692.5 Td (Use a test account and test data where possible. Run SQL in Supabase Dashboard > SQL Editor.) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 681 Td (These checks are mostly read-only; the expired-member demo insert is called out separately. Keep) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 669.5 Td (the browser Developer Tools Console and Network tabs available when testing.) Tj ET
+BT /F1 13 Tf 0.12 0.13 0.15 rg 48 652 Td (1. Confirm the expected tables exist) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 635 Td (Run this query. Confirm the app tables appear, especially profiles, members,) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 623.5 Td (membership_applications, attendance, products, sales, sale_items, and membership_history.) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 606 Td (select table_name) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 596 Td (from information_schema.tables) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 586 Td (where table_schema = 'public') Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 576 Td (  and table_type = 'BASE TABLE') Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 566 Td (order by table_name;) Tj ET
+BT /F1 13 Tf 0.12 0.13 0.15 rg 48 550 Td (2. Inspect expected columns) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 533 Td (This helps diagnose errors such as a missing column in the Supabase schema cache.) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 515.5 Td (select table_name, column_name, data_type, is_nullable) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 505.5 Td (from information_schema.columns) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 495.5 Td (where table_schema = 'public') Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 485.5 Td (  and table_name in \() Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 475.5 Td (    'profiles', 'members', 'membership_applications', 'attendance',) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 465.5 Td (    'products', 'sales', 'sale_items', 'membership_history') Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 455.5 Td (  \)) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 445.5 Td (order by table_name, ordinal_position;) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 429.5 Td (If a column exists here but the website says it cannot find the column, refresh PostgREST's) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 418 Td (schema cache:) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 400.5 Td (notify pgrst, 'reload schema';) Tj ET
+BT /F1 13 Tf 0.12 0.13 0.15 rg 48 383 Td (3. Check row-level security and policies) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 366 Td (RLS should be enabled on tables exposed to website clients. Policies determine what signed-in) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 354.5 Td (members and admins can read or change.) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 337 Td (select c.relname as table_name, c.relrowsecurity as rls_enabled) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 327 Td (from pg_class c) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 317 Td (join pg_namespace n on n.oid = c.relnamespace) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 307 Td (where n.nspname = 'public' and c.relkind = 'r') Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 297 Td (order by c.relname;) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 281 Td (List the policies:) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 263.5 Td (select tablename, policyname, cmd, roles, qual, with_check) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 253.5 Td (from pg_policies) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 243.5 Td (where schemaname = 'public') Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 233.5 Td (order by tablename, policyname;) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 217.5 Td (An empty result from a data query may simply mean there are no rows visible to the current role.) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 206 Td (SQL Editor access can differ from website access.) Tj ET
+BT /F1 13 Tf 0.12 0.13 0.15 rg 48 188.5 Td (4. Check constraints and indexes) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 171.5 Td (Use these when inserts fail with unique, foreign-key, or check-constraint errors.) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 154 Td (select tablename, indexname, indexdef) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 144 Td (from pg_indexes) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 134 Td (where schemaname = 'public') Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 124 Td (order by tablename, indexname;) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 108 Td (select table_name, constraint_name, constraint_type) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 98 Td (from information_schema.table_constraints) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 88 Td (where table_schema = 'public') Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 78 Td (order by table_name, constraint_name;) Tj ET
+BT /F1 8 Tf 0.42 0.42 0.42 rg 48 30 Td (Iron Grind Fitness Gym | Supabase verification guide) Tj ET
+BT /F1 8 Tf 0.42 0.42 0.42 rg 520 30 Td (Page 1 of 3) Tj ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 5 0 R >>
+endobj
+7 0 obj
+<< /Length 5390 >>
+stream
+BT /F1 13 Tf 0.12 0.13 0.15 rg 48 750 Td (5. Verify Realtime publication) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 733 Td (For live pending application and attendance updates, confirm these tables appear in the) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 721.5 Td (publication result.) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 704 Td (select schemaname, tablename) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 694 Td (from pg_publication_tables) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 684 Td (where pubname = 'supabase_realtime') Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 674 Td (order by schemaname, tablename;) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 658 Td (Look for public.membership_applications and public.attendance.) Tj ET
+BT /F1 13 Tf 0.12 0.13 0.15 rg 48 640.5 Td (6. Check current records) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 623.5 Td (These counts show whether data has reached each table. Zero can be expected before that feature) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 612 Td (has been used.) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 594.5 Td (select count\(*\) as profiles from public.profiles;) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 584.5 Td (select count\(*\) as members from public.members;) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 574.5 Td (select count\(*\) as applications from public.membership_applications;) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 564.5 Td (select count\(*\) as pending_applications from public.membership_applications where status = 'pending';) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 554.5 Td (select count\(*\) as attendance from public.attendance;) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 544.5 Td (select count\(*\) as products from public.products;) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 534.5 Td (select count\(*\) as sales from public.sales;) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 524.5 Td (select count\(*\) as sale_items from public.sale_items;) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 514.5 Td (select count\(*\) as membership_history from public.membership_history;) Tj ET
+BT /F1 13 Tf 0.12 0.13 0.15 rg 48 498.5 Td (7. Inspect recent rows) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 481.5 Td (Recent applications:) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 464 Td (select id, application_type, email, status, submitted_at) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 454 Td (from public.membership_applications) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 444 Td (order by submitted_at desc limit 20;) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 428 Td (Recent attendance:) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 410.5 Td (select id, member_id, time_in, time_out, recorded_by) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 400.5 Td (from public.attendance order by time_in desc limit 20;) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 384.5 Td (Recent sales:) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 367 Td (select id, receipt_number, customer_type, customer_name, total, status, sold_at) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 357 Td (from public.sales order by sold_at desc limit 20;) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 341 Td (Recent membership history:) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 323.5 Td (select id, member_id, event_type, previous_expiry_date, new_expiry_date, recorded_at) Tj ET
+BT /F2 8 Tf 0.18 0.22 0.27 rg 48 313.5 Td (from public.membership_history order by recorded_at desc limit 20;) Tj ET
+BT /F1 13 Tf 0.12 0.13 0.15 rg 48 297.5 Td (WEBSITE TEST FLOW) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 280.5 Td (Follow this order so a failure is easier to isolate.) Tj ET
+BT /F1 13 Tf 0.12 0.13 0.15 rg 48 263 Td (A. Login and connectivity) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 246 Td (1. Open the website and sign in as an admin. Confirm the dashboard loads without an error.) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 234.5 Td (2. Sign in separately as a member and confirm their profile or membership loads.) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 223 Td (3. If something fails, open browser Developer Tools \(F12\), then inspect Console and Network.) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 211.5 Td (Record the exact failed request and error.) Tj ET
+BT /F1 13 Tf 0.12 0.13 0.15 rg 48 194 Td (B. New registration and approval) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 177 Td (1. Submit a registration using a unique test email.) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 165.5 Td (2. Confirm the site reports that the application was submitted.) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 154 Td (3. Run the recent applications query. Confirm a registration row is pending.) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 142.5 Td (4. In the admin dashboard, confirm it appears under Pending Applications. If practical, check) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 131 Td (whether another already-open admin tab updates without refresh.) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 119.5 Td (5. Approve it. Confirm the application status changes and a member record is created.) Tj ET
+BT /F1 13 Tf 0.12 0.13 0.15 rg 48 102 Td (C. Membership renewal) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 85 Td (1. Use a member whose expiry date is within the allowed five-day renewal window.) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 73.5 Td (2. Submit a renewal request from that member account.) Tj ET
+BT /F1 8 Tf 0.42 0.42 0.42 rg 48 30 Td (Iron Grind Fitness Gym | Supabase verification guide) Tj ET
+BT /F1 8 Tf 0.42 0.42 0.42 rg 520 30 Td (Page 2 of 3) Tj ET
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 7 0 R >>
+endobj
+9 0 obj
+<< /Length 3951 >>
+stream
+BT /F1 13 Tf 0.12 0.13 0.15 rg 48 750 Td (D. QR attendance check-in and check-out) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 733 Td (1. Open the member QR code and scan it using the staff attendance screen.) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 721.5 Td (2. Confirm a row is created in attendance with time_out empty.) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 710 Td (3. Scan the same member again to check out. Confirm that row now has time_out filled.) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 698.5 Td (4. Check the admin attendance page and the member attendance view. If both are open, verify) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 687 Td (updates appear without refreshing.) Tj ET
+BT /F1 13 Tf 0.12 0.13 0.15 rg 48 669.5 Td (E. Expired membership archive) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 652.5 Td (1. Use only a safe test database. Run supabase/demo_expired_member.sql once in SQL Editor to add) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 641 Td (the clearly labeled expired fixture.) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 629.5 Td (2. Open or reload the admin dashboard so its archive process runs.) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 618 Td (3. In Reports, check Archives. Also inspect recent membership_history rows.) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 606.5 Td (4. The demo member is test data and remains in the system under the archive-only workflow. Do) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 595 Td (not delete it directly if the app is designed to archive records.) Tj ET
+BT /F1 13 Tf 0.12 0.13 0.15 rg 48 577.5 Td (F. Inventory and sales) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 560.5 Td (1. Add a clearly labeled test product in the admin inventory page. Confirm it appears in the) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 549 Td (product list and public.products.) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 537.5 Td (2. Record a small test sale. Confirm a sales row and related sale_items rows appear and the sale) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 526 Td (is in Reports.) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 514.5 Td (3. For merchandise, confirm stock decreases. Supplements are sold by gram and do not use stock) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 503 Td (counts.) Tj ET
+BT /F1 13 Tf 0.12 0.13 0.15 rg 48 485.5 Td (When a step fails) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 468.5 Td (Write down the step, exact on-screen error, and any relevant browser Network response. Compare) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 457 Td (with the SQL checks above.) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 445.5 Td (- Missing column / schema cache: inspect columns, then reload schema cache.) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 434 Td (- Permission denied / empty website data: inspect RLS policies and test with the right) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 422.5 Td (account.) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 411 Td (- Check constraint: compare the app value to the constraint definition.) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 399.5 Td (- No row in database: confirm the website request succeeded and targeted the expected Supabase) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 388 Td (project.) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 376.5 Td (- Live update missing: check publication membership and the browser console.) Tj ET
+BT /F1 13 Tf 0.12 0.13 0.15 rg 48 359 Td (Safety note) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 342 Td (Do not run schema migrations or data-changing demo SQL against production unless you intend to) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 330.5 Td (change that project. The table, column, policy, index, constraint, Realtime, and recent-row) Tj ET
+BT /F1 9.5 Tf 0.12 0.13 0.15 rg 48 319 Td (queries above are read-only; demo_expired_member.sql inserts a test member.) Tj ET
+BT /F1 8 Tf 0.42 0.42 0.42 rg 48 30 Td (Iron Grind Fitness Gym | Supabase verification guide) Tj ET
+BT /F1 8 Tf 0.42 0.42 0.42 rg 520 30 Td (Page 3 of 3) Tj ET
+endstream
+endobj
+10 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 9 0 R >>
+endobj
+xref
+0 11
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000134 00000 n 
+0000000204 00000 n 
+0000000272 00000 n 
+0000005387 00000 n 
+0000005523 00000 n 
+0000010964 00000 n 
+0000011100 00000 n 
+0000015102 00000 n 
+trailer
+<< /Size 11 /Root 1 0 R >>
+startxref
+15239
+%%EOF
