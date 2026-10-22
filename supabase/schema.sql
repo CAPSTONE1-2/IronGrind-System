@@ -47,6 +47,19 @@ create table if not exists public.members (
 alter table public.members
     add column if not exists auth_user_id uuid references auth.users (id) on delete set null;
 
+-- Older setup used `user_id`; preserve its links when adopting the current name.
+do $$
+begin
+    if exists (
+        select 1 from information_schema.columns
+        where table_schema = 'public' and table_name = 'members' and column_name = 'user_id'
+    ) then
+        execute 'update public.members set auth_user_id = user_id '
+            || 'where auth_user_id is null and user_id is not null';
+    end if;
+end;
+$$;
+
 create table if not exists public.membership_applications (
     id uuid primary key default gen_random_uuid(),
     auth_user_id uuid not null references auth.users (id) on delete cascade,
@@ -76,6 +89,39 @@ create table if not exists public.membership_applications (
     reviewed_at timestamptz,
     reviewed_by uuid references auth.users (id) on delete set null
 );
+
+-- The existing Supabase project may already have the earlier table shape.
+-- Add columns referenced by the current policies and indexes, preserving rows.
+alter table public.membership_applications
+    add column if not exists auth_user_id uuid references auth.users (id) on delete cascade,
+    add column if not exists member_id uuid references public.members (id) on delete set null,
+    add column if not exists application_type text not null default 'registration'
+        check (application_type in ('registration', 'renewal')),
+    add column if not exists submitted_at timestamptz not null default now(),
+    add column if not exists email text,
+    add column if not exists username text;
+
+-- Earlier tables called the auth link `user_id` and the submission time `created_at`.
+do $$
+begin
+    if exists (
+        select 1 from information_schema.columns
+        where table_schema = 'public' and table_name = 'membership_applications'
+          and column_name = 'user_id'
+    ) then
+        execute 'update public.membership_applications set auth_user_id = user_id '
+            || 'where auth_user_id is null and user_id is not null';
+    end if;
+    if exists (
+        select 1 from information_schema.columns
+        where table_schema = 'public' and table_name = 'membership_applications'
+          and column_name = 'created_at'
+    ) then
+        execute 'update public.membership_applications set submitted_at = created_at '
+            || 'where created_at is not null and submitted_at is distinct from created_at';
+    end if;
+end;
+$$;
 
 create table if not exists public.attendance (
     id uuid primary key default gen_random_uuid(),
