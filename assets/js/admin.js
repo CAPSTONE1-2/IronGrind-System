@@ -727,7 +727,7 @@ async function completeSupabaseRenewalApproval(application) {
         return;
     }
 
-    await loadSupabaseMembersAndApplications();
+    await loadSupabaseMembershipData();
     await loadSupabaseOperationalData();
     toast(`${memberRow.full_name}'s renewal was approved and saved to Supabase.`, 'success');
 }

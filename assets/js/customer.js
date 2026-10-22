@@ -29,6 +29,7 @@ function addDays(dateStr, days) {
     return d.toISOString().slice(0, 10);
 }
 function formatPeso(n) { return '₱' + Number(n).toLocaleString('en-PH'); }
+function isUUID(value) { return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || '')); }
 function loadDB(key) {
     try { return JSON.parse(localStorage.getItem('ig_' + key)) || []; }
     catch { return []; }
@@ -481,7 +482,11 @@ async function submitMembershipForm(event) {
     }
 
     const client = window.ironGrindSupabase;
-    if (client) {
+    if (!client) {
+        toast('Renewal not submitted: the connection to Supabase did not load. Refresh the page and try again.', 'error');
+        return;
+    }
+    {
         const { data: { user }, error: authError } = await client.auth.getUser();
         const member = getCurrentMember();
         if (authError || !user || !member || !isUUID(member.id)) {
@@ -550,25 +555,6 @@ async function submitMembershipForm(event) {
         toast('Renewal request submitted to the admin for approval.', 'success');
         return;
     }
-
-    // Push to pending approvals
-    const pending = loadDB('pendingApprovals');
-    pending.push({
-        id: 'APP' + Date.now(),
-        fullName: name,
-        mobile: contact,
-        plan,
-        planPrice,
-        username: session.username,
-        memberId: getCurrentMember()?.id || null,
-        submittedAt: new Date().toISOString(),
-        status: 'pending',
-        source: 'dashboard-renewal'
-    });
-    saveDB('pendingApprovals', pending);
-
-    toast('✅ Renewal request submitted! Awaiting admin approval.', 'success');
-    document.getElementById('mfContact').value = '';
 }
 
 // ===== INIT =====
