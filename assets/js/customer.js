@@ -84,6 +84,14 @@ function toast(msg, type = '') {
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => el.classList.add('hidden'), 3000);
 }
+function renewalFormMessage(message, type = '') {
+    const status = document.getElementById('renewalFormStatus');
+    if (status) {
+        status.textContent = message;
+        status.style.color = type === 'error' ? '#ff7777' : type === 'success' ? '#69d899' : '#b8c0cc';
+    }
+    if (message) toast(message, type);
+}
 function openModal(html) {
     document.getElementById('modalContent').innerHTML = html;
     document.getElementById('modalOverlay').classList.remove('hidden');
@@ -476,6 +484,7 @@ async function submitMembershipForm(event) {
         submitButton.disabled = true;
         submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
     }
+    renewalFormMessage('', '');
     try {
     const name = document.getElementById('mfName').value.trim();
     const contactInput = document.getElementById('mfContact');
@@ -483,26 +492,32 @@ async function submitMembershipForm(event) {
     const planInput = document.getElementById('mfPlan');
     const [plan, planPriceStr] = planInput ? planInput.value.split('|') : ['Renewal', '0'];
     const planPrice = Number(planPriceStr) || 0;
-    if (!name || !contact) { toast('Please fill in all fields.', 'error'); return; }
+    if (!name || !contact) { renewalFormMessage('Please fill in all fields.', 'error'); return; }
 
     if (!/^09\d{9}$/.test(contact)) {
-        toast('Enter a valid PH mobile number (e.g. 09171234567).', 'error');
+        renewalFormMessage('Enter a valid PH mobile number (e.g. 09171234567).', 'error');
         contactInput.classList.add('input-error');
         return;
     }
 
     const client = window.ironGrindSupabase;
     if (!client) {
-        toast('Renewal not submitted: the connection to Supabase did not load. Refresh the page and try again.', 'error');
+        renewalFormMessage('Renewal not submitted: the connection to Supabase did not load. Refresh the page and try again.', 'error');
         return;
     }
-    {
-        const { data: { user }, error: authError } = await client.auth.getUser();
-        const member = getCurrentMember();
-        if (authError || !user || !member || !isUUID(member.id)) {
-            toast('Your Supabase membership session could not be verified. Sign in again or contact the gym admin.', 'error');
-            return;
-        }
+    const { data: authData, error: authError } = await client.auth.getUser();
+    const user = authData?.user;
+    if (authError || !user) {
+        renewalFormMessage('Your Supabase session could not be verified. Sign in again, then retry.', 'error');
+        return;
+    }
+
+    if (!supabaseMember) await loadSupabaseMember();
+    const member = supabaseMember;
+    if (!member || !isUUID(member.id) || member.authUserId !== user.id) {
+        renewalFormMessage('No Supabase member record is linked to this login. Contact the gym admin.', 'error');
+        return;
+    }
 
         const { data: existing, error: lookupError } = await client
             .from('membership_applications')
@@ -513,11 +528,11 @@ async function submitMembershipForm(event) {
             .limit(1)
             .maybeSingle();
         if (lookupError) {
-            toast(`Could not check existing renewal requests: ${lookupError.message}`, 'error');
+            renewalFormMessage(`Could not check existing renewal requests: ${lookupError.message}`, 'error');
             return;
         }
         if (existing) {
-            toast('You already have a renewal request waiting for admin approval.', 'error');
+            renewalFormMessage('You already have a renewal request waiting for admin approval.', 'error');
             return;
         }
 
@@ -557,17 +572,16 @@ async function submitMembershipForm(event) {
         });
         if (insertError) {
             console.error('Supabase renewal request failed:', insertError);
-            toast(`Could not submit renewal request: ${insertError.message}`, 'error');
+            renewalFormMessage(`Could not submit renewal request: ${insertError.message}`, 'error');
             return;
         }
 
         document.getElementById('mfContact').value = '';
-        toast('Renewal request submitted to the admin for approval.', 'success');
+        renewalFormMessage('Renewal request submitted to the admin for approval.', 'success');
         return;
-    }
     } catch (error) {
         console.error('Unexpected renewal submission error:', error);
-        toast(`Renewal could not be submitted: ${error?.message || 'Please refresh and try again.'}`, 'error');
+        renewalFormMessage(`Renewal could not be submitted: ${error?.message || 'Please refresh and try again.'}`, 'error');
     } finally {
         if (submitButton) {
             submitButton.disabled = false;
@@ -578,6 +592,7 @@ async function submitMembershipForm(event) {
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('membershipForm')?.addEventListener('submit', submitMembershipForm);
     loadSupabaseMember().finally(() => {
     updateMemberStatus();
     renderMembershipProgress();

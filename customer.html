@@ -52,7 +52,7 @@
         <details class="membership-form-card member-collapsible" id="member-request">
             <summary class="member-collapse-summary"><span><i class="fas fa-id-card"></i> Membership Renewal</span><i class="fas fa-chevron-down collapse-chevron" aria-hidden="true"></i></summary>
             <div class="member-collapse-content">
-            <form id="membershipForm" onsubmit="submitMembershipForm(event)">
+            <form id="membershipForm">
                 <div class="form-row">
                     <div class="form-group"><label for="mfName">Full Name</label><input type="text" id="mfName" placeholder="Juan Dela Cruz" required></div>
                     <div class="form-group"><label for="mfContact">Contact Number</label><input type="tel" id="mfContact" placeholder="0917 123 4567" required></div>
@@ -62,6 +62,7 @@
                     <select id="mfPlan"><option value="Monthly|800">Monthly — ₱800</option><option value="Half Month|400">Half Month — ₱400</option><option value="Walk-in|80">Walk-in — ₱80</option></select>
                 </div>
                 <button type="submit" class="btn-submit"><i class="fas fa-paper-plane"></i> Submit Renewal Request</button>
+                <p id="renewalFormStatus" role="status" aria-live="polite" style="min-height:1.25em; margin:10px 0 0; font-size:13px;"></p>
             </form>
             </div>
         </details>
