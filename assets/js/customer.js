@@ -425,6 +425,10 @@ function showQRCode() {
 
 // ===== RENEW MEMBERSHIP =====
 function renewMembership() {
+    if (window.ironGrindSupabase) {
+        toast('Renewals must be submitted as a request for admin approval.', 'error');
+        return;
+    }
     openModal(`
         <h3><i class="fas fa-sync-alt"></i> Renew Membership</h3>
         <p class="modal-sub">Choose a plan to renew your membership.</p>
@@ -446,6 +450,11 @@ function renewMembership() {
 }
 
 function confirmRenew() {
+    if (window.ironGrindSupabase) {
+        closeModal();
+        toast('Renewals must be submitted as a request for admin approval.', 'error');
+        return;
+    }
     const m = getCurrentMember();
     if (!m) {
         toast('No membership record found. Please contact admin.', 'error');

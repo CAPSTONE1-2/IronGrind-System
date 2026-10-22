@@ -602,6 +602,16 @@ async function completeSupabaseRegistrationApproval(application) {
         memberRow = inserted.data;
     }
 
+    const registrationReceipt = `IG-REG-${String(appRow.id).slice(0, 8).toUpperCase()}`;
+    const { error: receiptError } = await supabaseClient.rpc('admin_record_registration_sale', {
+        p_member_id: memberRow.id,
+        p_receipt_number: registrationReceipt
+    });
+    if (receiptError) {
+        toast(`Member is saved, but the registration payment could not be recorded: ${receiptError.message}`, 'error');
+        return;
+    }
+
     const updated = await supabaseClient.from('membership_applications').update({
         status: 'approved',
         reviewed_at: new Date().toISOString(),
@@ -855,13 +865,16 @@ async function loadSupabaseMembershipData() {
 async function loadSupabaseOperationalData() {
     const client = window.ironGrindSupabase;
     if (!client) return;
-    const [productsResult, salesResult, attendanceResult, renewalsResult] = await Promise.all([
+    const { error: archiveError } = await client.rpc('admin_capture_expired_memberships');
+    if (archiveError) console.error('Could not archive expired memberships:', archiveError);
+    const [productsResult, salesResult, attendanceResult, renewalsResult, historyResult] = await Promise.all([
         client.from('products').select('*').order('name'),
         client.from('sales').select('*, sale_items(*)').order('sold_at', { ascending: false }),
         client.from('attendance').select('*, members(full_name)').order('time_in', { ascending: false }),
         client.from('membership_applications').select('*')
             .eq('application_type', 'renewal').eq('status', 'approved')
-            .order('reviewed_at', { ascending: false })
+            .order('reviewed_at', { ascending: false }),
+        client.from('membership_history').select('*').order('recorded_at', { ascending: false })
     ]);
 
     if (productsResult.error) {
@@ -890,6 +903,39 @@ async function loadSupabaseOperationalData() {
         toast(`Could not load approved renewals for the report: ${renewalsResult.error.message}`, 'error');
     } else {
         approvedRenewalApplications = renewalsResult.data.map(mapApprovedRenewalApplication);
+    }
+    if (historyResult.error) {
+        console.error('Could not load membership history:', historyResult.error);
+        toast(`Could not load membership archives from Supabase: ${historyResult.error.message}`, 'error');
+    } else {
+        const remoteHistory = historyResult.data.map(row => {
+            const member = members.find(item => String(item.id) === String(row.member_id));
+            return {
+                id: row.id,
+                memberId: row.member_id,
+                memberName: member?.name || 'Member',
+                username: member?.username || '',
+                plan: row.previous_plan || row.new_plan || '—',
+                startDate: row.previous_start_date || '',
+                expiry: row.previous_expiry_date || '',
+                price: Number(row.previous_price) || 0,
+                archivedAt: row.recorded_at,
+                renewedAt: row.notes?.includes('Archived when renewed') ? row.recorded_at : null,
+                eventType: row.event_type,
+                previousPlan: row.previous_plan,
+                previousStartDate: row.previous_start_date,
+                previousExpiry: row.previous_expiry_date,
+                previousPrice: Number(row.previous_price) || 0,
+                newPlan: row.new_plan,
+                newStartDate: row.new_start_date,
+                newExpiry: row.new_expiry_date,
+                newPrice: Number(row.new_price) || 0,
+                changedAt: row.recorded_at,
+                changedBy: row.event_type
+            };
+        });
+        membershipArchives = remoteHistory.filter(row => row.eventType === 'expired');
+        planArchives = remoteHistory.filter(row => row.eventType === 'plan_change');
     }
     renderStore();
     renderSales();
@@ -1103,7 +1149,7 @@ function clearSignature() {
     if (signaturePad) signaturePad.clear();
 }
 
-function submitNewMember() {
+async function submitNewMember() {
     // ---- Personal ----
     const name = document.getElementById('wiName').value.trim();
     const dob = document.getElementById('wiDob').value;
@@ -1168,6 +1214,33 @@ function submitNewMember() {
         return;
     }
     const signatureData = signaturePad.toDataURL('image/png');
+
+    if (window.ironGrindSupabase) {
+        const { data: authData, error: authError } = await window.ironGrindSupabase.auth.getUser();
+        if (authError || !authData.user) { toast('Your Supabase session expired. Please sign in again.', 'error'); return; }
+        const { error } = await window.ironGrindSupabase.functions.invoke('admin-create-member', {
+            body: {
+                email, username, password, fullName: name, mobile: contact,
+                dateOfBirth: dob, age, sex, height, heightUnit: height ? 'cm' : null,
+                weight, emergencyName: ecName, emergencyRelationship: ecRelation, emergencyContact: ecContact,
+                plan, planPrice: Number(price), startDate,
+                expiryDate: endDate || addDays(startDate, days), fitnessGoals: goals,
+                healthConditions, otherMedicalConditions: '',
+                signatureData
+            }
+        });
+        if (error) {
+            const details = error.context?.json ? await error.context.json().catch(() => null) : null;
+            toast(`Could not create member in Supabase: ${details?.error || error.message}. Deploy the admin-create-member Edge Function and run the membership operations migration.`, 'error');
+            return;
+        }
+        signaturePad = null;
+        closeModal();
+        await loadSupabaseMembershipData();
+        await loadSupabaseOperationalData();
+        toast(`${name} was registered in Supabase and their membership payment was recorded.`, 'success');
+        return;
+    }
 
     // ---- Create Member ----
     const memberId = uid('M');
@@ -1245,7 +1318,7 @@ function updatePlanChangePrice() {
     priceInput.readOnly = Boolean(selectedPrice);
 }
 
-function submitMemberPlanChange(encodedId) {
+async function submitMemberPlanChange(encodedId) {
     const id = decodeURIComponent(encodedId);
     const member = members.find(item => String(item.id) === id);
     const select = document.getElementById('changePlanSelect');
@@ -1263,6 +1336,27 @@ function submitMemberPlanChange(encodedId) {
     const changedAt = new Date().toISOString();
     const nextStartDate = todayStr();
     const nextExpiry = addDays(nextStartDate, duration);
+    if (window.ironGrindSupabase) {
+        if (!isUUID(member.id)) { toast('This member is not linked to a Supabase member record.', 'error'); return; }
+        const receiptNumber = `IG-PC-${crypto.randomUUID().toUpperCase()}`;
+        const { error } = await window.ironGrindSupabase.rpc('admin_record_membership_change', {
+            p_member_id: member.id,
+            p_event_type: 'plan_change',
+            p_new_plan: newPlan,
+            p_new_price: price,
+            p_new_start_date: nextStartDate,
+            p_new_expiry_date: nextExpiry,
+            p_customer_name: member.name,
+            p_mobile: member.contact || null,
+            p_receipt_number: receiptNumber
+        });
+        if (error) { toast(`Could not save plan change to Supabase: ${error.message}`, 'error'); return; }
+        closeModal();
+        await loadSupabaseMembershipData();
+        await loadSupabaseOperationalData();
+        toast(`${member.name}'s plan changed to ${newPlan}. Previous plan archived.`, 'success');
+        return;
+    }
     const previous = {
         plan: member.plan || '—',
         startDate: member.startDate || null,
@@ -1341,7 +1435,7 @@ function renewMember(id) {
     `);
 }
 
-function completeMemberRenewal(id) {
+async function completeMemberRenewal(id) {
     const member = members.find(item => item.id === id);
     if (!member) return;
     const name = document.getElementById('crName').value.trim();
@@ -1354,6 +1448,28 @@ function completeMemberRenewal(id) {
     const changedAt = new Date().toISOString();
     const startDate = todayStr();
     const expiry = addDays(startDate, getPlanDurationDays(plan));
+    if (window.ironGrindSupabase) {
+        if (!isUUID(member.id)) { toast('This member is not linked to a Supabase member record.', 'error'); return; }
+        const receiptNumber = `IG-CR-${crypto.randomUUID().toUpperCase()}`;
+        const { error } = await window.ironGrindSupabase.rpc('admin_record_membership_change', {
+            p_member_id: member.id,
+            p_event_type: 'renewal',
+            p_new_plan: plan,
+            p_new_price: price,
+            p_new_start_date: startDate,
+            p_new_expiry_date: expiry,
+            p_customer_name: name,
+            p_mobile: contact,
+            p_receipt_number: receiptNumber
+        });
+        if (error) { toast(`Could not save renewal to Supabase: ${error.message}`, 'error'); return; }
+        closeModal();
+        await loadSupabaseMembershipData();
+        await loadSupabaseOperationalData();
+        toast(`${name}'s membership renewed until ${expiry}.`, 'success');
+        showSaleReceipt(receiptNumber);
+        return;
+    }
     const previous = {
         plan: member.plan || '—', startDate: member.startDate || null, expiry: member.expiry || null,
         planPrice: Number(member.planPrice || getPlanPrice(member.plan, member)) || 0
@@ -2108,6 +2224,7 @@ function archiveExpiredMembership(member, renewed = false) {
 }
 
 function captureExpiredMemberships() {
+    if (window.ironGrindSupabase) return;
     const before = membershipArchives.length;
     members.forEach(archiveExpiredMembership);
     if (membershipArchives.length !== before) saveDB('membershipArchives', membershipArchives);
@@ -2137,18 +2254,19 @@ function isRenewalSale(sale) {
     return ['counter-renewal', 'dashboard-renewal', 'member-portal-renewal'].includes(sale.source)
         || /^IG-R-/i.test(String(sale.id || ''))
         || /\brenewal\b/i.test(sale.items || '')
-        || sale.lineItems?.some(item => item.category === 'Membership' || /\brenewal\b/i.test(item.name || ''));
+        || sale.lineItems?.some(item => /\brenewal\b/i.test(item.name || ''));
 }
 
 function getRenewalChannel(sale) {
     if (sale.source === 'counter-renewal') return 'Counter';
+    if (/^IG-CR-/i.test(String(sale.id || ''))) return 'Counter';
     if (sale.source === 'dashboard-renewal' || /^IG-R-/i.test(String(sale.id || ''))) return 'Member portal approval';
     if (sale.source === 'member-portal-renewal') return 'Member portal';
     return 'Previously recorded';
 }
 
 function getRenewalPlan(sale) {
-    const text = sale.items || sale.lineItems?.[0]?.name || '';
+    const text = sale.lineItems?.[0]?.name || sale.items || '';
     const recordedPlan = text.replace(/\s+membership\s+renewal$/i, '').replace(/\s+renewal$/i, '');
     if (recordedPlan) return recordedPlan;
     const member = members.find(item => String(item.id) === String(sale.memberId));

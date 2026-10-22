@@ -1,4 +1,6 @@
 {
+    "deno.enable": true,
+    "deno.enablePaths": ["./supabase/functions"],
     "vscode-autoGit.enabled": true,
     "vscode-autoGit.syncAfterCommit": false,
     "vscode-autoGit.syncOnStartup": false,

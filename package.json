@@ -9,5 +9,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js"
+  },
+  "devDependencies": {
+    "supabase": "^2.121.0"
   }
 }
