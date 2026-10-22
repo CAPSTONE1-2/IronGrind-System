@@ -1,5 +1,3 @@
-const ADMIN_USER = { username: 'admin', password: 'irongrind2025' };
-
 function loadUsers() {
     try {
         const users = JSON.parse(localStorage.getItem('ig_users') || '[]');
@@ -35,7 +33,7 @@ function closeForgotPassword() {
     document.getElementById('forgotPasswordModal').classList.add('hidden');
 }
 
-function handleLogin(event) {
+async function handleLogin(event) {
     event.preventDefault();
     hideError();
 
@@ -47,28 +45,71 @@ function handleLogin(event) {
         return;
     }
 
-    let session;
-    if (email === ADMIN_USER.username && password === ADMIN_USER.password) {
-        session = { role: 'admin', username: ADMIN_USER.username, fullName: 'Administrator', loginTime: new Date().toISOString() };
-    } else {
-        const user = loadUsers().find(item => item.email?.toLowerCase() === email && item.password === password);
-        if (user) {
-            session = { role: 'customer', username: user.username, fullName: user.fullName || user.username || email, loginTime: new Date().toISOString() };
-        } else {
-            let pending = [];
-            try {
-                const saved = JSON.parse(localStorage.getItem('ig_pendingApprovals') || '[]');
-                if (Array.isArray(saved)) pending = saved;
-            } catch {
-                // Ignore malformed pending data and show the normal login error.
+    const submitButton = document.querySelector('#loginForm button[type="submit"]');
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in…';
+
+    try {
+        const supabaseClient = window.ironGrindSupabase;
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+        if (!error && data.user) {
+            const { data: profile, error: profileError } = await supabaseClient
+                .from('profiles')
+                .select('role, username, full_name')
+                .eq('id', data.user.id)
+                .single();
+
+            if (profileError || !profile) {
+                await supabaseClient.auth.signOut();
+                showError('Your account profile could not be loaded. Please contact the gym admin.');
+                return;
             }
-            showError(pending.some(item => item.email?.toLowerCase() === email)
-                ? 'Your application is still pending approval.'
-                : 'Invalid email or password.');
+
+            const role = profile.role === 'admin' ? 'admin' : 'customer';
+            const session = {
+                role,
+                username: profile.username || data.user.email,
+                fullName: profile.full_name || data.user.email,
+                loginTime: new Date().toISOString()
+            };
+            saveLoginSession(session, remember);
             return;
         }
-    }
 
+        // Existing member accounts still use the current localStorage flow
+        // until member registration and records are migrated to Supabase.
+        const user = loadUsers().find(item => item.email?.toLowerCase() === email && item.password === password);
+        if (user) {
+            saveLoginSession({
+                role: 'customer',
+                username: user.username,
+                fullName: user.fullName || user.username || email,
+                loginTime: new Date().toISOString()
+            }, remember);
+            return;
+        }
+
+        let pending = [];
+        try {
+            const saved = JSON.parse(localStorage.getItem('ig_pendingApprovals') || '[]');
+            if (Array.isArray(saved)) pending = saved;
+        } catch {
+            // Ignore malformed pending data and show the normal login error.
+        }
+        showError(pending.some(item => item.email?.toLowerCase() === email)
+            ? 'Your application is still pending approval.'
+            : 'Invalid email or password.');
+    } catch (error) {
+        console.error('Login failed:', error);
+        showError('Unable to connect to the login service. Please try again.');
+    } finally {
+        submitButton.disabled = false;
+        submitButton.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
+    }
+}
+
+function saveLoginSession(session, remember) {
     localStorage.removeItem('irongrind_session');
     sessionStorage.removeItem('irongrind_session');
     (remember ? localStorage : sessionStorage).setItem('irongrind_session', JSON.stringify(session));
