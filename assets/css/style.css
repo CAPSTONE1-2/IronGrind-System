@@ -373,6 +373,15 @@ label:has(input[name="wiPlan"]:checked) {
 .member-collapsible:not([open]) > .member-collapse-summary { margin-bottom: 0; }
 .member-store-title { align-items: flex-start !important; flex-direction: column; gap: 5px !important; }
 .member-store-title .stat-sub { margin: 0; }
+.settings-section-title { margin: 22px 0 14px; padding-bottom: 9px; border-bottom: 1px solid rgba(190,201,220,0.12); font-size: 0.92rem; font-weight: 600; }
+.settings-height-input { display: grid; grid-template-columns: minmax(0, 1fr) 105px; gap: 8px; }
+.settings-choice-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; margin: 14px 0; }
+.settings-choice-list label { display: flex; align-items: center; gap: 9px; min-width: 0; color: #c5cbd8; font-size: 0.82rem; }
+.settings-choice-list input { accent-color: #d31212; }
+.settings-health-list { padding-top: 14px; border-top: 1px solid rgba(190,201,220,0.1); }
+.settings-credential-form { margin-top: 26px; padding-top: 4px; border-top: 1px solid rgba(190,201,220,0.14); }
+.settings-form-status { min-height: 1.25em; margin: 10px 0 0; font-size: 13px; }
+.settings-credential-form .form-group { margin-bottom: 14px; }
 .member-collapsible > .panel-header { margin-bottom: 0; }
 .member-collapsible > summary:focus-visible { outline: 2px solid #d31212; outline-offset: 4px; border-radius: 8px; }
 

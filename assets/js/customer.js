@@ -594,14 +594,36 @@ async function submitMemberSettings(event) {
     settingsFormMessage('');
     try {
         const fullName = document.getElementById('settingsFullName').value.trim();
-        const mobileInput = document.getElementById('settingsMobile');
-        const mobile = mobileInput.value.replace(/\D/g, '');
+        const dob = document.getElementById('settingsDob').value;
+        const mobile = document.getElementById('settingsMobile').value.replace(/\D/g, '');
+        const emergencyMobile = document.getElementById('settingsEmergencyMobile').value.replace(/\D/g, '');
+        const heightValue = document.getElementById('settingsHeight').value;
+        const weightValue = document.getElementById('settingsWeight').value;
+        const otherMedicalChoice = document.getElementById('settingsOtherMedicalChoice').checked;
+        const otherMedicalConditions = otherMedicalChoice ? document.getElementById('settingsOtherMedical').value.trim() : '';
         if (!fullName) {
             settingsFormMessage('Enter your full name.', 'error');
             return;
         }
+        if (!dob || dob > todayStr()) {
+            settingsFormMessage('Enter a valid date of birth that is not in the future.', 'error');
+            return;
+        }
         if (mobile && !/^09\d{9}$/.test(mobile)) {
             settingsFormMessage('Enter a valid PH mobile number (e.g. 09171234567), or leave it blank.', 'error');
+            return;
+        }
+        if (emergencyMobile && !/^09\d{9}$/.test(emergencyMobile)) {
+            settingsFormMessage('Enter a valid emergency contact number, or leave it blank.', 'error');
+            return;
+        }
+        if ((heightValue && (!Number.isFinite(Number(heightValue)) || Number(heightValue) <= 0)) ||
+            (weightValue && (!Number.isFinite(Number(weightValue)) || Number(weightValue) <= 0))) {
+            settingsFormMessage('Height and weight must be greater than zero.', 'error');
+            return;
+        }
+        if (otherMedicalChoice && !otherMedicalConditions) {
+            settingsFormMessage('Describe the other medical condition or clear the checkbox.', 'error');
             return;
         }
 
@@ -615,9 +637,25 @@ async function submitMemberSettings(event) {
             settingsFormMessage('Your session could not be verified. Sign in again, then retry.', 'error');
             return;
         }
-        const { error } = await client.rpc('update_own_member_profile', {
-            p_full_name: fullName,
-            p_mobile: mobile || null
+        const profile = {
+            full_name: fullName,
+            mobile: mobile || null,
+            date_of_birth: dob,
+            sex: document.getElementById('settingsSex').value,
+            height: heightValue ? Number(heightValue) : null,
+            height_unit: document.getElementById('settingsHeightUnit').value,
+            weight_kg: weightValue ? Number(weightValue) : null,
+            emergency_contact: {
+                name: document.getElementById('settingsEmergencyName').value.trim(),
+                relationship: document.getElementById('settingsEmergencyRelationship').value.trim(),
+                contact: emergencyMobile || ''
+            },
+            fitness_goals: [...document.querySelectorAll('input[name="settingsGoal"]:checked')].map(input => input.value),
+            health_conditions: [...document.querySelectorAll('input[name="settingsHealth"]:checked')].map(input => input.value),
+            other_medical_conditions: otherMedicalConditions
+        };
+        const { error } = await client.rpc('update_own_member_personal_info', {
+            p_profile: profile
         });
         if (error) {
             settingsFormMessage(`Could not save your information: ${error.message}`, 'error');
@@ -627,6 +665,15 @@ async function submitMemberSettings(event) {
         if (supabaseMember) {
             supabaseMember.name = fullName;
             supabaseMember.contact = mobile || null;
+            supabaseMember.dateOfBirth = dob;
+            supabaseMember.sex = profile.sex;
+            supabaseMember.height = profile.height;
+            supabaseMember.heightUnit = profile.height_unit;
+            supabaseMember.weight = profile.weight_kg;
+            supabaseMember.emergencyContact = profile.emergency_contact;
+            supabaseMember.fitnessGoals = profile.fitness_goals;
+            supabaseMember.healthConditions = profile.health_conditions;
+            supabaseMember.otherMedicalConditions = profile.other_medical_conditions;
         }
         session.fullName = fullName;
         const sessionStorageArea = localStorage.getItem('irongrind_session') ? localStorage : sessionStorage;
@@ -634,6 +681,7 @@ async function submitMemberSettings(event) {
         document.getElementById('currentUserName').textContent = fullName;
         document.getElementById('heroName').textContent = fullName.trim().split(/\s+/)[0] + '!';
         document.getElementById('mfName').value = fullName;
+        updateSettingsAge();
         settingsFormMessage('Your information was updated.', 'success');
         toast('Account information updated.', 'success');
     } catch (error) {
@@ -647,15 +695,123 @@ async function submitMemberSettings(event) {
     }
 }
 
+async function submitMemberEmail(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const button = form.querySelector('button[type="submit"]');
+    const originalButtonHTML = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+    setSettingsStatus('memberEmailStatus', '');
+    try {
+        const client = window.ironGrindSupabase;
+        if (!client) throw new Error('Supabase connection did not load. Refresh and try again.');
+        const email = document.getElementById('settingsEmail').value.trim();
+        const { data, error } = await client.auth.updateUser({ email });
+        if (error) throw error;
+        if (data.user?.new_email) {
+            setSettingsStatus('memberEmailStatus', `Confirm the change using the link sent to ${data.user.new_email}. Your current email remains active until confirmation.`, 'success');
+        } else {
+            if (data.user?.email) {
+                document.getElementById('settingsEmail').value = data.user.email;
+                if (supabaseMember) supabaseMember.email = data.user.email;
+            }
+            setSettingsStatus('memberEmailStatus', 'Email updated.', 'success');
+        }
+    } catch (error) {
+        setSettingsStatus('memberEmailStatus', `Could not update email: ${error?.message || 'Please try again.'}`, 'error');
+    } finally {
+        button.disabled = false;
+        button.innerHTML = originalButtonHTML;
+    }
+}
+
+async function submitMemberPassword(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const button = form.querySelector('button[type="submit"]');
+    const originalButtonHTML = button.innerHTML;
+    const passwordInput = document.getElementById('settingsPassword');
+    const confirmInput = document.getElementById('settingsPasswordConfirm');
+    setSettingsStatus('memberPasswordStatus', '');
+    if (passwordInput.value.length < 8) {
+        setSettingsStatus('memberPasswordStatus', 'Use a password with at least 8 characters.', 'error');
+        return;
+    }
+    if (passwordInput.value !== confirmInput.value) {
+        setSettingsStatus('memberPasswordStatus', 'The passwords do not match.', 'error');
+        return;
+    }
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+    try {
+        const client = window.ironGrindSupabase;
+        if (!client) throw new Error('Supabase connection did not load. Refresh and try again.');
+        const { error } = await client.auth.updateUser({ password: passwordInput.value });
+        if (error) throw error;
+        passwordInput.value = '';
+        confirmInput.value = '';
+        setSettingsStatus('memberPasswordStatus', 'Password updated.', 'success');
+    } catch (error) {
+        setSettingsStatus('memberPasswordStatus', `Could not update password: ${error?.message || 'Please try again.'}`, 'error');
+    } finally {
+        button.disabled = false;
+        button.innerHTML = originalButtonHTML;
+    }
+}
+
+function updateSettingsAge() {
+    const dob = document.getElementById('settingsDob').value;
+    if (!dob) {
+        document.getElementById('settingsAge').value = '';
+        return;
+    }
+    const birthDate = new Date(`${dob}T00:00:00`);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    if (today.getMonth() < birthDate.getMonth() || (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate())) age--;
+    document.getElementById('settingsAge').value = age >= 0 ? age : '';
+}
+
+function populateMemberSettings(member) {
+    const emergency = member?.emergencyContact || {};
+    document.getElementById('settingsFullName').value = member?.name || session.fullName || '';
+    document.getElementById('settingsDob').value = member?.dateOfBirth || '';
+    document.getElementById('settingsSex').value = member?.sex || 'Prefer not to say';
+    document.getElementById('settingsMobile').value = member?.contact || '';
+    document.getElementById('settingsHeight').value = member?.height ?? '';
+    document.getElementById('settingsHeightUnit').value = member?.heightUnit || 'cm';
+    document.getElementById('settingsWeight').value = member?.weight ?? '';
+    document.getElementById('settingsEmergencyName').value = emergency.name || '';
+    document.getElementById('settingsEmergencyRelationship').value = emergency.relationship || '';
+    document.getElementById('settingsEmergencyMobile').value = emergency.contact || '';
+    document.querySelectorAll('input[name="settingsGoal"]').forEach(input => { input.checked = (member?.fitnessGoals || []).includes(input.value); });
+    document.querySelectorAll('input[name="settingsHealth"]').forEach(input => { input.checked = (member?.healthConditions || []).includes(input.value); });
+    const hasOtherMedical = Boolean(member?.otherMedicalConditions);
+    document.getElementById('settingsOtherMedicalChoice').checked = hasOtherMedical;
+    document.getElementById('settingsOtherMedical').value = member?.otherMedicalConditions || '';
+    document.getElementById('settingsOtherMedicalGroup').hidden = !hasOtherMedical;
+    document.getElementById('settingsOtherMedical').required = hasOtherMedical;
+    document.getElementById('settingsEmail').value = member?.email || '';
+    updateSettingsAge();
+}
+
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('membershipForm')?.addEventListener('submit', submitMembershipForm);
     document.getElementById('memberSettingsForm')?.addEventListener('submit', submitMemberSettings);
+    document.getElementById('memberEmailForm')?.addEventListener('submit', submitMemberEmail);
+    document.getElementById('memberPasswordForm')?.addEventListener('submit', submitMemberPassword);
+    document.getElementById('settingsDob')?.addEventListener('change', updateSettingsAge);
+    document.getElementById('settingsOtherMedicalChoice')?.addEventListener('change', event => {
+        const details = document.getElementById('settingsOtherMedicalGroup');
+        details.hidden = !event.currentTarget.checked;
+        document.getElementById('settingsOtherMedical').required = event.currentTarget.checked;
+    });
     loadSupabaseMember().finally(() => {
     const member = getCurrentMember();
     document.getElementById('mfName').value = member?.name || session.fullName || '';
-    document.getElementById('settingsFullName').value = member?.name || session.fullName || '';
-    document.getElementById('settingsMobile').value = member?.contact || '';
+    populateMemberSettings(member);
     updateMemberStatus();
     renderMembershipProgress();
     renderAttendanceHistory();
@@ -682,6 +838,8 @@ async function loadSupabaseMember() {
         id: row.id,
         authUserId: row.auth_user_id || row.user_id,
         name: row.full_name,
+        dateOfBirth: row.date_of_birth,
+        sex: row.sex,
         plan: row.plan,
         planPrice: Number(row.plan_price) || (typeof row.paid === 'number' ? row.paid : 0),
         startDate: row.start_date,
@@ -690,7 +848,7 @@ async function loadSupabaseMember() {
         paid: typeof row.paid === 'boolean' ? row.paid : Number(row.paid) > 0,
         goal: (row.fitness_goals || [])[0] || 'General Fitness',
         contact: row.mobile,
-        email: row.email || user.email,
+        email: user.email || row.email,
         username: row.username || session.username,
         height: row.height,
         heightUnit: row.height_unit,
@@ -698,9 +856,13 @@ async function loadSupabaseMember() {
         healthConditions: row.health_conditions || [],
         otherMedicalConditions: row.other_medical_conditions || '',
         fitnessGoals: row.fitness_goals || [],
+        emergencyContact: row.emergency_contact && typeof row.emergency_contact === 'object'
+            ? row.emergency_contact
+            : { name: row.emergency_name || '', relationship: row.emergency_relationship || '', contact: row.emergency_contact || '' },
         signature: row.signature_path || row.signature_data || null,
         qrCode: `IRONGRIND|${row.id}`
     };
+    populateMemberSettings(supabaseMember);
 
     const [attendanceResult, productsResult] = await Promise.all([
         client.from('attendance').select('*').eq('member_id', row.id).order('time_in', { ascending: false }),
