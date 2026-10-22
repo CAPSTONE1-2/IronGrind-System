@@ -17,11 +17,52 @@ function hideError() {
 }
 
 function showForgotPassword() {
-    document.getElementById('forgotPasswordModal').classList.remove('hidden');
+    const modal = document.getElementById('forgotPasswordModal');
+    const emailInput = document.getElementById('recoveryEmail');
+    const loginEmail = document.getElementById('loginEmail');
+    if (emailInput && loginEmail && loginEmail.value.trim()) emailInput.value = loginEmail.value.trim();
+    const status = document.getElementById('recoveryStatus');
+    if (status) {
+        status.textContent = '';
+        status.classList.add('hidden');
+    }
+    modal.classList.remove('hidden');
+    emailInput?.focus();
 }
 
 function closeForgotPassword() {
     document.getElementById('forgotPasswordModal').classList.add('hidden');
+}
+
+async function sendPasswordReset(event) {
+    event.preventDefault();
+    const client = window.ironGrindSupabase;
+    const emailInput = document.getElementById('recoveryEmail');
+    const status = document.getElementById('recoveryStatus');
+    const button = document.getElementById('sendRecoveryButton');
+    const email = emailInput?.value.trim().toLowerCase();
+    if (!client || !email || !status || !button) return;
+
+    status.classList.add('hidden');
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending…';
+    try {
+        const redirectTo = new URL('reset-password.html', window.location.href).toString();
+        const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo });
+        if (error) throw error;
+        status.classList.remove('hidden');
+        status.innerHTML = '<i class="fas fa-check-circle"></i> <span>If an account uses that email, a password reset link will arrive shortly. Check your inbox and spam folder.</span>';
+        status.style.color = '#6ee7a8';
+        document.getElementById('forgotPasswordForm')?.reset();
+    } catch (error) {
+        console.error('Could not send password reset email:', error);
+        status.classList.remove('hidden');
+        status.innerHTML = '<i class="fas fa-exclamation-circle"></i> <span>We could not send the reset link. Please check your connection and try again.</span>';
+        status.style.color = '#ff7777';
+    } finally {
+        button.disabled = false;
+        button.innerHTML = '<i class="fas fa-envelope"></i> Send Reset Link';
+    }
 }
 
 async function recoverConfirmedRegistration(client, user) {

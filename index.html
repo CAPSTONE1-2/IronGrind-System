@@ -74,12 +74,22 @@
     <div id="forgotPasswordModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="forgotPasswordTitle" onclick="if(event.target===this) closeForgotPassword()">
         <div class="modal-content">
             <h3 id="forgotPasswordTitle">Forgot your password?</h3>
-            <p class="modal-sub">For account security, password resets are handled by gym staff. Please contact or visit the gym counter and verify your identity to regain access.</p>
-            <div class="modal-actions"><button type="button" class="btn-primary" onclick="closeForgotPassword()">Got it</button></div>
+            <p class="modal-sub">Enter the email address linked to your account. If it is registered, we’ll send a password reset link.</p>
+            <form id="forgotPasswordForm" onsubmit="sendPasswordReset(event)">
+                <div class="form-group">
+                    <label for="recoveryEmail">Email Address</label>
+                    <input type="email" id="recoveryEmail" autocomplete="email" maxlength="300" required>
+                </div>
+                <p id="recoveryStatus" role="status" aria-live="polite" class="login-error hidden"></p>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeForgotPassword()">Cancel</button>
+                    <button type="submit" class="btn-primary" id="sendRecoveryButton"><i class="fas fa-envelope"></i> Send Reset Link</button>
+                </div>
+            </form>
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="assets/js/supabase-client.js"></script>
-    <script src="assets/js/auth.js?v=20261023-member-status-copy"></script>
+    <script src="assets/js/auth.js?v=20261023-password-recovery"></script>
 </body>
 </html>
