@@ -79,7 +79,7 @@ body.dashboard-body .low-stock-item { background-color: rgba(13,18,25,0.64); bor
 .stat-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.6px; color: #6a748b; font-weight: 600; margin-bottom: 8px; }
 .stat-value { font-size: 2rem; font-weight: 700; line-height: 1.2; }
 .stat-sub { font-size: 0.75rem; color: #8b95a9; margin-top: 6px; display: flex; align-items: center; gap: 6px; }
-.stat-sub i { font-size: 0.7rem; color: #13b657; }
+.stat-sub i { font-size: 0.7rem; color: #33e27c; }
 .stat-sub.danger i { color: #cc0f0f; }
 
 /* ========== PANEL ========== */
