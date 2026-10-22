@@ -594,7 +594,6 @@ async function submitMemberSettings(event) {
     settingsFormMessage('');
     try {
         const fullName = document.getElementById('settingsFullName').value.trim();
-        const username = document.getElementById('settingsUsername').value.trim().toLowerCase();
         const dob = document.getElementById('settingsDob').value;
         const mobile = document.getElementById('settingsMobile').value.replace(/\D/g, '');
         const emergencyMobile = document.getElementById('settingsEmergencyMobile').value.replace(/\D/g, '');
@@ -604,10 +603,6 @@ async function submitMemberSettings(event) {
         const otherMedicalConditions = otherMedicalChoice ? document.getElementById('settingsOtherMedical').value.trim() : '';
         if (!fullName) {
             settingsFormMessage('Enter your full name.', 'error');
-            return;
-        }
-        if (username.length < 4 || !/^[a-z0-9_.]+$/.test(username)) {
-            settingsFormMessage('Username must be at least 4 characters and use only letters, numbers, underscores, or dots.', 'error');
             return;
         }
         if (!dob || dob > todayStr()) {
@@ -644,7 +639,6 @@ async function submitMemberSettings(event) {
         }
         const profile = {
             full_name: fullName,
-            username,
             mobile: mobile || null,
             date_of_birth: dob,
             sex: document.getElementById('settingsSex').value,
@@ -670,7 +664,6 @@ async function submitMemberSettings(event) {
 
         if (supabaseMember) {
             supabaseMember.name = fullName;
-            supabaseMember.username = username;
             supabaseMember.age = Number(document.getElementById('settingsAge').value) || null;
             supabaseMember.contact = mobile || null;
             supabaseMember.dateOfBirth = dob;
@@ -684,7 +677,6 @@ async function submitMemberSettings(event) {
             supabaseMember.otherMedicalConditions = profile.other_medical_conditions;
         }
         session.fullName = fullName;
-        session.username = username;
         const sessionStorageArea = localStorage.getItem('irongrind_session') ? localStorage : sessionStorage;
         sessionStorageArea.setItem('irongrind_session', JSON.stringify(session));
         document.getElementById('currentUserName').textContent = fullName;
@@ -785,7 +777,6 @@ function updateSettingsAge() {
 function populateMemberSettings(member) {
     const emergency = member?.emergencyContact || {};
     document.getElementById('settingsFullName').value = member?.name || session.fullName || '';
-    document.getElementById('settingsUsername').value = member?.username || session.username || '';
     document.getElementById('settingsDob').value = member?.dateOfBirth || '';
     document.getElementById('settingsSex').value = member?.sex || 'Prefer not to say';
     document.getElementById('settingsMobile').value = member?.contact || '';

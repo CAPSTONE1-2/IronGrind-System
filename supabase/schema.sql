@@ -333,7 +333,6 @@ as $$
 declare
     v_member_id uuid;
     v_full_name text;
-    v_username text;
     v_mobile text;
     v_dob date;
     v_sex text;
@@ -353,7 +352,6 @@ begin
     end if;
 
     v_full_name := nullif(btrim(p_profile ->> 'full_name'), '');
-    v_username := nullif(lower(btrim(p_profile ->> 'username')), '');
     v_mobile := nullif(btrim(p_profile ->> 'mobile'), '');
     v_dob := nullif(p_profile ->> 'date_of_birth', '')::date;
     v_sex := nullif(btrim(p_profile ->> 'sex'), '');
@@ -368,9 +366,6 @@ begin
 
     if v_full_name is null then
         raise exception 'Full name is required';
-    end if;
-    if v_username is null or length(v_username) < 4 or v_username !~ '^[a-z0-9_.]+$' then
-        raise exception 'Username must be at least 4 characters and use only letters, numbers, underscores, or dots';
     end if;
     if v_dob is null or v_dob > current_date then
         raise exception 'Enter a valid date of birth';
@@ -408,7 +403,6 @@ begin
 
     update public.members
     set full_name = v_full_name,
-        username = v_username,
         mobile = v_mobile,
         date_of_birth = v_dob,
         age = extract(year from age(current_date, v_dob))::smallint,
@@ -429,8 +423,7 @@ begin
     end if;
 
     update public.profiles
-    set full_name = v_full_name,
-        username = v_username
+    set full_name = v_full_name
     where id = (select auth.uid());
 end;
 $$;
