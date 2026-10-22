@@ -17,6 +17,11 @@ set category = case
     when lower(category) = 'supplement' then 'supplement'
     when lower(category) in ('merch', 'merchandise') then 'merchandise'
     else lower(category)
+end
+where category is distinct from case
+    when lower(category) = 'supplement' then 'supplement'
+    when lower(category) in ('merch', 'merchandise') then 'merchandise'
+    else lower(category)
 end;
 alter table public.products
     add constraint products_category_check
