@@ -6,7 +6,17 @@
 alter table public.products
     add column if not exists archived_at timestamptz,
     add column if not exists image_path text,
-    add column if not exists price_per_unit numeric(12, 2) not null default 0;
+    add column if not exists price_per_unit numeric(12, 2) not null default 0,
+    add column if not exists unit text not null default 'item';
+
+-- Match the unit expected by the current product catalog and POS.
+update public.products
+set unit = case when lower(category) = 'supplement' then 'gram' else 'item' end
+where unit is null
+   or (lower(category) = 'supplement' and unit <> 'gram')
+   or (lower(category) = 'merchandise' and unit <> 'item');
+
+notify pgrst, 'reload schema';
 
 -- Older product tables may have stored the amount in a column named `price`.
 -- Copy it forward when present so existing catalog prices are retained.
