@@ -637,6 +637,55 @@ async function completeSupabaseRenewalApproval(application) {
     const receiptNumber = `IG-R-${String(appRow.id).slice(0, 8).toUpperCase()}`;
     const historyNote = `Member portal renewal application ${appRow.id}`;
 
+    // Persist receipt records first; an unavailable sales schema must not
+    // reactivate the membership while leaving its approval pending.
+    const { data: existingSale, error: saleLookupError } = await client
+        .from('sales').select('id').eq('receipt_number', receiptNumber).maybeSingle();
+    if (saleLookupError) {
+        toast(`Could not check the renewal receipt: ${saleLookupError.message}`, 'error');
+        return;
+    }
+    let saleId = existingSale?.id;
+    if (!existingSale) {
+        const { data: sale, error: saleError } = await client.from('sales').insert({
+            receipt_number: receiptNumber,
+            customer_type: 'member',
+            customer_name: memberRow.full_name,
+            member_id: memberId,
+            total: price,
+            status: 'paid',
+            sold_at: reviewedAt,
+            processed_by: user.id
+        }).select('id').single();
+        if (saleError) {
+            toast(`Could not save the renewal sale record: ${saleError.message}`, 'error');
+            return;
+        }
+        saleId = sale.id;
+    }
+
+    const { data: existingItem, error: itemLookupError } = await client
+        .from('sale_items').select('id').eq('sale_id', saleId).eq('category', 'membership').limit(1).maybeSingle();
+    if (itemLookupError) {
+        toast(`Could not check the renewal receipt details: ${itemLookupError.message}`, 'error');
+        return;
+    }
+    if (!existingItem) {
+        const { error: itemError } = await client.from('sale_items').insert({
+            sale_id: saleId,
+            item_name: `${plan} Membership Renewal`,
+            category: 'membership',
+            quantity: 1,
+            unit: 'membership',
+            unit_price: price,
+            line_total: price
+        });
+        if (itemError) {
+            toast(`Could not save the renewal receipt details: ${itemError.message}`, 'error');
+            return;
+        }
+    }
+
     // These checks make an approval retry safe if a later Supabase write failed.
     const { data: priorHistory, error: historyLookupError } = await client
         .from('membership_history').select('id').eq('member_id', memberId)
@@ -677,44 +726,8 @@ async function completeSupabaseRenewalApproval(application) {
         updated_at: reviewedAt
     }).eq('id', memberId);
     if (updateMemberError) {
-        toast(`Could not update the member's renewal: ${updateMemberError.message}`, 'error');
+        toast(`Receipt is saved, but the member's renewal could not be updated: ${updateMemberError.message}`, 'error');
         return;
-    }
-
-    const { data: existingSale, error: saleLookupError } = await client
-        .from('sales').select('id').eq('receipt_number', receiptNumber).maybeSingle();
-    if (saleLookupError) {
-        toast(`Membership renewed, but the receipt could not be checked: ${saleLookupError.message}`, 'error');
-        return;
-    }
-    if (!existingSale) {
-        const { data: sale, error: saleError } = await client.from('sales').insert({
-            receipt_number: receiptNumber,
-            customer_type: 'member',
-            customer_name: memberRow.full_name,
-            member_id: memberId,
-            total: price,
-            status: 'paid',
-            sold_at: reviewedAt,
-            processed_by: user.id
-        }).select('id').single();
-        if (saleError) {
-            toast(`Membership renewed, but the sale record could not be saved: ${saleError.message}`, 'error');
-            return;
-        }
-        const { error: itemError } = await client.from('sale_items').insert({
-            sale_id: sale.id,
-            item_name: `${plan} Membership Renewal`,
-            category: 'membership',
-            quantity: 1,
-            unit: 'membership',
-            unit_price: price,
-            line_total: price
-        });
-        if (itemError) {
-            toast(`Membership renewed, but its receipt details could not be saved: ${itemError.message}`, 'error');
-            return;
-        }
     }
 
     const { error: applicationError } = await client.from('membership_applications').update({
