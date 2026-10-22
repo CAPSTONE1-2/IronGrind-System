@@ -53,10 +53,7 @@
             <summary class="member-collapse-summary"><span><i class="fas fa-id-card"></i> Membership Renewal</span><i class="fas fa-chevron-down collapse-chevron" aria-hidden="true"></i></summary>
             <div class="member-collapse-content">
             <form id="membershipForm">
-                <div class="form-row">
-                    <div class="form-group"><label for="mfName">Full Name</label><input type="text" id="mfName" placeholder="Juan Dela Cruz" required></div>
-                    <div class="form-group"><label for="mfContact">Contact Number</label><input type="tel" id="mfContact" placeholder="0917 123 4567" required></div>
-                </div>
+                <div class="form-group"><label for="mfName">Full Name</label><input type="text" id="mfName" readonly required></div>
                 <div class="form-group">
                     <label for="mfPlan">Membership Plan</label>
                     <select id="mfPlan"><option value="Monthly|800">Monthly — ₱800</option><option value="Half Month|400">Half Month — ₱400</option><option value="Walk-in|80">Walk-in — ₱80</option></select>
@@ -64,6 +61,21 @@
                 <button type="submit" class="btn-submit"><i class="fas fa-paper-plane"></i> Submit Renewal Request</button>
                 <p id="renewalFormStatus" role="status" aria-live="polite" style="min-height:1.25em; margin:10px 0 0; font-size:13px;"></p>
             </form>
+            </div>
+        </details>
+
+        <details class="panel member-collapsible" id="member-settings">
+            <summary class="panel-header member-collapse-summary">
+                <span><i class="fas fa-gear"></i> Account Settings</span>
+                <i class="fas fa-chevron-down collapse-chevron" aria-hidden="true"></i>
+            </summary>
+            <div class="member-collapse-content">
+                <form id="memberSettingsForm">
+                    <div class="form-group"><label for="settingsFullName">Full Name</label><input type="text" id="settingsFullName" autocomplete="name" required></div>
+                    <div class="form-group"><label for="settingsMobile">Contact Number</label><input type="tel" id="settingsMobile" autocomplete="tel" placeholder="0917 123 4567"></div>
+                    <button type="submit" class="btn-submit"><i class="fas fa-floppy-disk"></i> Save Information</button>
+                    <p id="memberSettingsStatus" role="status" aria-live="polite" style="min-height:1.25em; margin:10px 0 0; font-size:13px;"></p>
+                </form>
             </div>
         </details>
 

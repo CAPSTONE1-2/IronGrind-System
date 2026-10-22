@@ -92,6 +92,12 @@ function renewalFormMessage(message, type = '') {
     }
     if (message) toast(message, type);
 }
+function settingsFormMessage(message, type = '') {
+    const status = document.getElementById('memberSettingsStatus');
+    if (!status) return;
+    status.textContent = message;
+    status.style.color = type === 'error' ? '#ff7777' : type === 'success' ? '#69d899' : '#b8c0cc';
+}
 function openModal(html) {
     document.getElementById('modalContent').innerHTML = html;
     document.getElementById('modalOverlay').classList.remove('hidden');
@@ -486,19 +492,10 @@ async function submitMembershipForm(event) {
     }
     renewalFormMessage('', '');
     try {
-    const name = document.getElementById('mfName').value.trim();
-    const contactInput = document.getElementById('mfContact');
-    const contact = contactInput.value.replace(/\D/g, '');
+    const nameInput = document.getElementById('mfName');
     const planInput = document.getElementById('mfPlan');
     const [plan, planPriceStr] = planInput ? planInput.value.split('|') : ['Renewal', '0'];
     const planPrice = Number(planPriceStr) || 0;
-    if (!name || !contact) { renewalFormMessage('Please fill in all fields.', 'error'); return; }
-
-    if (!/^09\d{9}$/.test(contact)) {
-        renewalFormMessage('Enter a valid PH mobile number (e.g. 09171234567).', 'error');
-        contactInput.classList.add('input-error');
-        return;
-    }
 
     const client = window.ironGrindSupabase;
     if (!client) {
@@ -518,6 +515,12 @@ async function submitMembershipForm(event) {
         renewalFormMessage('No Supabase member record is linked to this login. Contact the gym admin.', 'error');
         return;
     }
+    const name = member.name?.trim() || '';
+    if (!name) {
+        renewalFormMessage('Your member name is missing. Update it in Account Settings first.', 'error');
+        return;
+    }
+    if (nameInput) nameInput.value = name;
 
         const { data: existing, error: lookupError } = await client
             .from('membership_applications')
@@ -539,36 +542,23 @@ async function submitMembershipForm(event) {
         const submittedAt = new Date().toISOString();
         const estimatedEndDate = addDays(todayStr(), plan === 'Monthly' ? 30 : plan === 'Half Month' ? 15 : 1);
         const { error: insertError } = await client.from('membership_applications').insert({
-            user_id: user.id,
             auth_user_id: user.id,
             member_id: member.id,
             application_type: 'renewal',
-            full_name: member.name || name,
+            full_name: name,
             email: member.email || user.email,
             username: member.username || session.username,
-            mobile: contact,
-            date_of_birth: null,
-            age: null,
-            sex: null,
-            height: null,
-            height_unit: null,
-            weight: null,
-            emergency_name: null,
-            emergency_relationship: null,
-            emergency_contact: contact,
+            mobile: member.contact || null,
             plan,
             plan_price: planPrice,
             start_date: todayStr(),
             end_date: estimatedEndDate,
-            fitness_goals: [],
-            health_conditions: [],
-            other_medical_conditions: '',
-            signature_data: null,
+            fitness_goals: member.fitnessGoals || [],
+            health_conditions: member.healthConditions || [],
+            other_medical_conditions: member.otherMedicalConditions || '',
+            signature_path: member.signature || null,
             status: 'pending',
-            submitted_at: submittedAt,
-            created_at: submittedAt,
-            reviewed_at: null,
-            reviewed_by: null
+            submitted_at: submittedAt
         });
         if (insertError) {
             console.error('Supabase renewal request failed:', insertError);
@@ -576,7 +566,6 @@ async function submitMembershipForm(event) {
             return;
         }
 
-        document.getElementById('mfContact').value = '';
         renewalFormMessage('Renewal request submitted to the admin for approval.', 'success');
         return;
     } catch (error) {
@@ -590,10 +579,81 @@ async function submitMembershipForm(event) {
     }
 }
 
+async function submitMemberSettings(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const submitButton = form.querySelector('button[type="submit"]');
+    if (submitButton?.disabled) return;
+    const originalButtonHTML = submitButton?.innerHTML;
+    if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    }
+    settingsFormMessage('');
+    try {
+        const fullName = document.getElementById('settingsFullName').value.trim();
+        const mobileInput = document.getElementById('settingsMobile');
+        const mobile = mobileInput.value.replace(/\D/g, '');
+        if (!fullName) {
+            settingsFormMessage('Enter your full name.', 'error');
+            return;
+        }
+        if (mobile && !/^09\d{9}$/.test(mobile)) {
+            settingsFormMessage('Enter a valid PH mobile number (e.g. 09171234567), or leave it blank.', 'error');
+            return;
+        }
+
+        const client = window.ironGrindSupabase;
+        if (!client) {
+            settingsFormMessage('Settings could not be saved because the connection did not load. Refresh and try again.', 'error');
+            return;
+        }
+        const { data: authData, error: authError } = await client.auth.getUser();
+        if (authError || !authData?.user) {
+            settingsFormMessage('Your session could not be verified. Sign in again, then retry.', 'error');
+            return;
+        }
+        const { error } = await client.rpc('update_own_member_profile', {
+            p_full_name: fullName,
+            p_mobile: mobile || null
+        });
+        if (error) {
+            settingsFormMessage(`Could not save your information: ${error.message}`, 'error');
+            return;
+        }
+
+        if (supabaseMember) {
+            supabaseMember.name = fullName;
+            supabaseMember.contact = mobile || null;
+        }
+        session.fullName = fullName;
+        const sessionStorageArea = localStorage.getItem('irongrind_session') ? localStorage : sessionStorage;
+        sessionStorageArea.setItem('irongrind_session', JSON.stringify(session));
+        document.getElementById('currentUserName').textContent = fullName;
+        document.getElementById('heroName').textContent = fullName.trim().split(/\s+/)[0] + '!';
+        document.getElementById('mfName').value = fullName;
+        settingsFormMessage('Your information was updated.', 'success');
+        toast('Account information updated.', 'success');
+    } catch (error) {
+        console.error('Member settings update failed:', error);
+        settingsFormMessage(`Could not save your information: ${error?.message || 'Please try again.'}`, 'error');
+    } finally {
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalButtonHTML;
+        }
+    }
+}
+
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('membershipForm')?.addEventListener('submit', submitMembershipForm);
+    document.getElementById('memberSettingsForm')?.addEventListener('submit', submitMemberSettings);
     loadSupabaseMember().finally(() => {
+    const member = getCurrentMember();
+    document.getElementById('mfName').value = member?.name || session.fullName || '';
+    document.getElementById('settingsFullName').value = member?.name || session.fullName || '';
+    document.getElementById('settingsMobile').value = member?.contact || '';
     updateMemberStatus();
     renderMembershipProgress();
     renderAttendanceHistory();
@@ -635,6 +695,7 @@ async function loadSupabaseMember() {
         weight: row.weight_kg ?? row.weight,
         healthConditions: row.health_conditions || [],
         otherMedicalConditions: row.other_medical_conditions || '',
+        fitnessGoals: row.fitness_goals || [],
         signature: row.signature_path || row.signature_data || null,
         qrCode: `IRONGRIND|${row.id}`
     };
