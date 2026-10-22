@@ -36,6 +36,18 @@ function addDays(dateStr, days) {
     return d.toISOString().slice(0, 10);
 }
 function formatPeso(n) { return '₱' + Number(n).toLocaleString('en-PH'); }
+function formatAttendanceClock(value) {
+    if (!value) return '—';
+    const match = /^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?$/i.exec(String(value).trim());
+    if (!match) return String(value);
+    let hour = Number(match[1]);
+    const minute = match[2];
+    const suffix = match[3]?.toUpperCase();
+    if (suffix) return `${hour}:${minute} ${suffix}`;
+    const period = hour >= 12 ? 'PM' : 'AM';
+    hour = hour % 12 || 12;
+    return `${hour}:${minute} ${period}`;
+}
 function uid(prefix) { return prefix + Math.floor(Math.random() * 9000 + 1000); }
 function nextSaleReceiptId() {
     const highest = sales.reduce((max, sale) => {
@@ -253,7 +265,7 @@ function renderDashboard() {
         <table class="attendance-table">
             <thead><tr><th>Member</th><th>Time In</th><th>Time Out</th><th>Status</th></tr></thead>
             <tbody>${todayAtt.map(a => `
-                <tr><td>${a.memberName}</td><td>${a.timeIn}</td><td>${a.timeOut || '—'}</td>
+                <tr><td>${a.memberName}</td><td>${formatAttendanceClock(a.timeIn)}</td><td>${formatAttendanceClock(a.timeOut)}</td>
                 <td>${a.timeOut ? '<span class="badge-status out">Checked Out</span>' : '<span class="badge-status in">Inside</span>'}</td></tr>
             `).join('')}</tbody>
         </table>`;
@@ -1523,7 +1535,7 @@ function renderAttendance() {
         <table class="attendance-table">
             <thead><tr><th>Member</th><th>Time In</th><th>Time Out</th><th>Status</th><th>Action</th></tr></thead>
             <tbody>${todayAtt.map(a => `
-                <tr><td>${a.memberName}</td><td>${a.timeIn}</td><td>${a.timeOut || '—'}</td>
+                <tr><td>${a.memberName}</td><td>${formatAttendanceClock(a.timeIn)}</td><td>${formatAttendanceClock(a.timeOut)}</td>
                 <td>${a.timeOut ? '<span class="badge-status out">Checked Out</span>' : '<span class="badge-status in">Inside</span>'}</td>
                 <td>${a.timeOut ? '' : `<button class="btn-sm" onclick="checkOut('${a.id}')">Check Out</button>`}</td></tr>
             `).join('')}</tbody>
@@ -1713,7 +1725,7 @@ async function recordMemberAttendanceScan(member) {
     }
     renderAttendance();
     renderDashboard();
-    toast(`${member.name} checked in at ${timeIn}. Scan their QR again to check them out.`, 'success');
+    toast(`${member.name} checked in at ${formatAttendanceClock(timeIn)}. Scan their QR again to check them out.`, 'success');
 }
 
 async function checkOut(id) {
@@ -1731,12 +1743,12 @@ async function checkOut(id) {
     a.timeOut = now.toTimeString().slice(0, 5);
     renderAttendance();
     renderDashboard();
-    toast(`${a.memberName} checked out.`, 'success');
+    toast(`${a.memberName} checked out at ${formatAttendanceClock(a.timeOut)}.`, 'success');
 }
 
 function exportAttendance() {
     const csv = ['Member,Time In,Time Out,Status']
-        .concat(attendance.filter(a => a.date === todayStr()).map(a => `${a.memberName},${a.timeIn},${a.timeOut || '—'},${a.timeOut ? 'Checked Out' : 'Inside'}`))
+        .concat(attendance.filter(a => a.date === todayStr()).map(a => `${a.memberName},${formatAttendanceClock(a.timeIn)},${formatAttendanceClock(a.timeOut)},${a.timeOut ? 'Checked Out' : 'Inside'}`))
         .join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -2432,7 +2444,7 @@ function viewReport(type) {
                     ${escapeHTML(group.label)} <span style="float:right; color:#c4cad5;">${group.records.length} ${group.records.length === 1 ? 'visit' : 'visits'}</span>
                 </h4>
                 <table class="attendance-table"><thead><tr><th>Member</th><th>Date</th><th>In</th><th>Out</th></tr></thead><tbody>
-                    ${group.records.map(a => `<tr><td>${escapeHTML(a.memberName)}</td><td>${escapeHTML(a.date || '—')}</td><td>${escapeHTML(a.timeIn || '—')}</td><td>${escapeHTML(a.timeOut || '—')}</td></tr>`).join('')}
+                    ${group.records.map(a => `<tr><td>${escapeHTML(a.memberName)}</td><td>${escapeHTML(a.date || '—')}</td><td>${escapeHTML(formatAttendanceClock(a.timeIn))}</td><td>${escapeHTML(formatAttendanceClock(a.timeOut))}</td></tr>`).join('')}
                 </tbody></table>
             </section>`).join('') : '<div class="empty-state">No attendance records.</div>';
     } else if (type === 'inventory') {
@@ -2509,7 +2521,7 @@ function printReportPDF(type) {
     } else if (type === 'attendance') {
         columns = ['Member', 'Date', 'Time in', 'Time out'];
         rows = attendance.map(record => ({
-            cells: [record.memberName, record.date, record.timeIn, record.timeOut || '—'],
+            cells: [record.memberName, record.date, formatAttendanceClock(record.timeIn), formatAttendanceClock(record.timeOut)],
             date: record.date
         }));
         dateForRow = row => row.date;

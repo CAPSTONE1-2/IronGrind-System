@@ -40,6 +40,18 @@ function addDays(dateStr, days) {
     return d.toISOString().slice(0, 10);
 }
 function formatPeso(n) { return '₱' + Number(n).toLocaleString('en-PH'); }
+function formatAttendanceClock(value) {
+    if (!value) return '—';
+    const match = /^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?$/i.exec(String(value).trim());
+    if (!match) return String(value);
+    let hour = Number(match[1]);
+    const minute = match[2];
+    const suffix = match[3]?.toUpperCase();
+    if (suffix) return `${hour}:${minute} ${suffix}`;
+    const period = hour >= 12 ? 'PM' : 'AM';
+    hour = hour % 12 || 12;
+    return `${hour}:${minute} ${period}`;
+}
 function isUUID(value) { return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || '')); }
 function loadDB(key) {
     try { return JSON.parse(localStorage.getItem('ig_' + key)) || []; }
@@ -355,8 +367,8 @@ function renderAttendanceHistory() {
                         : '<span class="badge-status in">Inside</span>';
                     return `<tr>
                         <td>${a.date}</td>
-                        <td>${a.timeIn || '—'}</td>
-                        <td>${a.timeOut || '—'}</td>
+                        <td>${formatAttendanceClock(a.timeIn)}</td>
+                        <td>${formatAttendanceClock(a.timeOut)}</td>
                         <td>${duration}</td>
                         <td>${status}</td>
                     </tr>`;
