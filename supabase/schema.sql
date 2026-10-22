@@ -15,13 +15,35 @@ create table if not exists public.profiles (
 
 -- Existing profiles tables may predate the email field used by the Auth trigger.
 alter table public.profiles
-    add column if not exists email text;
+    add column if not exists email text,
+    add column if not exists username text,
+    add column if not exists full_name text not null default '',
+    add column if not exists role text not null default 'member',
+    add column if not exists created_at timestamptz not null default now();
 
 update public.profiles p
 set email = u.email
 from auth.users u
 where u.id = p.id
   and p.email is null;
+
+-- Older profile setups used `customer`; the app and policies use `member`.
+update public.profiles
+set role = case when lower(role) = 'admin' then 'admin' else 'member' end
+where role is null or role not in ('admin', 'member');
+
+do $$
+begin
+    if not exists (
+        select 1 from pg_catalog.pg_constraint
+        where conrelid = 'public.profiles'::regclass
+          and conname = 'profiles_role_check'
+    ) then
+        alter table public.profiles
+            add constraint profiles_role_check check (role in ('admin', 'member'));
+    end if;
+end;
+$$;
 
 create table if not exists public.members (
     id uuid primary key default gen_random_uuid(),
