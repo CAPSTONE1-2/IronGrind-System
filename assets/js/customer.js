@@ -33,11 +33,15 @@ function updateCustomerName(name, updateSettingsField = false) {
 }
 
 // ===== HELPERS =====
-function todayStr() { return new Date().toISOString().slice(0, 10); }
+function localDateStr(date = new Date()) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+function todayStr() { return localDateStr(); }
 function addDays(dateStr, days) {
-    const d = new Date(dateStr);
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const d = new Date(year, month - 1, day);
     d.setDate(d.getDate() + days);
-    return d.toISOString().slice(0, 10);
+    return localDateStr(d);
 }
 function formatPeso(n) { return '₱' + Number(n).toLocaleString('en-PH'); }
 function formatAttendanceClock(value) {

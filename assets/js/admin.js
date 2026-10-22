@@ -29,11 +29,15 @@ let activeQRScanner = null;
 let qrScanHandled = false;
 
 /* ========== HELPERS ========== */
-function todayStr() { return new Date().toISOString().slice(0, 10); }
+function localDateStr(date = new Date()) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+function todayStr() { return localDateStr(); }
 function addDays(dateStr, days) {
-    const d = new Date(dateStr);
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const d = new Date(year, month - 1, day);
     d.setDate(d.getDate() + days);
-    return d.toISOString().slice(0, 10);
+    return localDateStr(d);
 }
 function formatPeso(n) { return '₱' + Number(n).toLocaleString('en-PH'); }
 function formatAttendanceClock(value) {
@@ -105,7 +109,7 @@ function mapSupabaseSale(row) {
         items: items.map(item => `${item.name} x${item.quantity}${item.quantityUnit === 'g' ? 'g' : ''}`).join(', '),
         lineItems: items,
         total: Number(row.total),
-        date: Number.isNaN(soldAt.getTime()) ? todayStr() : soldAt.toISOString().slice(0, 10),
+        date: Number.isNaN(soldAt.getTime()) ? todayStr() : localDateStr(soldAt),
         createdAt: row.sold_at,
         status: row.status === 'voided' ? 'Voided' : 'Paid'
     };
@@ -123,7 +127,7 @@ function mapApprovedRenewalApplication(row) {
         source: 'dashboard-renewal',
         items: `${row.plan || member?.plan || 'Membership'} Membership Renewal`,
         total: Number(row.plan_price) || 0,
-        date: row.reviewed_at ? new Date(row.reviewed_at).toISOString().slice(0, 10) : '',
+        date: row.reviewed_at ? localDateStr(new Date(row.reviewed_at)) : '',
         status: 'Paid'
     };
 }
