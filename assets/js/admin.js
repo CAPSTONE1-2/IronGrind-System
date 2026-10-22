@@ -103,7 +103,9 @@ function mapApprovedRenewalApplication(row) {
     const member = members.find(item => String(item.id) === String(row.member_id));
     const receipt = `IG-R-${String(row.id).slice(0, 8).toUpperCase()}`;
     return {
-        id: receipt,
+        id: 'Not recorded',
+        expectedReceipt: receipt,
+        saleRecorded: false,
         customer: member?.name || row.full_name || 'Name not recorded',
         memberId: row.member_id,
         source: 'dashboard-renewal',
@@ -2156,10 +2158,11 @@ function getRenewalPlan(sale) {
 function getRenewalReportRows() {
     const salesByReceipt = new Map(sales.map(sale => [String(sale.id), sale]));
     const approvedPortalRenewals = approvedRenewalApplications.map(application => {
-        const recordedSale = salesByReceipt.get(String(application.id));
-        return recordedSale ? { ...recordedSale, source: 'dashboard-renewal' } : application;
+        const recordedSale = salesByReceipt.get(String(application.expectedReceipt));
+        return recordedSale ? { ...recordedSale, source: 'dashboard-renewal', saleRecorded: true } : application;
     });
-    const approvedReceiptIds = new Set(approvedPortalRenewals.map(sale => String(sale.id)));
+    const approvedReceiptIds = new Set(approvedPortalRenewals
+        .filter(sale => sale.saleRecorded !== false).map(sale => String(sale.id)));
     const otherRenewalSales = sales.filter(sale =>
         isRenewalSale(sale) && !approvedReceiptIds.has(String(sale.id))
     );
@@ -2197,22 +2200,21 @@ function viewReport(type) {
             : '<div class="empty-state">No products have been archived.</div>';
         body = `<section><h4>Expired Subscriptions (${expiredMembers.length})</h4>${expiredTable}</section><section style="margin-top:24px;"><h4>Plan Changes (${archivedPlans.length})</h4><p class="modal-sub">No refunds are issued for unused time on the previous plan.</p>${planTable}</section><section style="margin-top:24px;"><h4>Archived Products (${archivedProductRows.length})</h4>${productTable}</section>`;
     } else if (type === 'payment' || type === 'sales') {
-        body = `<table class="attendance-table"><thead><tr><th>Receipt</th><th>Customer</th><th>Total</th><th>Date</th></tr></thead><tbody>
-            ${sales.map(s => `<tr><td>${s.id}</td><td>${s.customer}</td><td>${formatPeso(s.total)}</td><td>${s.date}</td></tr>`).join('')}</tbody></table>`;
+        body = `<table class="attendance-table"><thead><tr><th>Receipt</th><th>Customer</th><th>Total</th><th>Date</th><th>Status</th></tr></thead><tbody>
+            ${sales.map(s => `<tr><td>#${escapeHTML(s.id || '—')}</td><td>${escapeHTML(s.customer || 'Name not recorded')}</td><td>${formatPeso(s.total)}</td><td>${escapeHTML(s.date || '—')}</td><td>${escapeHTML(s.status || 'Unknown')}</td></tr>`).join('') || '<tr><td colspan="5">No payment records.</td></tr>'}</tbody></table>`;
     } else if (type === 'renewals') {
         const renewals = getRenewalReportRows();
-        const income = renewals.reduce((total, sale) => total + Number(sale.total || 0), 0);
+        const income = renewals.reduce((total, sale) => total + (sale.saleRecorded === false ? 0 : Number(sale.total || 0)), 0);
         body = `<p class="modal-sub">${renewals.length} completed renewal${renewals.length === 1 ? '' : 's'} · Total collected: <strong>${formatPeso(income)}</strong></p>
-            ${renewals.length ? `<div class="table-scroll"><table class="attendance-table"><thead><tr><th>Receipt</th><th>Member</th><th>Renewed Plan</th><th>Channel</th><th>Amount</th><th>Date</th></tr></thead><tbody>
-                ${renewals.map(sale => `<tr><td>#${escapeHTML(sale.id)}</td><td>${escapeHTML(sale.customer || 'Name not recorded')}</td><td>${escapeHTML(getRenewalPlan(sale))}</td><td>${escapeHTML(getRenewalChannel(sale))}</td><td>${formatPeso(sale.total)}</td><td>${escapeHTML(sale.date || '—')}</td></tr>`).join('')}
+            ${renewals.length ? `<div class="table-scroll"><table class="attendance-table"><thead><tr><th>Receipt</th><th>Member</th><th>Renewed Plan</th><th>Channel</th><th>Amount</th><th>Date</th><th>Receipt Status</th></tr></thead><tbody>
+                ${renewals.map(sale => `<tr><td>${sale.saleRecorded === false ? 'Not recorded' : `#${escapeHTML(sale.id)}`}</td><td>${escapeHTML(sale.customer || 'Name not recorded')}</td><td>${escapeHTML(getRenewalPlan(sale))}</td><td>${escapeHTML(getRenewalChannel(sale))}</td><td>${formatPeso(sale.total)}</td><td>${escapeHTML(sale.date || '—')}</td><td>${sale.saleRecorded === false ? 'Missing receipt' : 'Recorded'}</td></tr>`).join('')}
             </tbody></table></div>` : '<div class="empty-state">No completed membership renewals recorded.</div>'}`;
     } else if (type === 'attendance') {
         body = `<table class="attendance-table"><thead><tr><th>Member</th><th>Date</th><th>In</th><th>Out</th></tr></thead><tbody>
             ${attendance.map(a => `<tr><td>${a.memberName}</td><td>${a.date}</td><td>${a.timeIn}</td><td>${a.timeOut || '—'}</td></tr>`).join('')}</tbody></table>`;
     } else if (type === 'inventory') {
-        const inventoryProducts = products.filter(product => product.category === 'Merch');
-        body = `<table class="attendance-table"><thead><tr><th>Product</th><th>Price</th><th>Stock</th></tr></thead><tbody>
-            ${inventoryProducts.map(p => `<tr><td>${p.name}${p.size ? ' (' + p.size + ')' : ''}</td><td>${formatPeso(p.price)}</td><td>${p.stock}</td></tr>`).join('')}</tbody></table>`;
+        body = `<table class="attendance-table"><thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Stock</th></tr></thead><tbody>
+            ${products.map(p => `<tr><td>${escapeHTML(p.name)}${p.category === 'Merch' && p.size ? ` (${escapeHTML(p.size)})` : ''}</td><td>${p.category === 'Supplement' ? 'Supplement' : 'Merchandise'}</td><td>${formatPeso(p.price)}${p.category === 'Supplement' ? ' / g' : ' / item'}</td><td>${p.category === 'Supplement' ? 'Not tracked' : escapeHTML(p.stock)}</td></tr>`).join('') || '<tr><td colspan="4">No active products.</td></tr>'}</tbody></table>`;
     }
     const title = type === 'member-status'
         ? 'Active / Inactive Members Report'
@@ -2271,13 +2273,13 @@ function printReportPDF(type) {
         ];
         dateForRow = row => row.date;
     } else if (type === 'payment' || type === 'sales') {
-        columns = ['Receipt', 'Customer', 'Total', 'Date'];
-        rows = sales.map(sale => ({ cells: [sale.id, sale.customer, formatPeso(sale.total), sale.date], date: sale.date }));
+        columns = ['Receipt', 'Customer', 'Total', 'Date', 'Status'];
+        rows = sales.map(sale => ({ cells: [sale.id, sale.customer || 'Name not recorded', formatPeso(sale.total), sale.date || '—', sale.status || 'Unknown'], date: sale.date }));
         dateForRow = row => row.date;
     } else if (type === 'renewals') {
-        columns = ['Receipt', 'Member', 'Renewed Plan', 'Channel', 'Amount', 'Date'];
+        columns = ['Receipt', 'Member', 'Renewed Plan', 'Channel', 'Amount', 'Date', 'Receipt Status'];
         rows = getRenewalReportRows().map(sale => ({
-            cells: [sale.id, sale.customer || 'Name not recorded', getRenewalPlan(sale), getRenewalChannel(sale), formatPeso(sale.total), sale.date || '—'],
+            cells: [sale.saleRecorded === false ? 'Not recorded' : sale.id, sale.customer || 'Name not recorded', getRenewalPlan(sale), getRenewalChannel(sale), formatPeso(sale.total), sale.date || '—', sale.saleRecorded === false ? 'Missing receipt' : 'Recorded'],
             date: sale.date
         }));
         dateForRow = row => row.date;
@@ -2289,12 +2291,13 @@ function printReportPDF(type) {
         }));
         dateForRow = row => row.date;
     } else if (type === 'inventory') {
-        columns = ['Product', 'Price', 'Stock'];
-        rows = products.filter(product => product.category === 'Merch').map(product => ({
+        columns = ['Product', 'Category', 'Price', 'Stock'];
+        rows = products.map(product => ({
             cells: [
                 `${product.name}${product.size ? ` (${product.size})` : ''}`,
-                formatPeso(product.price),
-                product.stock
+                product.category === 'Supplement' ? 'Supplement' : 'Merchandise',
+                `${formatPeso(product.price)}${product.category === 'Supplement' ? ' / g' : ' / item'}`,
+                product.category === 'Supplement' ? 'Not tracked' : product.stock
             ]
         }));
     }
@@ -2369,7 +2372,17 @@ function printReportPDF(type) {
 }
 
 function exportAllReports() {
-    const data = { members, products, sales, attendance, planArchives, generatedAt: new Date().toISOString() };
+    const data = {
+        members,
+        products,
+        archivedProducts,
+        sales,
+        attendance,
+        planArchives,
+        membershipArchives,
+        approvedRenewalApplications,
+        generatedAt: new Date().toISOString()
+    };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = `irongrind-${todayStr()}.json`; a.click();
