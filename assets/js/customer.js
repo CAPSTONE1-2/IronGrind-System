@@ -373,7 +373,7 @@ function showQRCode() {
         toast('Member record not found.', 'error');
         return;
     }
-    const qrData = m.qrCode || ('IRONGRIND|' + (m.id || session.username) + '|' + (m.name || session.username));
+    const qrData = 'IRONGRIND|' + (m.id || session.username);
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(qrData)}`;
     openModal(`
         <h3><i class="fas fa-qrcode"></i> My QR Code</h3>

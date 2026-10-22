@@ -73,12 +73,6 @@ function closeModal() {
     document.getElementById('modalOverlay').classList.add('hidden');
     stopQRScanner();
 }
-function printQRCode() {
-    document.body.classList.add('print-qr-only');
-    const cleanup = () => document.body.classList.remove('print-qr-only');
-    window.addEventListener('afterprint', cleanup, { once: true });
-    window.print();
-}
 let pendingConfirmationAction = null;
 function escapeDialogText(value) {
     const element = document.createElement('span');
@@ -253,7 +247,6 @@ function renderMembers() {
                     </div>
                 </div>
                 <div class="member-actions">
-                    <button class="qr-badge" onclick="showMemberQR('${m.id}')"><i class="fas fa-qrcode"></i> QR</button>
                     <button class="renew-btn" onclick="openChangePlanModal('${m.id}')"><i class="fas fa-exchange-alt"></i> Change Plan</button>
                     <button class="renew-btn" onclick="renewMember('${m.id}')"><i class="fas fa-sync-alt"></i> Renew</button>
                     <span class="approve-badge ${statusClass}">${statusText}</span>
@@ -407,8 +400,9 @@ function completeApproval(id) {
     });
     saveDB('users', users);
 
+    const memberId = uid('M');
     const newMember = {
-        id: uid('M'),
+        id: memberId,
         name: p.fullName,
         plan: p.plan,
         planPrice: Number(p.planPrice) || 0,
@@ -427,7 +421,7 @@ function completeApproval(id) {
         healthConditions: p.healthConditions || [],
         otherMedicalConditions: p.otherMedicalConditions || '',
         signature: p.signature || null,
-        qrCode: 'IRONGRIND|' + p.username
+        qrCode: 'IRONGRIND|' + memberId
     };
     members.push(newMember);
     saveDB('members', members);
@@ -445,43 +439,10 @@ function completeApproval(id) {
     pendingApprovals.splice(idx, 1);
     saveDB('pendingApprovals', pendingApprovals);
 
-    showApprovalSuccessModal(p, newMember);
+    toast(`${newMember.name}'s membership was approved.`, 'success');
     renderApprovals();
     renderMembers();
     renderDashboard();
-}
-
-function showApprovalSuccessModal(p, member) {
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(member.qrCode)}`;
-    openModal(`
-        <div style="text-align:center; padding:8px 0;">
-            <div style="width:72px; height:72px; border-radius:50%; background:rgba(46,204,113,0.15); color:#2ecc71; display:flex; align-items:center; justify-content:center; font-size:2rem; margin:0 auto 16px;">
-                <i class="fas fa-check-circle"></i>
-            </div>
-            <h3 style="justify-content:center; display:flex;"><i class="fas fa-check-circle"></i> Membership Approved!</h3>
-            <p class="modal-sub" style="text-align:center;"><strong>${p.fullName}</strong> is now an active member.</p>
-            <div style="background:#fff; padding:16px; border-radius:20px; display:inline-block; margin:16px 0;">
-                <img src="${qrUrl}" alt="QR" style="width:200px; height:200px;">
-            </div>
-            <div class="qr-print-card"><div class="qr-print-gym">Iron Grind Fitness Gym</div><img src="${qrUrl}" alt="Member QR code"></div>
-            <div style="background:#0d1219; border:1px solid #1e2533; border-radius:16px; padding:16px; text-align:left; font-size:0.85rem;">
-                <div style="font-size:0.75rem; text-transform:uppercase; color:#6a748b; font-weight:600; margin-bottom:12px;">Send to Member — Credentials</div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span style="color:#8b95a9;">Username:</span><code style="color:#ff6b2b; font-weight:700;">${p.username}</code></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span style="color:#8b95a9;">Password:</span><code style="color:#ff6b2b; font-weight:700;">${p.password}</code></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span style="color:#8b95a9;">Member ID:</span><span>${member.id}</span></div>
-                <div style="display:flex; justify-content:space-between;"><span style="color:#8b95a9;">Valid Until:</span><span>${p.endDate}</span></div>
-            </div>
-        </div>
-        <div class="modal-actions">
-            <button class="btn-sm" onclick="copyCredentials('${p.username}', '${p.password}')"><i class="fas fa-copy"></i> Copy</button>
-            <button class="btn-primary" onclick="printQRCode()"><i class="fas fa-print"></i> Print</button>
-        </div>
-    `);
-}
-
-function copyCredentials(username, password) {
-    const text = `Iron Grind Fitness Gym\nUsername: ${username}\nPassword: ${password}`;
-    navigator.clipboard.writeText(text).then(() => toast('Credentials copied!', 'success')).catch(() => toast('Clipboard unavailable. Copy the credentials from the approval details.', 'error'));
 }
 
 function rejectApplication(id) {
@@ -770,7 +731,7 @@ function submitNewMember() {
         signature: signatureData,   // base64 PNG
         registeredAt: new Date().toISOString(),
         receiptId: saleId,
-        qrCode: 'IRONGRIND|' + memberId + '|' + name
+        qrCode: 'IRONGRIND|' + memberId
     });
     saveDB('members', members);
 
@@ -794,8 +755,6 @@ function submitNewMember() {
     renderDashboard();
     toast(`✅ ${name} registered with signature.`, 'success');
 
-    // ---- Show QR for the new member ----
-    setTimeout(() => showMemberQR(memberId), 400);
 }
 
 function openChangePlanModal(id) {
@@ -971,21 +930,6 @@ function completeMemberRenewal(id) {
     renderReports();
     toast(`${name}'s membership renewed until ${expiry}.`, 'success');
     showSaleReceipt(saleId);
-}
-
-function showMemberQR(id) {
-    const m = members.find(x => x.id === id);
-    if (!m) return;
-    const account = users.find(user => user.username?.toLowerCase() === m.username?.toLowerCase());
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('IRONGRIND|' + m.id + '|' + m.name)}`;
-    openModal(`
-        <h3><i class="fas fa-qrcode"></i> Member QR</h3>
-        <p class="modal-sub">${m.name} · ${m.id}</p>
-        <div style="text-align:center; padding:20px; background:#fff; border-radius:20px;"><img src="${qrUrl}" style="width:200px;height:200px;"></div>
-        <div class="qr-print-card"><div class="qr-print-gym">Iron Grind Fitness Gym</div><img src="${qrUrl}" alt="Member QR code"></div>
-        ${account ? `<div style="margin-top:14px; padding:14px; background:#0d1219; border:1px solid #1e2533; border-radius:14px;"><strong style="display:block; margin-bottom:8px; color:#f1f3f7;">Member Portal Login</strong><div style="font-size:0.82rem; color:#a4adc2;">Username: <code style="color:#ff6b2b;">${escapeHTML(account.username)}</code></div><div style="margin-top:5px; font-size:0.82rem; color:#a4adc2;">Password: <code style="color:#ff6b2b;">${escapeHTML(account.password)}</code></div><small style="display:block; margin-top:8px; color:#6a748b;">Share these credentials privately with the member.</small></div>` : ''}
-        <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Close</button>${m.receiptId ? `<button class="btn-sm" onclick="showSaleReceipt(decodeURIComponent('${encodeURIComponent(String(m.receiptId))}'))"><i class="fas fa-receipt"></i> Receipt</button>` : ''}<button class="btn-primary" onclick="printQRCode()"><i class="fas fa-print"></i> Print QR</button></div>
-    `);
 }
 
 /* ========== ATTENDANCE ========== */

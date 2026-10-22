@@ -30,6 +30,19 @@ function closeModal() { document.getElementById('modalOverlay').classList.add('h
 
 const registrationSignature = initDigitalSignature('registrationSignature', 'clearRegistrationSignature');
 
+const registrationHeight = document.getElementById('regHeight');
+const registrationHeightUnit = document.getElementById('regHeightUnit');
+let previousHeightUnit = registrationHeightUnit.value;
+registrationHeightUnit.addEventListener('change', function() {
+    const nextUnit = this.value;
+    const enteredHeight = Number(registrationHeight.value);
+    if (registrationHeight.value && Number.isFinite(enteredHeight) && enteredHeight > 0 && previousHeightUnit !== nextUnit) {
+        const convertedHeight = previousHeightUnit === 'cm' ? enteredHeight / 2.54 : enteredHeight * 2.54;
+        registrationHeight.value = String(Number(convertedHeight.toFixed(2)));
+    }
+    previousHeightUnit = nextUnit;
+});
+
 document.getElementById('regDob').addEventListener('change', function() {
     const dob = new Date(this.value);
     if (isNaN(dob)) return;

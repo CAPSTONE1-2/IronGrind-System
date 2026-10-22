@@ -156,8 +156,6 @@ label:has(input[name="wiPlan"]:checked) {
 .member-details h4 { font-size: 0.95rem; font-weight: 600; }
 .member-details p { font-size: 0.75rem; color: #6a748b; }
 .member-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.qr-badge { background: #1e2533; padding: 6px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; color: #a4adc2; display: inline-flex; align-items: center; gap: 6px; border: none; cursor: pointer; font-family: inherit; }
-.qr-badge i { color: #d31212; }
 .renew-btn { background: transparent; border: 1px solid #2d3548; color: #e8edf5; padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 500; cursor: pointer; font-family: inherit; }
 .renew-btn:hover { background: #1e2533; border-color: #d31212; }
 .approve-badge { background: rgba(46, 204, 113, 0.15); color: #2ecc71; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
