@@ -23,6 +23,33 @@ let supabaseProducts = null;
 
 // ===== HELPERS =====
 function todayStr() { return new Date().toISOString().slice(0, 10); }
+function renewalDaysRemaining(expiryDate) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(expiryDate || ''))) return null;
+    const expiry = Date.parse(`${expiryDate}T00:00:00Z`);
+    const today = Date.parse(`${todayStr()}T00:00:00Z`);
+    return Number.isFinite(expiry) ? Math.round((expiry - today) / 86400000) : null;
+}
+function updateRenewalEligibility(member) {
+    const button = document.querySelector('#membershipForm button[type="submit"]');
+    const status = document.getElementById('renewalFormStatus');
+    if (!button || !status) return;
+    const daysRemaining = renewalDaysRemaining(member?.expiry);
+    if (daysRemaining === null) {
+        button.disabled = true;
+        status.textContent = 'We could not verify your membership expiry. Contact the gym admin.';
+    } else if (daysRemaining < 0) {
+        button.disabled = true;
+        status.textContent = 'Your membership has expired. Please visit the gym to renew.';
+    } else if (daysRemaining > 5) {
+        button.disabled = true;
+        status.textContent = `Renewal opens 5 days before your expiry date (${member.expiry}).`;
+    } else {
+        button.disabled = false;
+        const expiryMessage = daysRemaining === 0 ? 'today' : `in ${daysRemaining} day${daysRemaining === 1 ? '' : 's'}`;
+        status.textContent = `You can submit a renewal request now. Your membership expires ${expiryMessage}.`;
+    }
+    status.style.color = '#b8c0cc';
+}
 function addDays(dateStr, days) {
     const d = new Date(dateStr);
     d.setDate(d.getDate() + days);
@@ -525,6 +552,18 @@ async function submitMembershipForm(event) {
     }
     if (nameInput) nameInput.value = name;
 
+        const daysRemaining = renewalDaysRemaining(member.expiry);
+        if (daysRemaining === null || daysRemaining < 0 || daysRemaining > 5) {
+            const message = daysRemaining === null
+                ? 'We could not verify your membership expiry. Contact the gym admin.'
+                : daysRemaining < 0
+                    ? 'Your membership has expired. Please visit the gym to renew.'
+                    : `You can request renewal starting 5 days before your expiry date (${member.expiry}).`;
+            renewalFormMessage(message, 'error');
+            updateRenewalEligibility(member);
+            return;
+        }
+
         const { data: existing, error: lookupError } = await client
             .from('membership_applications')
             .select('id')
@@ -545,6 +584,7 @@ async function submitMembershipForm(event) {
         const submittedAt = new Date().toISOString();
         const estimatedEndDate = addDays(todayStr(), plan === 'Monthly' ? 30 : plan === 'Half Month' ? 15 : 1);
         const { error: insertError } = await client.from('membership_applications').insert({
+            user_id: user.id,
             auth_user_id: user.id,
             member_id: member.id,
             application_type: 'renewal',
@@ -811,6 +851,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadSupabaseMember().finally(() => {
     const member = getCurrentMember();
     document.getElementById('mfName').value = member?.name || session.fullName || '';
+    updateRenewalEligibility(member);
     populateMemberSettings(member);
     updateMemberStatus();
     renderMembershipProgress();
