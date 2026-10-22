@@ -37,7 +37,7 @@ registrationHeightUnit.addEventListener('change', function() {
     const nextUnit = this.value;
     const enteredHeight = Number(registrationHeight.value);
     if (registrationHeight.value && Number.isFinite(enteredHeight) && enteredHeight > 0 && previousHeightUnit !== nextUnit) {
-        const convertedHeight = previousHeightUnit === 'cm' ? enteredHeight / 2.54 : enteredHeight * 2.54;
+        const convertedHeight = previousHeightUnit === 'cm' ? enteredHeight / 30.48 : enteredHeight * 30.48;
         registrationHeight.value = String(Number(convertedHeight.toFixed(2)));
     }
     previousHeightUnit = nextUnit;

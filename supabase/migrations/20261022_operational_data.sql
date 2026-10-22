@@ -4,7 +4,8 @@
 -- Keep an explicit timestamp for product archives so Reports can show when
 -- each item left the active store catalog.
 alter table public.products
-    add column if not exists archived_at timestamptz;
+    add column if not exists archived_at timestamptz,
+    add column if not exists image_path text;
 
 create or replace function public.record_walk_in_sale(
     p_receipt_number text,
