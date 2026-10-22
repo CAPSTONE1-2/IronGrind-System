@@ -264,15 +264,15 @@ async function completeConfirmedRegistration() {
     }
     const { data: { session }, error } = await window.ironGrindSupabase.auth.getSession();
     if (error || !session || session.user.id !== draft.userId) {
-        showError('Email confirmation was not detected in this browser. Sign in with the confirmed email, then contact the gym admin to continue.');
+        showError('Your email may be confirmed, but this browser did not receive the confirmation session. Return to the registration page and sign in with your confirmed email to continue. If your application is still missing, contact the gym admin.');
         return;
     }
-    if (await insertSupabaseApplication(draft)) showSuccessModal(draft.application, false);
+    if (await insertSupabaseApplication(draft)) showSuccessModal(draft.application, false, true);
 }
 
 document.addEventListener('DOMContentLoaded', completeConfirmedRegistration);
 
-function showSuccessModal(app, confirmationRequired = false) {
+function showSuccessModal(app, confirmationRequired = false, emailJustConfirmed = false) {
     openModal(`
         <div style="text-align:center; padding:8px 0;">
             <div style="width:72px; height:72px; border-radius:50%; background:rgba(46,204,113,0.15); color:#2ecc71; display:flex; align-items:center; justify-content:center; font-size:2rem; margin:0 auto 16px;">
@@ -281,7 +281,9 @@ function showSuccessModal(app, confirmationRequired = false) {
             <h3 style="justify-content:center; display:flex;"><i class="fas ${confirmationRequired ? 'fa-envelope' : 'fa-check-circle'}"></i> ${confirmationRequired ? 'Confirm Your Email' : 'Application Submitted!'}</h3>
             <p class="modal-sub" style="text-align:center;">${confirmationRequired
                 ? `Your account was created, ${app.fullName}. Confirm your email to submit your application for admin review.`
-                : `Thank you, <strong>${app.fullName}</strong>. Your application is now pending admin approval.`}</p>
+                : emailJustConfirmed
+                    ? `Your email is confirmed, ${app.fullName}. Your application has been sent to the gym for review and is awaiting approval.`
+                    : `Thank you, <strong>${app.fullName}</strong>. Your application is now pending admin approval.`}</p>
             <div style="background:#0d1219; border:1px solid #1e2533; border-radius:16px; padding:16px; text-align:left; font-size:0.85rem;">
                 ${confirmationRequired ? '' : `<div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span style="color:#8b95a9;">Application ID:</span><code style="color:#ff6b2b;">${app.id}</code></div>`}
                 <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span style="color:#8b95a9;">Plan:</span><strong>${app.plan}</strong></div>
@@ -294,7 +296,9 @@ function showSuccessModal(app, confirmationRequired = false) {
                 <i class="fas fa-info-circle" style="color:#ff6b2b;"></i>
                 ${confirmationRequired
                     ? 'Check your email and confirm your account. Return to this browser after confirmation to finish submitting your application. Your form is saved here temporarily; your password is not stored.'
-                    : 'Visit the gym to complete your payment. Once approved, sign in with your email and password.'}
+                    : emailJustConfirmed
+                        ? 'Email confirmation is complete. The gym admin must approve your registration before you can access the member portal. Check your email for an update, or contact the gym if you need to follow up.'
+                        : 'Visit the gym to complete your payment. Once approved, sign in with your email and password.'}
             </div>
         </div>
         <div class="modal-actions">
