@@ -71,10 +71,62 @@
             </summary>
             <div class="member-collapse-content">
                 <form id="memberSettingsForm">
-                    <div class="form-group"><label for="settingsFullName">Full Name</label><input type="text" id="settingsFullName" autocomplete="name" required></div>
-                    <div class="form-group"><label for="settingsMobile">Contact Number</label><input type="tel" id="settingsMobile" autocomplete="tel" placeholder="0917 123 4567"></div>
+                    <h3 class="settings-section-title">Personal Information</h3>
+                    <div class="form-row">
+                        <div class="form-group"><label for="settingsFullName">Full Name</label><input type="text" id="settingsFullName" autocomplete="name" required></div>
+                        <div class="form-group"><label for="settingsDob">Date of Birth</label><input type="date" id="settingsDob" required></div>
+                    </div>
+                    <div class="form-row form-row-three">
+                        <div class="form-group"><label for="settingsAge">Age</label><input type="number" id="settingsAge" readonly></div>
+                        <div class="form-group"><label for="settingsSex">Sex</label><select id="settingsSex"><option>Male</option><option>Female</option><option>Prefer not to say</option></select></div>
+                        <div class="form-group"><label for="settingsMobile">Mobile</label><input type="tel" id="settingsMobile" autocomplete="tel" placeholder="0917 123 4567" inputmode="tel"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label for="settingsHeight">Height</label><div class="settings-height-input"><input type="number" id="settingsHeight" min="0.01" step="any" placeholder="170"><select id="settingsHeightUnit" aria-label="Height unit"><option value="cm">cm</option><option value="ft">feet</option><option value="in">inches</option></select></div></div>
+                        <div class="form-group"><label for="settingsWeight">Weight (kg)</label><input type="number" id="settingsWeight" min="0.01" step="any" placeholder="65"></div>
+                    </div>
+
+                    <h3 class="settings-section-title">Emergency Contact</h3>
+                    <div class="form-row form-row-three">
+                        <div class="form-group"><label for="settingsEmergencyName">Name</label><input type="text" id="settingsEmergencyName"></div>
+                        <div class="form-group"><label for="settingsEmergencyRelationship">Relationship</label><input type="text" id="settingsEmergencyRelationship"></div>
+                        <div class="form-group"><label for="settingsEmergencyMobile">Contact Number</label><input type="tel" id="settingsEmergencyMobile" inputmode="tel"></div>
+                    </div>
+
+                    <h3 class="settings-section-title">Health and Fitness</h3>
+                    <div class="settings-choice-list">
+                        <label><input type="checkbox" name="settingsGoal" value="Weight Loss"> Weight Loss</label>
+                        <label><input type="checkbox" name="settingsGoal" value="Muscle Gain"> Muscle Gain</label>
+                        <label><input type="checkbox" name="settingsGoal" value="Strength"> Strength</label>
+                        <label><input type="checkbox" name="settingsGoal" value="General Fitness"> General Fitness</label>
+                    </div>
+                    <div class="settings-choice-list settings-health-list">
+                        <label><input type="checkbox" name="settingsHealth" value="High Blood Pressure"> High Blood Pressure</label>
+                        <label><input type="checkbox" name="settingsHealth" value="Heart Condition"> Heart Condition</label>
+                        <label><input type="checkbox" name="settingsHealth" value="Asthma"> Asthma / Breathing Problems</label>
+                        <label><input type="checkbox" name="settingsHealth" value="Recent Injury"> Recent Injury or Surgery</label>
+                        <label><input type="checkbox" id="settingsOtherMedicalChoice"> Other Medical Conditions</label>
+                    </div>
+                    <div class="form-group" id="settingsOtherMedicalGroup" hidden><label for="settingsOtherMedical">Other medical condition details</label><textarea id="settingsOtherMedical" rows="3" maxlength="500"></textarea></div>
                     <button type="submit" class="btn-submit"><i class="fas fa-floppy-disk"></i> Save Information</button>
                     <p id="memberSettingsStatus" role="status" aria-live="polite" style="min-height:1.25em; margin:10px 0 0; font-size:13px;"></p>
+                </form>
+
+                <form id="memberEmailForm" class="settings-credential-form">
+                    <h3 class="settings-section-title">Login Email</h3>
+                    <div class="form-group"><label for="settingsEmail">Email Address</label><input type="email" id="settingsEmail" autocomplete="email" required></div>
+                    <button type="submit" class="btn-submit"><i class="fas fa-envelope"></i> Update Email</button>
+                    <p id="memberEmailStatus" role="status" aria-live="polite" class="settings-form-status"></p>
+                </form>
+
+                <form id="memberPasswordForm" class="settings-credential-form">
+                    <h3 class="settings-section-title">Change Password</h3>
+                    <div class="form-row">
+                        <div class="form-group"><label for="settingsPassword">New Password</label><input type="password" id="settingsPassword" autocomplete="new-password" minlength="8" required></div>
+                        <div class="form-group"><label for="settingsPasswordConfirm">Confirm New Password</label><input type="password" id="settingsPasswordConfirm" autocomplete="new-password" minlength="8" required></div>
+                    </div>
+                    <button type="submit" class="btn-submit"><i class="fas fa-key"></i> Update Password</button>
+                    <p id="memberPasswordStatus" role="status" aria-live="polite" class="settings-form-status"></p>
                 </form>
             </div>
         </details>
