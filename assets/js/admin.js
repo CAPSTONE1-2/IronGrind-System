@@ -1558,13 +1558,26 @@ function startQRScanner() {
             if (qrScanHandled) return;
             qrScanHandled = true;
             const scannedText = decodedText.trim();
+            const member = await resolveMemberFromQR(scannedText);
+            const openVisit = member && attendance.find(
+                a => String(a.memberId) === String(member.id) && !a.timeOut
+            );
             const processing = document.getElementById('qrScanProcessing');
             const status = document.getElementById('qrCameraStatus');
-            if (processing) processing.hidden = false;
-            if (status) status.textContent = 'QR detected. Recording attendance…';
+            if (processing) {
+                processing.hidden = false;
+                const heading = processing.querySelector('strong');
+                const detail = processing.querySelector('span:not(.qr-scan-spinner)');
+                if (heading) heading.textContent = openVisit ? 'Checking out' : 'Checking in';
+                if (detail) detail.textContent = member
+                    ? `${member.name} — attendance is being updated.`
+                    : 'QR code not recognized.';
+            }
+            if (status) status.textContent = openVisit
+                ? 'Open visit found. Checking out…'
+                : 'No open visit found. Checking in…';
             window.setTimeout(async () => {
                 closeModal();
-                const member = findMemberFromQR(scannedText);
                 if (!member) {
                     toast('QR code not recognized. Scan a QR code issued by Iron Grind.', 'error');
                     return;
@@ -1599,7 +1612,44 @@ function findMemberFromQR(value) {
     const parts = value.split('|');
     if (parts[0]?.toUpperCase() !== 'IRONGRIND' || !parts[1]) return null;
     const identifier = parts[1].trim();
-    return members.find(member => String(member.id) === identifier || member.username === identifier) || null;
+    const normalizedIdentifier = identifier.toLowerCase();
+    return members.find(member =>
+        String(member.id).toLowerCase() === normalizedIdentifier
+        || String(member.authUserId || '').toLowerCase() === normalizedIdentifier
+        || String(member.username || '').toLowerCase() === normalizedIdentifier
+    ) || null;
+}
+
+async function resolveMemberFromQR(value) {
+    const cachedMember = findMemberFromQR(value);
+    if (cachedMember) return cachedMember;
+
+    const [prefix, ...identifierParts] = value.split('|');
+    const identifier = identifierParts.join('|').trim();
+    if (prefix?.toUpperCase() !== 'IRONGRIND' || !identifier || !window.ironGrindSupabase) return null;
+
+    const client = window.ironGrindSupabase;
+    let result;
+    if (isUUID(identifier)) {
+        result = await client.from('members').select('*').eq('id', identifier).maybeSingle();
+        if (!result.error && !result.data) {
+            result = await client.from('members').select('*').eq('auth_user_id', identifier).maybeSingle();
+        }
+    } else {
+        result = await client.from('members').select('*').ilike('username', identifier).maybeSingle();
+    }
+
+    if (result?.error) {
+        console.error('Could not resolve scanned member QR from Supabase:', result.error);
+        return null;
+    }
+    if (!result?.data) return null;
+
+    const member = mapSupabaseMember(result.data, result.data.username, result.data.email);
+    const existingIndex = members.findIndex(item => String(item.id) === String(member.id));
+    if (existingIndex >= 0) members[existingIndex] = member;
+    else members.push(member);
+    return member;
 }
 
 async function recordMemberAttendanceScan(member) {

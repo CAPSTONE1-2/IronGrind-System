@@ -16,10 +16,21 @@ let supabaseProducts = null;
         window.location.href = 'index.html?role=customer';
         return;
     }
-    const pretty = session.fullName || session.username;
-    document.getElementById('currentUserName').textContent = pretty;
-    document.getElementById('heroName').textContent = pretty.split(' ')[0] + '!';
+    updateCustomerName(session.fullName || session.username);
 })();
+
+function updateCustomerName(name, updateSettingsField = false) {
+    const fullName = String(name || session?.username || 'Member').trim();
+    const firstName = fullName.split(/\s+/)[0];
+    session.fullName = fullName;
+    const sessionStorageArea = localStorage.getItem('irongrind_session') ? localStorage : sessionStorage;
+    sessionStorageArea.setItem('irongrind_session', JSON.stringify(session));
+    document.getElementById('currentUserName').textContent = fullName;
+    document.getElementById('heroName').textContent = firstName + '!';
+    document.getElementById('mfName').value = fullName;
+    const settingsName = document.getElementById('settingsFullName');
+    if (updateSettingsField && settingsName) settingsName.value = fullName;
+}
 
 // ===== HELPERS =====
 function todayStr() { return new Date().toISOString().slice(0, 10); }
@@ -696,12 +707,7 @@ async function submitMemberSettings(event) {
             supabaseMember.healthConditions = profile.health_conditions;
             supabaseMember.otherMedicalConditions = profile.other_medical_conditions;
         }
-        session.fullName = fullName;
-        const sessionStorageArea = localStorage.getItem('irongrind_session') ? localStorage : sessionStorage;
-        sessionStorageArea.setItem('irongrind_session', JSON.stringify(session));
-        document.getElementById('currentUserName').textContent = fullName;
-        document.getElementById('heroName').textContent = fullName.trim().split(/\s+/)[0] + '!';
-        document.getElementById('mfName').value = fullName;
+        updateCustomerName(fullName, true);
         updateSettingsAge();
         settingsFormMessage('Your information was updated.', 'success');
         toast('Account information updated.', 'success');
@@ -883,7 +889,24 @@ async function loadSupabaseMember() {
         signature: row.signature_path || row.signature_data || null,
         qrCode: `IRONGRIND|${row.id}`
     };
+    updateCustomerName(supabaseMember.name, true);
     populateMemberSettings(supabaseMember);
+
+    client.channel(`customer-member-name-${user.id}`)
+        .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'members',
+            filter: `auth_user_id=eq.${user.id}`
+        }, payload => {
+            const fullName = payload.new?.full_name?.trim();
+            if (!fullName) return;
+            supabaseMember.name = fullName;
+            updateCustomerName(fullName);
+            const settingsName = document.getElementById('settingsFullName');
+            if (settingsName && document.activeElement !== settingsName) settingsName.value = fullName;
+        })
+        .subscribe();
 
     const [attendanceResult, productsResult] = await Promise.all([
         client.from('attendance').select('*').eq('member_id', row.id).order('time_in', { ascending: false }),
