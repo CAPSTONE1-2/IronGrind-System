@@ -5,7 +5,28 @@
 -- each item left the active store catalog.
 alter table public.products
     add column if not exists archived_at timestamptz,
-    add column if not exists image_path text;
+    add column if not exists image_path text,
+    add column if not exists price_per_unit numeric(12, 2) not null default 0;
+
+-- Older product tables may have stored the amount in a column named `price`.
+-- Copy it forward when present so existing catalog prices are retained.
+do $$
+begin
+    if exists (
+        select 1 from information_schema.columns
+        where table_schema = 'public' and table_name = 'products' and column_name = 'price'
+    ) then
+        execute 'update public.products set price_per_unit = price::numeric '
+            || 'where price_per_unit = 0 and price is not null';
+    elsif exists (
+        select 1 from information_schema.columns
+        where table_schema = 'public' and table_name = 'products' and column_name = 'price_per_gram'
+    ) then
+        execute 'update public.products set price_per_unit = price_per_gram::numeric '
+            || 'where category = ''supplement'' and price_per_unit = 0 and price_per_gram is not null';
+    end if;
+end;
+$$;
 
 create or replace function public.record_walk_in_sale(
     p_receipt_number text,
