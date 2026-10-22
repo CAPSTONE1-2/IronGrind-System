@@ -175,6 +175,9 @@ async function submitRegistration(event) {
         application.id = data.user.id;
         application.submittedAt = new Date().toISOString();
         const draft = { userId: data.user.id, application, savedAt: Date.now() };
+        // Keep a short-lived recovery copy until the database confirms insert.
+        // The password is intentionally excluded from the saved application.
+        localStorage.setItem('ig_registration_draft', JSON.stringify(draft));
 
         if (data.session) {
             const saved = await insertSupabaseApplication(draft);
@@ -183,7 +186,6 @@ async function submitRegistration(event) {
         } else {
             // Supabase requires email confirmation before RLS permits submission.
             // Keep the form data briefly in this browser, never the password.
-            localStorage.setItem('ig_registration_draft', JSON.stringify(draft));
             showSuccessModal(application, true);
         }
     } catch (error) {
@@ -273,15 +275,17 @@ function showSuccessModal(app, confirmationRequired = false) {
             <div style="width:72px; height:72px; border-radius:50%; background:rgba(46,204,113,0.15); color:#2ecc71; display:flex; align-items:center; justify-content:center; font-size:2rem; margin:0 auto 16px;">
                 <i class="fas fa-check-circle"></i>
             </div>
-            <h3 style="justify-content:center; display:flex;"><i class="fas fa-check-circle"></i> Application Submitted!</h3>
-            <p class="modal-sub" style="text-align:center;">Thank you, <strong>${app.fullName}</strong>. Your application is now pending admin approval.</p>
+            <h3 style="justify-content:center; display:flex;"><i class="fas ${confirmationRequired ? 'fa-envelope' : 'fa-check-circle'}"></i> ${confirmationRequired ? 'Confirm Your Email' : 'Application Submitted!'}</h3>
+            <p class="modal-sub" style="text-align:center;">${confirmationRequired
+                ? `Your account was created, ${app.fullName}. Confirm your email to submit your application for admin review.`
+                : `Thank you, <strong>${app.fullName}</strong>. Your application is now pending admin approval.`}</p>
             <div style="background:#0d1219; border:1px solid #1e2533; border-radius:16px; padding:16px; text-align:left; font-size:0.85rem;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span style="color:#8b95a9;">Application ID:</span><code style="color:#ff6b2b;">${app.id}</code></div>
+                ${confirmationRequired ? '' : `<div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span style="color:#8b95a9;">Application ID:</span><code style="color:#ff6b2b;">${app.id}</code></div>`}
                 <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span style="color:#8b95a9;">Plan:</span><strong>${app.plan}</strong></div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span style="color:#8b95a9;">Amount:</span><strong>₱${app.planPrice.toLocaleString()}</strong></div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span style="color:#8b95a9;">Username:</span><strong>${app.username}</strong></div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span style="color:#8b95a9;">Email:</span><strong>${app.email}</strong></div>
-                <div style="display:flex; justify-content:space-between;"><span style="color:#8b95a9;">Status:</span><span class="badge-status reserved">Pending</span></div>
+                <div style="display:flex; justify-content:space-between;"><span style="color:#8b95a9;">Status:</span><span class="badge-status reserved">${confirmationRequired ? 'Confirm email first' : 'Pending review'}</span></div>
             </div>
             <div style="background:rgba(255,107,43,0.08); border:1px solid rgba(255,107,43,0.25); border-radius:14px; padding:14px; font-size:0.8rem; color:#8b95a9; text-align:left; margin-top:16px;">
                 <i class="fas fa-info-circle" style="color:#ff6b2b;"></i>
