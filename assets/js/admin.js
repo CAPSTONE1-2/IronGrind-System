@@ -1554,36 +1554,57 @@ function startQRScanner() {
     activeQRScanner.start(
         { facingMode: 'environment' },
         { fps: 10, qrbox: { width: 240, height: 240 }, aspectRatio: 1 },
-        decodedText => {
+        async decodedText => {
             if (qrScanHandled) return;
             qrScanHandled = true;
             const scannedText = decodedText.trim();
-            const member = await resolveMemberFromQR(scannedText);
-            const openVisit = member && attendance.find(
-                a => String(a.memberId) === String(member.id) && !a.timeOut
-            );
             const processing = document.getElementById('qrScanProcessing');
             const status = document.getElementById('qrCameraStatus');
             if (processing) {
                 processing.hidden = false;
                 const heading = processing.querySelector('strong');
                 const detail = processing.querySelector('span:not(.qr-scan-spinner)');
+                if (heading) heading.textContent = 'Looking up member';
+                if (detail) detail.textContent = 'Checking the QR code with the member records…';
+            }
+            if (status) status.textContent = 'QR detected. Looking up member…';
+
+            let member;
+            try {
+                member = await Promise.race([
+                    resolveMemberFromQR(scannedText),
+                    new Promise((_, reject) => window.setTimeout(
+                        () => reject(new Error('Member lookup timed out. Check the connection and try again.')),
+                        10000
+                    ))
+                ]);
+            } catch (error) {
+                closeModal();
+                toast(`Could not look up scanned QR: ${error.message || 'Please try again.'}`, 'error');
+                return;
+            }
+
+            if (!member) {
+                closeModal();
+                toast('QR code not recognized. Scan a QR code issued by Iron Grind.', 'error');
+                return;
+            }
+
+            const openVisit = attendance.find(
+                a => String(a.memberId) === String(member.id) && !a.timeOut
+            );
+            if (processing) {
+                const heading = processing.querySelector('strong');
+                const detail = processing.querySelector('span:not(.qr-scan-spinner)');
                 if (heading) heading.textContent = openVisit ? 'Checking out' : 'Checking in';
-                if (detail) detail.textContent = member
-                    ? `${member.name} — attendance is being updated.`
-                    : 'QR code not recognized.';
+                if (detail) detail.textContent = `${member.name} — attendance is being updated.`;
             }
             if (status) status.textContent = openVisit
                 ? 'Open visit found. Checking out…'
                 : 'No open visit found. Checking in…';
-            window.setTimeout(async () => {
-                closeModal();
-                if (!member) {
-                    toast('QR code not recognized. Scan a QR code issued by Iron Grind.', 'error');
-                    return;
-                }
-                await recordMemberAttendanceScan(member);
-            }, 650);
+            await new Promise(resolve => window.setTimeout(resolve, 350));
+            closeModal();
+            await recordMemberAttendanceScan(member);
         },
         () => {}
     ).then(() => {
