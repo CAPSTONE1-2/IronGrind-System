@@ -556,7 +556,6 @@ async function submitMembershipForm(event) {
             fitness_goals: member.fitnessGoals || [],
             health_conditions: member.healthConditions || [],
             other_medical_conditions: member.otherMedicalConditions || '',
-            signature_path: member.signature || null,
             status: 'pending',
             submitted_at: submittedAt
         });

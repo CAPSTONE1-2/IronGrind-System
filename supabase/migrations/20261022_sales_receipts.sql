@@ -11,6 +11,17 @@ alter table public.sales
     add column if not exists sold_at timestamptz not null default now(),
     add column if not exists processed_by uuid references auth.users (id) on delete set null;
 
+-- Older projects may constrain status to title-case labels (for example
+-- "Paid"), while the current app writes lowercase "paid". Normalize existing
+-- labels and replace the legacy constraint with a case-normalization check.
+alter table public.sales drop constraint if exists sales_status_check;
+update public.sales
+set status = lower(btrim(status))
+where status is distinct from lower(btrim(status));
+alter table public.sales
+    add constraint sales_status_check
+    check (status <> '' and status = lower(btrim(status)));
+
 -- A prior sales table may use older field names. Copy those values into the
 -- columns used by the current dashboard without replacing populated values.
 do $$
