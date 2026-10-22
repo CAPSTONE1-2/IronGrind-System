@@ -1,6 +1,11 @@
 -- Transaction-safe walk-in POS writes.
 -- Run after schema.sql and the online-registration compatibility migration.
 
+-- Keep an explicit timestamp for product archives so Reports can show when
+-- each item left the active store catalog.
+alter table public.products
+    add column if not exists archived_at timestamptz;
+
 create or replace function public.record_walk_in_sale(
     p_receipt_number text,
     p_customer_name text,

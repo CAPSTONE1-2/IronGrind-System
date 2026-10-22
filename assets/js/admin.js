@@ -14,6 +14,7 @@
 /* ========== STATE ========== */
 let members = [];
 let products = [];
+let archivedProducts = [];
 let sales = [];
 let attendance = [];
 let pendingApprovals = [];
@@ -66,7 +67,8 @@ function mapSupabaseProduct(row) {
         size: row.size || '',
         inventoryUnit: row.unit === 'gram' ? 'gram' : 'item',
         image: row.image_path || '',
-        isActive: row.is_active !== false
+        isActive: row.is_active !== false,
+        archivedAt: row.archived_at || null
     };
 }
 
@@ -696,7 +698,7 @@ async function loadSupabaseOperationalData() {
     const client = window.ironGrindSupabase;
     if (!client) return;
     const [productsResult, salesResult, attendanceResult] = await Promise.all([
-        client.from('products').select('*').eq('is_active', true).order('name'),
+        client.from('products').select('*').order('name'),
         client.from('sales').select('*, sale_items(*)').order('sold_at', { ascending: false }),
         client.from('attendance').select('*, members(full_name)').order('time_in', { ascending: false })
     ]);
@@ -705,7 +707,9 @@ async function loadSupabaseOperationalData() {
         console.error('Could not load Supabase products:', productsResult.error);
         toast(`Could not load inventory from Supabase: ${productsResult.error.message}`, 'error');
     } else {
-        products = productsResult.data.map(mapSupabaseProduct);
+        const mappedProducts = productsResult.data.map(mapSupabaseProduct);
+        products = mappedProducts.filter(product => product.isActive);
+        archivedProducts = mappedProducts.filter(product => !product.isActive);
     }
     if (salesResult.error) {
         console.error('Could not load Supabase sales:', salesResult.error);
@@ -1411,7 +1415,7 @@ function productCard(p) {
             ${!supplement ? `<div class="stock ${low ? 'low' : ''}">${low ? '⚠ ' : ''}${stockLabel}</div>` : ''}
             <div class="product-actions">
                 <button class="btn-edit" onclick="editProduct('${p.id}')">Edit</button>
-                <button class="btn-delete" onclick="deleteProduct('${p.id}')"><i class="fas fa-trash"></i></button>
+                <button class="btn-delete" aria-label="Archive ${escapeHTML(p.name)}" title="Archive product" onclick="archiveProduct('${p.id}')"><i class="fas fa-box-archive"></i></button>
             </div>
         </div>`;
 }
@@ -1571,25 +1575,32 @@ function getProductPhoto(inputId) {
     });
 }
 
-function deleteProduct(id) {
+function archiveProduct(id) {
     const p = products.find(x => x.id === id);
     if (!p) return;
-    askConfirmation('Delete product?', `Delete ${p.name}? This action cannot be undone.`, 'Delete', () => completeProductDeletion(id), true);
+    askConfirmation('Archive product?', `Move ${p.name} to Archives? It will be removed from the active store and recorded in Reports.`, 'Archive', () => completeProductArchive(id));
 }
 
-async function completeProductDeletion(id) {
+async function completeProductArchive(id) {
     const p = products.find(x => x.id === id);
     if (!p) return;
+    const archivedAt = new Date().toISOString();
     if (window.ironGrindSupabase) {
         const { error } = await window.ironGrindSupabase.from('products')
-            .update({ is_active: false, updated_at: new Date().toISOString() }).eq('id', id);
+            .update({ is_active: false, archived_at: archivedAt, updated_at: archivedAt }).eq('id', id);
         if (error) { toast(`Could not archive product in Supabase: ${error.message}`, 'error'); return; }
     }
+    p.isActive = false;
+    p.archivedAt = archivedAt;
     products = products.filter(x => x.id !== id);
-    if (!window.ironGrindSupabase) saveDB('products', products);
+    archivedProducts = [p, ...archivedProducts.filter(x => String(x.id) !== String(id))];
+    if (!window.ironGrindSupabase) {
+        saveDB('products', products);
+        saveDB('archivedProducts', archivedProducts);
+    }
     renderStore();
     renderDashboard();
-    toast(`Deleted ${p.name}.`, 'error');
+    toast(`Archived ${p.name}.`, 'success');
 }
 
 function openNewSaleModal() {
@@ -1938,7 +1949,7 @@ function renderReports() {
     const reports = [
         { id: 'membership', name: 'Membership Report' },
         { id: 'member-status', name: 'Active / Inactive Members' },
-        { id: 'archives', name: 'Membership Archives' },
+        { id: 'archives', name: 'Archives' },
         { id: 'payment', name: 'Payment Report' },
         { id: 'attendance', name: 'Attendance Report' },
         { id: 'renewals', name: 'Membership Renewal Report' },
@@ -1996,7 +2007,11 @@ function viewReport(type) {
         const planTable = archivedPlans.length
             ? `<table class="attendance-table"><thead><tr><th>Member</th><th>Previous Plan</th><th>New Plan</th><th>Previous Expiry</th><th>New Expiry</th><th>Previous Fee</th><th>New Fee</th><th>Changed</th></tr></thead><tbody>${archivedPlans.map(record => `<tr><td>${escapeHTML(record.memberName)}</td><td>${escapeHTML(record.previousPlan)}</td><td>${escapeHTML(record.newPlan)}</td><td>${escapeHTML(record.previousExpiry || '—')}</td><td>${escapeHTML(record.newExpiry || '—')}</td><td>${formatPeso(record.previousPrice || 0)}</td><td>${formatPeso(record.newPrice || 0)}</td><td>${escapeHTML(record.changedAt ? new Date(record.changedAt).toLocaleString() : '—')}</td></tr>`).join('')}</tbody></table>`
             : '<div class="empty-state">No plan changes have been archived yet.</div>';
-        body = `<section><h4>Expired Subscriptions (${expiredMembers.length})</h4>${expiredTable}</section><section style="margin-top:24px;"><h4>Plan Changes (${archivedPlans.length})</h4><p class="modal-sub">No refunds are issued for unused time on the previous plan.</p>${planTable}</section>`;
+        const archivedProductRows = archivedProducts.slice().sort((a, b) => String(b.archivedAt || '').localeCompare(String(a.archivedAt || '')));
+        const productTable = archivedProductRows.length
+            ? `<table class="attendance-table"><thead><tr><th>Product</th><th>Category</th><th>Size</th><th>Price</th><th>Archived</th></tr></thead><tbody>${archivedProductRows.map(product => `<tr><td>${escapeHTML(product.name)}</td><td>${escapeHTML(product.category)}</td><td>${escapeHTML(product.size || '—')}</td><td>${formatPeso(product.price)}${product.category === 'Supplement' ? ' / g' : ''}</td><td>${escapeHTML(product.archivedAt ? new Date(product.archivedAt).toLocaleString() : '—')}</td></tr>`).join('')}</tbody></table>`
+            : '<div class="empty-state">No products have been archived.</div>';
+        body = `<section><h4>Expired Subscriptions (${expiredMembers.length})</h4>${expiredTable}</section><section style="margin-top:24px;"><h4>Plan Changes (${archivedPlans.length})</h4><p class="modal-sub">No refunds are issued for unused time on the previous plan.</p>${planTable}</section><section style="margin-top:24px;"><h4>Archived Products (${archivedProductRows.length})</h4>${productTable}</section>`;
     } else if (type === 'payment' || type === 'sales') {
         body = `<table class="attendance-table"><thead><tr><th>Receipt</th><th>Customer</th><th>Total</th><th>Date</th></tr></thead><tbody>
             ${sales.map(s => `<tr><td>${s.id}</td><td>${s.customer}</td><td>${formatPeso(s.total)}</td><td>${s.date}</td></tr>`).join('')}</tbody></table>`;
@@ -2018,7 +2033,7 @@ function viewReport(type) {
     const title = type === 'member-status'
         ? 'Active / Inactive Members Report'
         : type === 'archives'
-            ? 'Membership Archives'
+        ? 'Archives'
             : type === 'renewals'
                 ? 'Membership Renewal Report'
             : `${type.charAt(0).toUpperCase() + type.slice(1)} Report`;
@@ -2034,7 +2049,7 @@ function printReportPDF(type) {
         return;
     }
 
-    const reportNames = { membership: 'Membership', 'member-status': 'Active / Inactive Members', archives: 'Membership Archives', payment: 'Payment', attendance: 'Attendance', renewals: 'Membership Renewal', inventory: 'Inventory', sales: 'Sales' };
+    const reportNames = { membership: 'Membership', 'member-status': 'Active / Inactive Members', archives: 'Archives', payment: 'Payment', attendance: 'Attendance', renewals: 'Membership Renewal', inventory: 'Inventory', sales: 'Sales' };
     const reportTitle = `${reportNames[type] || 'Gym'} Report`;
     let columns = [];
     let rows = [];
@@ -2055,7 +2070,7 @@ function printReportPDF(type) {
         }));
     } else if (type === 'archives') {
         captureExpiredMemberships();
-        columns = ['Record Type', 'Member', 'Username', 'Plan', 'Previous Plan', 'New Plan', 'Started', 'Expired', 'New Expiry', 'Fee', 'New Fee', 'Recorded'];
+        columns = ['Record Type', 'Member / Product', 'Username / Category', 'Plan / Details', 'Previous Plan', 'New Plan', 'Started', 'Expired / Archived', 'New Expiry', 'Fee', 'New Fee', 'Recorded'];
         rows = [
             ...membershipArchives.filter(isMembershipArchiveReady).map(record => ({
                 cells: ['Expired subscription', record.memberName, record.username || '—', record.plan, '—', '—', record.startDate || '—', record.expiry, '—', formatPeso(record.price || 0), '—', record.expiry],
@@ -2064,6 +2079,10 @@ function printReportPDF(type) {
             ...planArchives.map(record => ({
                 cells: ['Plan change', record.memberName, '—', '—', record.previousPlan, record.newPlan, record.previousStartDate || '—', record.previousExpiry || '—', record.newExpiry || '—', formatPeso(record.previousPrice || 0), formatPeso(record.newPrice || 0), record.changedAt ? new Date(record.changedAt).toLocaleString() : '—'],
                 date: record.changedAt
+            })),
+            ...archivedProducts.map(product => ({
+                cells: ['Archived product', product.name, product.category, `${product.size ? `${product.size} · ` : ''}${formatPeso(product.price)}${product.category === 'Supplement' ? ' per gram' : ' per item'}`, '—', '—', '—', product.archivedAt ? new Date(product.archivedAt).toLocaleString() : '—', '—', '—', '—', product.archivedAt ? new Date(product.archivedAt).toLocaleString() : '—'],
+                date: product.archivedAt
             }))
         ];
         dateForRow = row => row.date;
@@ -2219,7 +2238,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     members = loadDB('members');
-    products = loadDB('products');
+    products = loadDB('products').filter(product => product.isActive !== false);
+    archivedProducts = loadDB('archivedProducts');
     sales = loadDB('sales');
     attendance = loadDB('attendance');
     pendingApprovals = loadDB('pendingApprovals');
