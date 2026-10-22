@@ -14,6 +14,7 @@
         <div class="logo-area"><img class="logo-icon logo-image" src="assets/images/iron-grind-mark.png" alt="Iron Grind Fitness Gym logo"><div class="logo-text"><h1>Iron<span>Grind</span></h1><p>Member Dashboard</p></div></div>
         <div class="header-actions">
             <div class="user-chip"><i class="fas fa-user"></i><span id="currentUserName">Member</span></div>
+            <button class="btn-settings" type="button" onclick="openMemberSettings()" aria-label="Account settings" title="Account settings"><i class="fas fa-gear" aria-hidden="true"></i></button>
             <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
         </div>
     </header>
@@ -64,12 +65,11 @@
             </div>
         </details>
 
-        <details class="panel member-collapsible" id="member-settings">
-            <summary class="panel-header member-collapse-summary">
-                <span><i class="fas fa-gear"></i> Account Settings</span>
-                <i class="fas fa-chevron-down collapse-chevron" aria-hidden="true"></i>
-            </summary>
-            <div class="member-collapse-content">
+        <dialog class="member-settings-dialog" id="memberSettingsDialog" aria-labelledby="memberSettingsTitle" onclick="if(event.target===this) closeMemberSettings()">
+            <div class="member-settings-heading">
+                <h2 id="memberSettingsTitle"><i class="fas fa-gear" aria-hidden="true"></i> Account Settings</h2>
+                <button class="settings-close" type="button" onclick="closeMemberSettings()" aria-label="Close account settings" title="Close"><i class="fas fa-xmark" aria-hidden="true"></i></button>
+            </div>
                 <form id="memberSettingsForm">
                     <h3 class="settings-section-title">Personal Information</h3>
                     <div class="form-row">
@@ -128,8 +128,7 @@
                     <button type="submit" class="btn-submit"><i class="fas fa-key"></i> Update Password</button>
                     <p id="memberPasswordStatus" role="status" aria-live="polite" class="settings-form-status"></p>
                 </form>
-            </div>
-        </details>
+        </dialog>
 
         <!-- STORE (VIEW ONLY) -->
         <details class="panel member-collapsible" id="member-store">

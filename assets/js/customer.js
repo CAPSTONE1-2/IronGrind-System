@@ -92,6 +92,13 @@ function renewalFormMessage(message, type = '') {
     }
     if (message) toast(message, type);
 }
+function openMemberSettings() {
+    const dialog = document.getElementById('memberSettingsDialog');
+    if (dialog && !dialog.open) dialog.showModal();
+}
+function closeMemberSettings() {
+    document.getElementById('memberSettingsDialog')?.close();
+}
 function settingsFormMessage(message, type = '') {
     setSettingsStatus('memberSettingsStatus', message, type);
 }
