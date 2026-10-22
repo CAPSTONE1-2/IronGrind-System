@@ -2107,20 +2107,24 @@ function renderReports() {
 
 function isRenewalSale(sale) {
     return ['counter-renewal', 'dashboard-renewal', 'member-portal-renewal'].includes(sale.source)
+        || /^IG-R-/i.test(String(sale.id || ''))
         || /\brenewal\b/i.test(sale.items || '')
-        || sale.lineItems?.some(item => /\brenewal\b/i.test(item.name || ''));
+        || sale.lineItems?.some(item => item.category === 'Membership' || /\brenewal\b/i.test(item.name || ''));
 }
 
 function getRenewalChannel(sale) {
     if (sale.source === 'counter-renewal') return 'Counter';
-    if (sale.source === 'dashboard-renewal') return 'Member portal approval';
+    if (sale.source === 'dashboard-renewal' || /^IG-R-/i.test(String(sale.id || ''))) return 'Member portal approval';
     if (sale.source === 'member-portal-renewal') return 'Member portal';
     return 'Previously recorded';
 }
 
 function getRenewalPlan(sale) {
     const text = sale.items || sale.lineItems?.[0]?.name || '';
-    return text.replace(/\s+membership\s+renewal$/i, '').replace(/\s+renewal$/i, '') || '—';
+    const recordedPlan = text.replace(/\s+membership\s+renewal$/i, '').replace(/\s+renewal$/i, '');
+    if (recordedPlan) return recordedPlan;
+    const member = members.find(item => String(item.id) === String(sale.memberId));
+    return member?.plan || '—';
 }
 
 function viewReport(type) {
