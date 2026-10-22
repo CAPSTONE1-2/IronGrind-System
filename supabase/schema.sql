@@ -15,7 +15,7 @@ create table if not exists public.profiles (
 
 create table if not exists public.members (
     id uuid primary key default gen_random_uuid(),
-    auth_user_id uuid unique references auth.users (id) on delete set null,
+    auth_user_id uuid references auth.users (id) on delete set null,
     full_name text not null,
     email text,
     username text,
@@ -41,6 +41,11 @@ create table if not exists public.members (
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now()
 );
+
+-- CREATE TABLE IF NOT EXISTS does not add columns to a table that already exists.
+-- This makes the schema safe to apply when an earlier attempt created members first.
+alter table public.members
+    add column if not exists auth_user_id uuid references auth.users (id) on delete set null;
 
 create table if not exists public.membership_applications (
     id uuid primary key default gen_random_uuid(),
@@ -139,7 +144,7 @@ create table if not exists public.membership_history (
     recorded_by uuid references auth.users (id) on delete set null
 );
 
-create index if not exists members_auth_user_id_idx on public.members (auth_user_id);
+create unique index if not exists members_auth_user_id_unique_idx on public.members (auth_user_id);
 create index if not exists applications_auth_user_id_idx on public.membership_applications (auth_user_id);
 create index if not exists applications_status_submitted_idx on public.membership_applications (status, submitted_at desc);
 create index if not exists attendance_member_time_idx on public.attendance (member_id, time_in desc);
