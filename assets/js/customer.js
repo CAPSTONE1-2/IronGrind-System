@@ -468,8 +468,18 @@ function confirmRenew() {
 // ===== MEMBERSHIP RENEWAL REQUEST =====
 async function submitMembershipForm(event) {
     event.preventDefault();
+    const form = event.currentTarget || document.getElementById('membershipForm');
+    const submitButton = form?.querySelector('button[type="submit"]');
+    if (submitButton?.disabled) return;
+    const originalButtonHTML = submitButton?.innerHTML;
+    if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+    }
+    try {
     const name = document.getElementById('mfName').value.trim();
-    const contact = document.getElementById('mfContact').value.trim();
+    const contactInput = document.getElementById('mfContact');
+    const contact = contactInput.value.replace(/\D/g, '');
     const planInput = document.getElementById('mfPlan');
     const [plan, planPriceStr] = planInput ? planInput.value.split('|') : ['Renewal', '0'];
     const planPrice = Number(planPriceStr) || 0;
@@ -477,7 +487,7 @@ async function submitMembershipForm(event) {
 
     if (!/^09\d{9}$/.test(contact)) {
         toast('Enter a valid PH mobile number (e.g. 09171234567).', 'error');
-        document.getElementById('mfContact').classList.add('input-error');
+        contactInput.classList.add('input-error');
         return;
     }
 
@@ -554,6 +564,15 @@ async function submitMembershipForm(event) {
         document.getElementById('mfContact').value = '';
         toast('Renewal request submitted to the admin for approval.', 'success');
         return;
+    }
+    } catch (error) {
+        console.error('Unexpected renewal submission error:', error);
+        toast(`Renewal could not be submitted: ${error?.message || 'Please refresh and try again.'}`, 'error');
+    } finally {
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalButtonHTML;
+        }
     }
 }
 
