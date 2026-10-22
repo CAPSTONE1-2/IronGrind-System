@@ -561,6 +561,10 @@ async function submitMembershipForm(event) {
         const submittedAt = new Date().toISOString();
         const estimatedEndDate = addDays(todayStr(), plan === 'Monthly' ? 30 : plan === 'Half Month' ? 15 : 1);
         const { error: insertError } = await client.from('membership_applications').insert({
+            // Legacy projects still have a NOT NULL `user_id` column.
+            // Keep it in sync with the canonical auth_user_id until that
+            // legacy constraint is removed from the database.
+            user_id: user.id,
             auth_user_id: user.id,
             member_id: member.id,
             application_type: 'renewal',
