@@ -4,6 +4,7 @@
 
 // ===== AUTH GUARD =====
 let session;
+let supabaseMember = null;
 (function guardCustomer() {
     session = JSON.parse(
         localStorage.getItem('irongrind_session') ||
@@ -157,6 +158,7 @@ function completeLogout() {
 
 // ===== FIND CURRENT MEMBER =====
 function getCurrentMember() {
+    if (supabaseMember) return supabaseMember;
     const members = loadDB('members');
     let m = members.find(m => m.username === session.username);
     if (!m && session.fullName) {
@@ -496,12 +498,52 @@ function submitMembershipForm(event) {
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
+    loadSupabaseMember().finally(() => {
     updateMemberStatus();
     renderMembershipProgress();
     renderAttendanceHistory();
     renderStore();
     window.setTimeout(showMemberWelcome, 2600);
+    });
 });
+
+async function loadSupabaseMember() {
+    const client = window.ironGrindSupabase;
+    if (!client) return;
+    const { data: { user }, error: authError } = await client.auth.getUser();
+    if (authError || !user) return;
+    const { data: row, error } = await client
+        .from('members')
+        .select('*')
+        .eq('auth_user_id', user.id)
+        .maybeSingle();
+    if (error || !row) {
+        console.error('Could not load Supabase membership:', error);
+        return;
+    }
+    supabaseMember = {
+        id: row.id,
+        authUserId: row.auth_user_id || row.user_id,
+        name: row.full_name,
+        plan: row.plan,
+        planPrice: Number(row.plan_price) || (typeof row.paid === 'number' ? row.paid : 0),
+        startDate: row.start_date,
+        expiry: row.expiry_date || row.end_date,
+        status: row.status,
+        paid: typeof row.paid === 'boolean' ? row.paid : Number(row.paid) > 0,
+        goal: (row.fitness_goals || [])[0] || 'General Fitness',
+        contact: row.mobile,
+        email: row.email || user.email,
+        username: row.username || session.username,
+        height: row.height,
+        heightUnit: row.height_unit,
+        weight: row.weight_kg ?? row.weight,
+        healthConditions: row.health_conditions || [],
+        otherMedicalConditions: row.other_medical_conditions || '',
+        signature: row.signature_path || row.signature_data || null,
+        qrCode: `IRONGRIND|${row.id}`
+    };
+}
 
 window.addEventListener('load', () => {
     window.setTimeout(() => document.getElementById('page-loader')?.classList.add('hidden-loader'), 2500);

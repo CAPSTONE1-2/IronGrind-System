@@ -638,11 +638,20 @@ function rejectApplication(id) {
     askConfirmation('Reject application?', `Reject ${p.fullName}'s application?`, 'Reject', () => completeRejection(id), true);
 }
 
-function completeRejection(id) {
+async function completeRejection(id) {
     const idx = pendingApprovals.findIndex(x => x.id === id);
     if (idx === -1) return;
+    const application = pendingApprovals[idx];
+    if (application.supabaseRecord) {
+        const { data: { user }, error: authError } = await window.ironGrindSupabase.auth.getUser();
+        if (authError || !user) { toast('Your Supabase session expired. Please sign in again.', 'error'); return; }
+        const { error } = await window.ironGrindSupabase.from('membership_applications').update({
+            status: 'rejected', reviewed_at: new Date().toISOString(), reviewed_by: user.id
+        }).eq('id', application.id).eq('status', 'pending');
+        if (error) { toast(`Could not reject application: ${error.message}`, 'error'); return; }
+    }
     pendingApprovals.splice(idx, 1);
-    saveDB('pendingApprovals', pendingApprovals);
+    saveDB('pendingApprovals', pendingApprovals.filter(item => !item.supabaseRecord));
     renderApprovals();
     renderDashboard();
     toast('Application rejected.', 'error');
@@ -2022,6 +2031,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderAttendance();
     renderSales();
     renderReports();
+    loadSupabaseMembershipData();
 
     window.setInterval(() => {
         captureExpiredMemberships();

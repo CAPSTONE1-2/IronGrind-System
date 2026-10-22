@@ -67,6 +67,33 @@ async function handleLogin(event) {
             }
 
             const role = profile.role === 'admin' ? 'admin' : 'customer';
+            if (role === 'customer') {
+                const { data: member, error: memberError } = await supabaseClient
+                    .from('members')
+                    .select('id')
+                    .eq('auth_user_id', data.user.id)
+                    .maybeSingle();
+                if (memberError) {
+                    await supabaseClient.auth.signOut();
+                    showError('We could not check your membership. Please contact the gym admin.');
+                    return;
+                }
+                if (!member) {
+                    const { data: application } = await supabaseClient
+                        .from('membership_applications')
+                        .select('status')
+                        .eq('auth_user_id', data.user.id)
+                        .order('submitted_at', { ascending: false })
+                        .limit(1)
+                        .maybeSingle();
+                    await supabaseClient.auth.signOut();
+                    showError(application?.status === 'rejected'
+                        ? 'Your application was not approved. Please contact the gym admin.'
+                        : 'Your membership application is awaiting approval.');
+                    return;
+                }
+            }
+
             const session = {
                 role,
                 username: profile.username || data.user.email,
