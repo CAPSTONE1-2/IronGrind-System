@@ -869,7 +869,9 @@ async function loadSupabaseOperationalData() {
     if (archiveError) console.error('Could not archive expired memberships:', archiveError);
     const [productsResult, salesResult, attendanceResult, renewalsResult, historyResult] = await Promise.all([
         client.from('products').select('*').order('name'),
-        client.from('sales').select('*, sale_items(*)').order('sold_at', { ascending: false }),
+        client.from('sales')
+            .select('*, sale_items!sale_items_sale_id_compat_fkey(*)')
+            .order('sold_at', { ascending: false }),
         client.from('attendance').select('*, members(full_name)').order('time_in', { ascending: false }),
         client.from('membership_applications').select('*')
             .eq('application_type', 'renewal').eq('status', 'approved')
@@ -2366,6 +2368,23 @@ function getRenewalReportRows() {
         .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
 }
 
+function groupAttendanceByMonth(records) {
+    const groups = new Map();
+    [...records].sort((a, b) => String(b.date || '').localeCompare(String(a.date || ''))).forEach(record => {
+        const match = /^(\d{4})-(\d{2})/.exec(String(record.date || ''));
+        const key = match ? `${match[1]}-${match[2]}` : 'undated';
+        const label = match
+            ? new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric' })
+                .format(new Date(Number(match[1]), Number(match[2]) - 1, 1))
+            : 'Date not recorded';
+        if (!groups.has(key)) groups.set(key, { label, records: [] });
+        groups.get(key).records.push(record);
+    });
+    return [...groups.entries()]
+        .sort(([a], [b]) => a === 'undated' ? 1 : b === 'undated' ? -1 : b.localeCompare(a))
+        .map(([, group]) => group);
+}
+
 function viewReport(type) {
     let body = '';
     if (type === 'membership') {
@@ -2406,8 +2425,16 @@ function viewReport(type) {
                 ${renewals.map(sale => `<tr><td>${sale.saleRecorded === false ? 'Not recorded' : `#${escapeHTML(sale.id)}`}</td><td>${escapeHTML(sale.customer || 'Name not recorded')}</td><td>${escapeHTML(getRenewalPlan(sale))}</td><td>${escapeHTML(getRenewalChannel(sale))}</td><td>${formatPeso(sale.total)}</td><td>${escapeHTML(sale.date || '—')}</td><td>${sale.saleRecorded === false ? 'Missing receipt' : 'Recorded'}</td></tr>`).join('')}
             </tbody></table></div>` : '<div class="empty-state">No completed membership renewals recorded.</div>'}`;
     } else if (type === 'attendance') {
-        body = `<table class="attendance-table"><thead><tr><th>Member</th><th>Date</th><th>In</th><th>Out</th></tr></thead><tbody>
-            ${attendance.map(a => `<tr><td>${a.memberName}</td><td>${a.date}</td><td>${a.timeIn}</td><td>${a.timeOut || '—'}</td></tr>`).join('')}</tbody></table>`;
+        const attendanceGroups = groupAttendanceByMonth(attendance);
+        body = attendanceGroups.length ? attendanceGroups.map(group => `
+            <section class="attendance-month-group" style="margin-bottom:22px;">
+                <h4 style="margin:0 0 10px; padding:10px 12px; border-left:4px solid #ff6b2b; background:#20242c; color:#fff;">
+                    ${escapeHTML(group.label)} <span style="float:right; color:#c4cad5;">${group.records.length} ${group.records.length === 1 ? 'visit' : 'visits'}</span>
+                </h4>
+                <table class="attendance-table"><thead><tr><th>Member</th><th>Date</th><th>In</th><th>Out</th></tr></thead><tbody>
+                    ${group.records.map(a => `<tr><td>${escapeHTML(a.memberName)}</td><td>${escapeHTML(a.date || '—')}</td><td>${escapeHTML(a.timeIn || '—')}</td><td>${escapeHTML(a.timeOut || '—')}</td></tr>`).join('')}
+                </tbody></table>
+            </section>`).join('') : '<div class="empty-state">No attendance records.</div>';
     } else if (type === 'inventory') {
         body = `<table class="attendance-table"><thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Stock</th></tr></thead><tbody>
             ${products.map(p => `<tr><td>${escapeHTML(p.name)}${p.category === 'Merch' && p.size ? ` (${escapeHTML(p.size)})` : ''}</td><td>${p.category === 'Supplement' ? 'Supplement' : 'Merchandise'}</td><td>${formatPeso(p.price)}${p.category === 'Supplement' ? ' / g' : ' / item'}</td><td>${p.category === 'Supplement' ? 'Not tracked' : escapeHTML(p.stock)}</td></tr>`).join('') || '<tr><td colspan="4">No active products.</td></tr>'}</tbody></table>`;
