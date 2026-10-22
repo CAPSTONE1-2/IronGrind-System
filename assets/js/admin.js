@@ -413,8 +413,9 @@ function completeApproval(id) {
     if (idx === -1) return;
     const p = pendingApprovals[idx];
 
-    if (p.supabaseRecord && p.source !== 'dashboard-renewal') {
-        completeSupabaseRegistrationApproval(p);
+    if (p.supabaseRecord) {
+        if (p.source === 'dashboard-renewal') completeSupabaseRenewalApproval(p);
+        else completeSupabaseRegistrationApproval(p);
         return;
     }
 
@@ -606,6 +607,131 @@ async function completeSupabaseRegistrationApproval(application) {
     toast(`${member.name}'s membership was approved and saved to Supabase.`, 'success');
 }
 
+async function completeSupabaseRenewalApproval(application) {
+    const client = window.ironGrindSupabase;
+    const { data: { user }, error: authError } = await client.auth.getUser();
+    if (authError || !user) {
+        toast('Your Supabase session expired. Please sign in again.', 'error');
+        return;
+    }
+
+    const appRow = application.supabaseRecord;
+    const memberId = appRow.member_id || application.memberId;
+    if (!memberId || !isUUID(memberId)) {
+        toast('This renewal request is not linked to a Supabase member record.', 'error');
+        return;
+    }
+
+    const { data: memberRow, error: memberError } = await client
+        .from('members').select('*').eq('id', memberId).maybeSingle();
+    if (memberError || !memberRow) {
+        toast(`Could not load the member for this renewal${memberError ? `: ${memberError.message}` : '.'}`, 'error');
+        return;
+    }
+
+    const plan = appRow.plan || application.plan || memberRow.plan;
+    const price = Number(appRow.plan_price ?? application.planPrice) || 0;
+    const startDate = todayStr();
+    const endDate = addDays(startDate, getPlanDurationDays(plan));
+    const reviewedAt = new Date().toISOString();
+    const receiptNumber = `IG-R-${String(appRow.id).slice(0, 8).toUpperCase()}`;
+    const historyNote = `Member portal renewal application ${appRow.id}`;
+
+    // These checks make an approval retry safe if a later Supabase write failed.
+    const { data: priorHistory, error: historyLookupError } = await client
+        .from('membership_history').select('id').eq('member_id', memberId)
+        .eq('event_type', 'renewal').eq('notes', historyNote).maybeSingle();
+    if (historyLookupError) {
+        toast(`Could not check renewal history: ${historyLookupError.message}`, 'error');
+        return;
+    }
+    if (!priorHistory) {
+        const { error } = await client.from('membership_history').insert({
+            member_id: memberId,
+            event_type: 'renewal',
+            previous_plan: memberRow.plan,
+            new_plan: plan,
+            previous_price: Number(memberRow.plan_price) || 0,
+            new_price: price,
+            previous_start_date: memberRow.start_date,
+            previous_expiry_date: memberRow.expiry_date || memberRow.end_date,
+            new_start_date: startDate,
+            new_expiry_date: endDate,
+            notes: historyNote,
+            recorded_by: user.id
+        });
+        if (error) {
+            toast(`Could not save the previous membership to history: ${error.message}`, 'error');
+            return;
+        }
+    }
+
+    const { error: updateMemberError } = await client.from('members').update({
+        plan,
+        plan_price: price,
+        start_date: startDate,
+        end_date: endDate,
+        expiry_date: endDate,
+        status: 'active',
+        mobile: appRow.mobile || memberRow.mobile,
+        updated_at: reviewedAt
+    }).eq('id', memberId);
+    if (updateMemberError) {
+        toast(`Could not update the member's renewal: ${updateMemberError.message}`, 'error');
+        return;
+    }
+
+    const { data: existingSale, error: saleLookupError } = await client
+        .from('sales').select('id').eq('receipt_number', receiptNumber).maybeSingle();
+    if (saleLookupError) {
+        toast(`Membership renewed, but the receipt could not be checked: ${saleLookupError.message}`, 'error');
+        return;
+    }
+    if (!existingSale) {
+        const { data: sale, error: saleError } = await client.from('sales').insert({
+            receipt_number: receiptNumber,
+            customer_type: 'member',
+            customer_name: memberRow.full_name,
+            member_id: memberId,
+            total: price,
+            status: 'paid',
+            sold_at: reviewedAt,
+            processed_by: user.id
+        }).select('id').single();
+        if (saleError) {
+            toast(`Membership renewed, but the sale record could not be saved: ${saleError.message}`, 'error');
+            return;
+        }
+        const { error: itemError } = await client.from('sale_items').insert({
+            sale_id: sale.id,
+            item_name: `${plan} Membership Renewal`,
+            category: 'membership',
+            quantity: 1,
+            unit: 'membership',
+            unit_price: price,
+            line_total: price
+        });
+        if (itemError) {
+            toast(`Membership renewed, but its receipt details could not be saved: ${itemError.message}`, 'error');
+            return;
+        }
+    }
+
+    const { error: applicationError } = await client.from('membership_applications').update({
+        status: 'approved',
+        reviewed_at: reviewedAt,
+        reviewed_by: user.id
+    }).eq('id', appRow.id).eq('status', 'pending');
+    if (applicationError) {
+        toast(`Renewal details were saved, but the request could not be marked approved: ${applicationError.message}`, 'error');
+        return;
+    }
+
+    await loadSupabaseMembersAndApplications();
+    await loadSupabaseOperationalData();
+    toast(`${memberRow.full_name}'s renewal was approved and saved to Supabase.`, 'success');
+}
+
 function mapSupabaseMember(row, username = '', email = '') {
     const paidValue = row.paid;
     return {
@@ -671,6 +797,7 @@ async function loadSupabaseMembershipData() {
             submittedAt: row.submitted_at || row.created_at,
             status: row.status,
             source: row.application_type === 'renewal' ? 'dashboard-renewal' : 'supabase-registration',
+            memberId: row.member_id || null,
             supabaseRecord: row
         }));
         const localApps = pendingApprovals.filter(item => !item.supabaseRecord);

@@ -465,7 +465,7 @@ function confirmRenew() {
 }
 
 // ===== MEMBERSHIP RENEWAL REQUEST =====
-function submitMembershipForm(event) {
+async function submitMembershipForm(event) {
     event.preventDefault();
     const name = document.getElementById('mfName').value.trim();
     const contact = document.getElementById('mfContact').value.trim();
@@ -477,6 +477,77 @@ function submitMembershipForm(event) {
     if (!/^09\d{9}$/.test(contact)) {
         toast('Enter a valid PH mobile number (e.g. 09171234567).', 'error');
         document.getElementById('mfContact').classList.add('input-error');
+        return;
+    }
+
+    const client = window.ironGrindSupabase;
+    if (client) {
+        const { data: { user }, error: authError } = await client.auth.getUser();
+        const member = getCurrentMember();
+        if (authError || !user || !member || !isUUID(member.id)) {
+            toast('Your Supabase membership session could not be verified. Sign in again or contact the gym admin.', 'error');
+            return;
+        }
+
+        const { data: existing, error: lookupError } = await client
+            .from('membership_applications')
+            .select('id')
+            .eq('auth_user_id', user.id)
+            .eq('application_type', 'renewal')
+            .eq('status', 'pending')
+            .limit(1)
+            .maybeSingle();
+        if (lookupError) {
+            toast(`Could not check existing renewal requests: ${lookupError.message}`, 'error');
+            return;
+        }
+        if (existing) {
+            toast('You already have a renewal request waiting for admin approval.', 'error');
+            return;
+        }
+
+        const submittedAt = new Date().toISOString();
+        const estimatedEndDate = addDays(todayStr(), plan === 'Monthly' ? 30 : plan === 'Half Month' ? 15 : 1);
+        const { error: insertError } = await client.from('membership_applications').insert({
+            user_id: user.id,
+            auth_user_id: user.id,
+            member_id: member.id,
+            application_type: 'renewal',
+            full_name: member.name || name,
+            email: member.email || user.email,
+            username: member.username || session.username,
+            mobile: contact,
+            date_of_birth: null,
+            age: null,
+            sex: null,
+            height: null,
+            height_unit: null,
+            weight: null,
+            emergency_name: null,
+            emergency_relationship: null,
+            emergency_contact: contact,
+            plan,
+            plan_price: planPrice,
+            start_date: todayStr(),
+            end_date: estimatedEndDate,
+            fitness_goals: [],
+            health_conditions: [],
+            other_medical_conditions: '',
+            signature_data: null,
+            status: 'pending',
+            submitted_at: submittedAt,
+            created_at: submittedAt,
+            reviewed_at: null,
+            reviewed_by: null
+        });
+        if (insertError) {
+            console.error('Supabase renewal request failed:', insertError);
+            toast(`Could not submit renewal request: ${insertError.message}`, 'error');
+            return;
+        }
+
+        document.getElementById('mfContact').value = '';
+        toast('Renewal request submitted to the admin for approval.', 'success');
         return;
     }
 

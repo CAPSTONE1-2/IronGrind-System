@@ -122,12 +122,12 @@ async function handleLogin(event) {
             if (recovery.error) {
                 await supabaseClient.auth.signOut();
                 console.error('Could not complete saved registration:', recovery.error);
-                showError(`Your email is confirmed, but we could not submit your saved application: ${recovery.error.message}`);
+                showError(`We could not submit your saved application: ${recovery.error.message}`);
                 return;
             }
             if (recovery.recovered) {
                 await supabaseClient.auth.signOut();
-                showError('Your email is confirmed and your registration has now been submitted. It is waiting for admin approval.');
+                showError('Your registration application has been submitted and is waiting for admin approval.');
                 return;
             }
 

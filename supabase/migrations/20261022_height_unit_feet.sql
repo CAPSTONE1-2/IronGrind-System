@@ -11,3 +11,5 @@ alter table public.membership_applications
 alter table public.membership_applications
     add constraint membership_applications_height_unit_check
     check (height_unit is null or height_unit in ('cm', 'in', 'ft'));
+
+notify pgrst, 'reload schema';

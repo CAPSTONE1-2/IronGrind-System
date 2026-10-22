@@ -195,7 +195,8 @@ async function submitRegistration(event) {
             if (!saved) return;
             showSuccessModal(application, false);
         } else {
-            // Supabase requires email confirmation before RLS permits submission.
+            // If email confirmation is enabled in Supabase, wait for its callback
+            // before submitting because an unauthenticated user cannot insert.
             // Keep the form data briefly in this browser, never the password.
             showSuccessModal(application, true);
         }
@@ -275,7 +276,7 @@ async function completeConfirmedRegistration() {
     }
     const { data: { session }, error } = await window.ironGrindSupabase.auth.getSession();
     if (error || !session || session.user.id !== draft.userId) {
-        showError('Your email may be confirmed, but this browser did not receive the confirmation session. Return to the registration page and sign in with your confirmed email to continue. If your application is still missing, contact the gym admin.');
+        showError('Your registration could not be completed in this browser. Sign in with your email and password to try submitting the saved application again. If it is still missing, contact the gym admin.');
         return;
     }
     if (await insertSupabaseApplication(draft)) showSuccessModal(draft.application, false, true);
@@ -293,7 +294,7 @@ function showSuccessModal(app, confirmationRequired = false, emailJustConfirmed 
             <p class="modal-sub" style="text-align:center;">${confirmationRequired
                 ? `Your account was created, ${app.fullName}. Confirm your email to submit your application for admin review.`
                 : emailJustConfirmed
-                    ? `Your email is confirmed, ${app.fullName}. Your application has been sent to the gym for review and is awaiting approval.`
+                    ? `Your application has been sent to the gym for review, ${app.fullName}, and is awaiting approval.`
                     : `Thank you, <strong>${app.fullName}</strong>. Your application is now pending admin approval.`}</p>
             <div style="background:#0d1219; border:1px solid #1e2533; border-radius:16px; padding:16px; text-align:left; font-size:0.85rem;">
                 ${confirmationRequired ? '' : `<div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span style="color:#8b95a9;">Application ID:</span><code style="color:#ff6b2b;">${app.id}</code></div>`}
@@ -308,7 +309,7 @@ function showSuccessModal(app, confirmationRequired = false, emailJustConfirmed 
                 ${confirmationRequired
                     ? 'Check your email and confirm your account. Return to this browser after confirmation to finish submitting your application. Your form is saved here temporarily; your password is not stored.'
                     : emailJustConfirmed
-                        ? 'Email confirmation is complete. The gym admin must approve your registration before you can access the member portal. Check your email for an update, or contact the gym if you need to follow up.'
+                        ? 'The gym admin must approve your registration before you can access the member portal. Contact the gym if you need to follow up.'
                         : 'Visit the gym to complete your payment. Once approved, sign in with your email and password.'}
             </div>
         </div>
