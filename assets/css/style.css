@@ -45,7 +45,10 @@ body.dashboard-body .low-stock-item { background-color: rgba(13,18,25,0.64); bor
 .logo-text span { color: #d31212; }
 .logo-text p { font-size: 0.8rem; color: #8b95a9; }
 .header-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.dashboard-body .header-actions { gap: 8px; flex-wrap: nowrap; }
 .user-chip { display: flex; align-items: center; gap: 8px; background: #1a1f2b; border: 1px solid #2d3548; padding: 8px 16px; border-radius: 30px; font-size: 0.85rem; font-weight: 500; }
+.dashboard-body .user-chip { min-width: 0; max-width: 280px; }
+.dashboard-body .user-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .user-chip i { color: #d31212; }
 .btn-settings { display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 1px solid #2d3548; border-radius: 10px; background: transparent; color: #e8edf5; font-size: 1rem; cursor: pointer; }
 .btn-settings:hover, .btn-settings:focus-visible { border-color: #d31212; color: #ef4545; }
@@ -344,6 +347,8 @@ label:has(input[name="wiPlan"]:checked) {
     .stats-grid { grid-template-columns: minmax(0, 1fr); gap: 14px; }
     .form-row { grid-template-columns: 1fr; }
     .app-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .dashboard-body .header-actions { width: 100%; }
+    .dashboard-body .user-chip { flex: 1; max-width: none; }
     .panel { padding: 18px; }
     .stat-card { min-height: 120px; padding: 18px; }
     .admin-section, .customer-view { gap: 16px; }
