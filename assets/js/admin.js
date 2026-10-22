@@ -622,6 +622,7 @@ function openAddMemberModal() {
                 <i class="fas fa-key" style="color:#ff6b2b;"></i><span>Member Portal Account</span>
             </div>
             <p style="font-size:0.75rem; color:#8b95a9; margin-bottom:12px;">Create login credentials so the member can access their portal.</p>
+            <div class="form-group"><label>Email Address *</label><input type="email" id="wiEmail" placeholder="member@example.com" autocomplete="email"></div>
             <div class="form-row">
                 <div class="form-group"><label>Username *</label><input type="text" id="wiUsername" placeholder="juan.delacruz" autocomplete="username"></div>
                 <div class="form-group"><label>Password *</label><input type="password" id="wiPassword" placeholder="At least 6 characters" autocomplete="new-password"></div>
@@ -685,6 +686,7 @@ function submitNewMember() {
     const age = Number(document.getElementById('wiAge').value);
     const sex = document.getElementById('wiSex').value;
     const contact = document.getElementById('wiContact').value.trim();
+    const email = document.getElementById('wiEmail').value.trim().toLowerCase();
     const username = document.getElementById('wiUsername').value.trim().toLowerCase();
     const password = document.getElementById('wiPassword').value;
     const confirmPassword = document.getElementById('wiConfirmPassword').value;
@@ -719,6 +721,7 @@ function submitNewMember() {
     if (!dob) { toast('Date of Birth is required.', 'error'); return; }
     if (age < 12) { toast('Member must be at least 12 years old.', 'error'); return; }
     if (!contact) { toast('Mobile Number is required.', 'error'); return; }
+    if (!email || !document.getElementById('wiEmail').checkValidity()) { toast('Enter a valid email address for the member account.', 'error'); return; }
     if (!ecName || !ecRelation || !ecContact) { toast('Emergency contact is required.', 'error'); return; }
     if (username.length < 4 || !/^[a-z0-9_.]+$/.test(username)) {
         toast('Username must be 4+ characters and use only letters, numbers, dots, or underscores.', 'error');
@@ -728,6 +731,10 @@ function submitNewMember() {
     if (password !== confirmPassword) { toast('Passwords do not match.', 'error'); return; }
     if (users.some(user => user.username?.toLowerCase() === username) || members.some(member => member.username?.toLowerCase() === username) || pendingApprovals.some(application => application.username?.toLowerCase() === username)) {
         toast('That username is already in use.', 'error');
+        return;
+    }
+    if (users.some(user => user.email?.toLowerCase() === email) || members.some(member => member.email?.toLowerCase() === email) || pendingApprovals.some(application => application.email?.toLowerCase() === email)) {
+        toast('That email address is already in use.', 'error');
         return;
     }
 
@@ -741,7 +748,7 @@ function submitNewMember() {
     // ---- Create Member ----
     const memberId = uid('M');
     const saleId = nextSaleReceiptId();
-    users.push({ username, password, fullName: name, role: 'customer', createdAt: new Date().toISOString() });
+    users.push({ email, username, password, fullName: name, role: 'customer', createdAt: new Date().toISOString() });
     saveDB('users', users);
     members.push({
         id: memberId,
@@ -756,6 +763,7 @@ function submitNewMember() {
         paid: true,
         goal: goals[0] || 'General Fitness',
         contact,
+        email,
         dob, age, sex, height, weight,
         healthConditions,
         emergencyContact: { name: ecName, relationship: ecRelation, contact: ecContact },

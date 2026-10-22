@@ -39,21 +39,21 @@ function handleLogin(event) {
     event.preventDefault();
     hideError();
 
-    const username = document.getElementById('loginId').value.trim().toLowerCase();
+    const email = document.getElementById('loginEmail').value.trim().toLowerCase();
     const password = document.getElementById('loginPassword').value;
     const remember = document.getElementById('rememberMe').checked;
-    if (!username || !password) {
+    if (!email || !password) {
         showError('Please fill in all fields.');
         return;
     }
 
     let session;
-    if (username === ADMIN_USER.username && password === ADMIN_USER.password) {
-        session = { role: 'admin', username, fullName: 'Administrator', loginTime: new Date().toISOString() };
+    if (email === ADMIN_USER.username && password === ADMIN_USER.password) {
+        session = { role: 'admin', username: ADMIN_USER.username, fullName: 'Administrator', loginTime: new Date().toISOString() };
     } else {
-        const user = loadUsers().find(item => item.username?.toLowerCase() === username && item.password === password);
+        const user = loadUsers().find(item => item.email?.toLowerCase() === email && item.password === password);
         if (user) {
-            session = { role: 'customer', username, fullName: user.fullName || username, loginTime: new Date().toISOString() };
+            session = { role: 'customer', username: user.username, fullName: user.fullName || user.username || email, loginTime: new Date().toISOString() };
         } else {
             let pending = [];
             try {
@@ -62,9 +62,9 @@ function handleLogin(event) {
             } catch {
                 // Ignore malformed pending data and show the normal login error.
             }
-            showError(pending.some(item => item.username?.toLowerCase() === username)
+            showError(pending.some(item => item.email?.toLowerCase() === email)
                 ? 'Your application is still pending approval.'
-                : 'Invalid username or password.');
+                : 'Invalid email or password.');
             return;
         }
     }
