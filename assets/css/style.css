@@ -93,8 +93,8 @@ body.dashboard-body .low-stock-item { background-color: rgba(13,18,25,0.64); bor
 .btn-sm:hover { background: #2d3548; }
 .btn-primary { background: #cc0f0f; border: none; color: #fff; padding: 8px 18px; border-radius: 30px; font-weight: 600; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-family: inherit; }
 .btn-primary:hover { background: #a50c0c; }
-.btn-danger { background: #cc0f0f; border: 1px solid #cc0f0f#cc0f0f; color: #fff; padding: 8px 18px; border-radius: 30px; font-weight: 600; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-family: inherit; }
-.btn-danger:hover { background: #cc0f0f; }
+.btn-danger { background: #db0808; border: 1px solid #cc0f0f#cc0f0f; color: #fff; padding: 8px 18px; border-radius: 30px; font-weight: 600; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-family: inherit; }
+.btn-danger:hover { background: #db0808; }
 .confirm-dialog { text-align: center; }
 .confirm-dialog-icon { display: grid; place-items: center; width: 48px; height: 48px; margin: 0 auto 14px; border-radius: 50%; background: rgba(211,18,18,0.12); color: #e34b4b; font-size: 1.1rem; }
 .confirm-dialog .modal-sub { margin: 10px 0 20px; line-height: 1.55; }
@@ -123,7 +123,7 @@ body.dashboard-body .low-stock-item { background-color: rgba(13,18,25,0.64); bor
 .badge-status.out { background: rgba(241, 196, 15, 0.15); color: #f0c30e; }
 .badge-status.paid { background: rgba(46, 204, 113, 0.15); color: #33e27c; }
 .badge-status.reserved { background: rgba(241, 196, 15, 0.15); color: #f0c30e; }
-.badge-status.expired { background: rgba(231, 76, 60, 0.15); color: #d31212; }
+.badge-status.expired { background: rgba(231, 76, 60, 0.15); color: #db0808; }
 
 /* ========== WALK-IN MODAL IMPROVEMENTS ========== */
 .modal-content { max-width: 620px; }
@@ -132,7 +132,7 @@ body.dashboard-body .low-stock-item { background-color: rgba(13,18,25,0.64); bor
 .modal-content .form-group select { padding: 10px 12px; font-size: 0.9rem; }
 .modal-content { -webkit-overflow-scrolling: touch; }
 label:has(input[name="wiPlan"]:checked) {
-    border-color: #cc0f0f !important;
+    border-color: #db0808 !important;
     background: rgba(255,107,43,0.08) !important;
     box-shadow: 0 0 0 3px rgba(255,107,43,0.15);
 }
@@ -142,9 +142,9 @@ label:has(input[name="wiPlan"]:checked) {
 
 /* ========== LOW STOCK ========== */
 .low-stock-list { display: flex; flex-direction: column; gap: 12px; }
-.low-stock-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #0d1219; border-radius: 14px; border-left: 3px solid #cc0f0f; gap: 12px; }
+.low-stock-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #0d1219; border-radius: 14px; border-left: 3px solid #db0808; gap: 12px; }
 .low-stock-item .name { font-weight: 500; font-size: 0.9rem; }
-.low-stock-item .qty { font-size: 0.8rem; color: #cc0f0f; font-weight: 600; white-space: nowrap; }
+.low-stock-item .qty { font-size: 0.8rem; color: #db0808; font-weight: 600; white-space: nowrap; }
 
 /* ========== MEMBERSHIP ========== */
 .membership-controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 20px; }
@@ -153,19 +153,19 @@ label:has(input[name="wiPlan"]:checked) {
 .membership-controls .search input { width: 100%; padding: 12px 16px 12px 44px; background: #0d1219; border: 1px solid #1e2533; border-radius: 40px; color: #e8edf5; font-size: 0.9rem; outline: none; font-family: inherit; }
 .plan-pills { display: flex; gap: 8px; flex-wrap: wrap; }
 .pill { padding: 8px 16px; border-radius: 40px; background: #1a1f2b; border: 1px solid #2d3548; color: #a4adc2; font-size: 0.8rem; font-weight: 500; cursor: pointer; }
-.pill.active { background: #cc0f0f; border-color: #cc0f0f; color: #fff; }
+.pill.active { background: #db0808; border-color: #db0808; color: #fff; }
 .member-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid #161c27; flex-wrap: wrap; gap: 12px; }
 .member-row:last-child { border-bottom: none; }
 .member-info { display: flex; align-items: center; gap: 14px; }
-.member-avatar { width: 42px; height: 42px; border-radius: 50%; background: #1e2533; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #d31212; font-size: 1rem; flex-shrink: 0; }
+.member-avatar { width: 42px; height: 42px; border-radius: 50%; background: #1e2533; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #db0808; font-size: 1rem; flex-shrink: 0; }
 .member-details h4 { font-size: 0.95rem; font-weight: 600; }
 .member-details p { font-size: 0.75rem; color: #6a748b; }
 .member-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .renew-btn { background: transparent; border: 1px solid #2d3548; color: #e8edf5; padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 500; cursor: pointer; font-family: inherit; }
-.renew-btn:hover { background: #1e2533; border-color: #cc0f0f; }
+.renew-btn:hover { background: #1e2533; border-color: #db0808; }
 .approve-badge { background: rgba(46, 204, 113, 0.15); color: #2ecc71; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
 .approve-badge.pending { background: rgba(241, 196, 15, 0.15); color: #f1c40f; }
-.approve-badge.expired { background: rgba(231, 76, 60, 0.15); color: #cc0f0f; }
+.approve-badge.expired { background: rgba(231, 76, 60, 0.15); color: #db0808; }
 
 /* ========== QR SCANNER ========== */
 .qr-scanner-box { background: #0d1219; border: 2px dashed #2d3548; border-radius: 20px; padding: 30px; text-align: center; margin-bottom: 20px; cursor: pointer; }

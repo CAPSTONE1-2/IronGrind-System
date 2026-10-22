@@ -41,7 +41,15 @@ async function sendPasswordReset(event) {
     const status = document.getElementById('recoveryStatus');
     const button = document.getElementById('sendRecoveryButton');
     const email = emailInput?.value.trim().toLowerCase();
-    if (!client || !email || !status || !button) return;
+    if (!status || !button) return;
+    if (!client) {
+        status.innerHTML = '<i class="fas fa-exclamation-circle"></i> <span></span>';
+        status.querySelector('span').textContent = 'The password reset service did not load. Refresh the page and try again.';
+        status.classList.remove('hidden');
+        status.style.color = '#ff7777';
+        return;
+    }
+    if (!email) return;
 
     status.classList.add('hidden');
     button.disabled = true;
@@ -57,7 +65,11 @@ async function sendPasswordReset(event) {
     } catch (error) {
         console.error('Could not send password reset email:', error);
         status.classList.remove('hidden');
-        status.innerHTML = '<i class="fas fa-exclamation-circle"></i> <span>We could not send the reset link. Please check your connection and try again.</span>';
+        const message = error instanceof Error && error.message
+            ? error.message
+            : 'A network error prevented the password reset request.';
+        status.innerHTML = '<i class="fas fa-exclamation-circle"></i> <span></span>';
+        status.querySelector('span').textContent = `We could not send the reset link: ${message}`;
         status.style.color = '#ff7777';
     } finally {
         button.disabled = false;
