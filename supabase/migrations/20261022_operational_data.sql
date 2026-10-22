@@ -9,6 +9,19 @@ alter table public.products
     add column if not exists price_per_unit numeric(12, 2) not null default 0,
     add column if not exists unit text not null default 'item';
 
+-- The existing catalog used title-case labels. Normalize them to the
+-- canonical values used by the app and POS before enforcing the current rule.
+alter table public.products drop constraint if exists products_category_check;
+update public.products
+set category = case
+    when lower(category) = 'supplement' then 'supplement'
+    when lower(category) in ('merch', 'merchandise') then 'merchandise'
+    else lower(category)
+end;
+alter table public.products
+    add constraint products_category_check
+    check (category in ('supplement', 'merchandise'));
+
 -- Supplements are sold by gram and do not use stock counts; merchandise does.
 alter table public.products alter column stock drop not null;
 update public.products
