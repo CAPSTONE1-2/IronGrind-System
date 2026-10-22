@@ -52,9 +52,11 @@
             return;
         }
 
+        // Auth may still be exchanging the recovery code for a session on a
+        // slower connection. Give the auth-state listener time to receive it.
         window.setTimeout(() => {
             if (!recoveryReady) showRecoveryError('This reset link is invalid or expired. Request a new password reset email and try again.');
-        }, 1200);
+        }, 10000);
     }
 
     form.addEventListener('submit', async (event) => {
