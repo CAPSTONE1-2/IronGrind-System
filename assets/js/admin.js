@@ -8,7 +8,7 @@
         window.location.href = 'index.html?role=admin';
         return;
     }
-    document.getElementById('currentUserName').textContent = session.username;
+    document.getElementById('currentUserName').textContent = session.fullName || session.username;
 })();
 
 /* ========== STATE ========== */
