@@ -382,6 +382,7 @@ label:has(input[name="wiPlan"]:checked) {
 .settings-credential-form { margin-top: 26px; padding-top: 4px; border-top: 1px solid rgba(190,201,220,0.14); }
 .settings-form-status { min-height: 1.25em; margin: 10px 0 0; font-size: 13px; }
 .settings-credential-form .form-group { margin-bottom: 14px; }
+@media (max-width: 640px) { .settings-choice-list { grid-template-columns: 1fr; } }
 .member-collapsible > .panel-header { margin-bottom: 0; }
 .member-collapsible > summary:focus-visible { outline: 2px solid #d31212; outline-offset: 4px; border-radius: 8px; }
 

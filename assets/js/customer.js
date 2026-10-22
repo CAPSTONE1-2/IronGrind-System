@@ -23,33 +23,6 @@ let supabaseProducts = null;
 
 // ===== HELPERS =====
 function todayStr() { return new Date().toISOString().slice(0, 10); }
-function renewalDaysRemaining(expiryDate) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(expiryDate || ''))) return null;
-    const expiry = Date.parse(`${expiryDate}T00:00:00Z`);
-    const today = Date.parse(`${todayStr()}T00:00:00Z`);
-    return Number.isFinite(expiry) ? Math.round((expiry - today) / 86400000) : null;
-}
-function updateRenewalEligibility(member) {
-    const button = document.querySelector('#membershipForm button[type="submit"]');
-    const status = document.getElementById('renewalFormStatus');
-    if (!button || !status) return;
-    const daysRemaining = renewalDaysRemaining(member?.expiry);
-    if (daysRemaining === null) {
-        button.disabled = true;
-        status.textContent = 'We could not verify your membership expiry. Contact the gym admin.';
-    } else if (daysRemaining < 0) {
-        button.disabled = true;
-        status.textContent = 'Your membership has expired. Please visit the gym to renew.';
-    } else if (daysRemaining > 5) {
-        button.disabled = true;
-        status.textContent = `Renewal opens 5 days before your expiry date (${member.expiry}).`;
-    } else {
-        button.disabled = false;
-        const expiryMessage = daysRemaining === 0 ? 'today' : `in ${daysRemaining} day${daysRemaining === 1 ? '' : 's'}`;
-        status.textContent = `You can submit a renewal request now. Your membership expires ${expiryMessage}.`;
-    }
-    status.style.color = '#b8c0cc';
-}
 function addDays(dateStr, days) {
     const d = new Date(dateStr);
     d.setDate(d.getDate() + days);
@@ -552,18 +525,6 @@ async function submitMembershipForm(event) {
     }
     if (nameInput) nameInput.value = name;
 
-        const daysRemaining = renewalDaysRemaining(member.expiry);
-        if (daysRemaining === null || daysRemaining < 0 || daysRemaining > 5) {
-            const message = daysRemaining === null
-                ? 'We could not verify your membership expiry. Contact the gym admin.'
-                : daysRemaining < 0
-                    ? 'Your membership has expired. Please visit the gym to renew.'
-                    : `You can request renewal starting 5 days before your expiry date (${member.expiry}).`;
-            renewalFormMessage(message, 'error');
-            updateRenewalEligibility(member);
-            return;
-        }
-
         const { data: existing, error: lookupError } = await client
             .from('membership_applications')
             .select('id')
@@ -584,7 +545,6 @@ async function submitMembershipForm(event) {
         const submittedAt = new Date().toISOString();
         const estimatedEndDate = addDays(todayStr(), plan === 'Monthly' ? 30 : plan === 'Half Month' ? 15 : 1);
         const { error: insertError } = await client.from('membership_applications').insert({
-            user_id: user.id,
             auth_user_id: user.id,
             member_id: member.id,
             application_type: 'renewal',
@@ -634,6 +594,7 @@ async function submitMemberSettings(event) {
     settingsFormMessage('');
     try {
         const fullName = document.getElementById('settingsFullName').value.trim();
+        const username = document.getElementById('settingsUsername').value.trim().toLowerCase();
         const dob = document.getElementById('settingsDob').value;
         const mobile = document.getElementById('settingsMobile').value.replace(/\D/g, '');
         const emergencyMobile = document.getElementById('settingsEmergencyMobile').value.replace(/\D/g, '');
@@ -643,6 +604,10 @@ async function submitMemberSettings(event) {
         const otherMedicalConditions = otherMedicalChoice ? document.getElementById('settingsOtherMedical').value.trim() : '';
         if (!fullName) {
             settingsFormMessage('Enter your full name.', 'error');
+            return;
+        }
+        if (username.length < 4 || !/^[a-z0-9_.]+$/.test(username)) {
+            settingsFormMessage('Username must be at least 4 characters and use only letters, numbers, underscores, or dots.', 'error');
             return;
         }
         if (!dob || dob > todayStr()) {
@@ -679,6 +644,7 @@ async function submitMemberSettings(event) {
         }
         const profile = {
             full_name: fullName,
+            username,
             mobile: mobile || null,
             date_of_birth: dob,
             sex: document.getElementById('settingsSex').value,
@@ -704,6 +670,8 @@ async function submitMemberSettings(event) {
 
         if (supabaseMember) {
             supabaseMember.name = fullName;
+            supabaseMember.username = username;
+            supabaseMember.age = Number(document.getElementById('settingsAge').value) || null;
             supabaseMember.contact = mobile || null;
             supabaseMember.dateOfBirth = dob;
             supabaseMember.sex = profile.sex;
@@ -716,6 +684,7 @@ async function submitMemberSettings(event) {
             supabaseMember.otherMedicalConditions = profile.other_medical_conditions;
         }
         session.fullName = fullName;
+        session.username = username;
         const sessionStorageArea = localStorage.getItem('irongrind_session') ? localStorage : sessionStorage;
         sessionStorageArea.setItem('irongrind_session', JSON.stringify(session));
         document.getElementById('currentUserName').textContent = fullName;
@@ -816,6 +785,7 @@ function updateSettingsAge() {
 function populateMemberSettings(member) {
     const emergency = member?.emergencyContact || {};
     document.getElementById('settingsFullName').value = member?.name || session.fullName || '';
+    document.getElementById('settingsUsername').value = member?.username || session.username || '';
     document.getElementById('settingsDob').value = member?.dateOfBirth || '';
     document.getElementById('settingsSex').value = member?.sex || 'Prefer not to say';
     document.getElementById('settingsMobile').value = member?.contact || '';
@@ -851,7 +821,6 @@ document.addEventListener('DOMContentLoaded', () => {
     loadSupabaseMember().finally(() => {
     const member = getCurrentMember();
     document.getElementById('mfName').value = member?.name || session.fullName || '';
-    updateRenewalEligibility(member);
     populateMemberSettings(member);
     updateMemberStatus();
     renderMembershipProgress();
@@ -900,6 +869,50 @@ async function loadSupabaseMember() {
         emergencyContact: row.emergency_contact && typeof row.emergency_contact === 'object'
             ? row.emergency_contact
             : { name: row.emergency_name || '', relationship: row.emergency_relationship || '', contact: row.emergency_contact || '' },
+        signature: row.signature_path || row.signature_data || null,
+        qrCode: `IRONGRIND|${row.id}`
+    };
+    populateMemberSettings(supabaseMember);
+
+    const [attendanceResult, productsResult] = await Promise.all([
+        client.from('attendance').select('*').eq('member_id', row.id).order('time_in', { ascending: false }),
+        client.from('products').select('*').eq('is_active', true).order('name')
+    ]);
+    if (attendanceResult.error) {
+        console.error('Could not load member attendance from Supabase:', attendanceResult.error);
+    } else {
+        supabaseAttendance = attendanceResult.data.map(record => {
+            const start = new Date(record.time_in);
+            const end = record.time_out ? new Date(record.time_out) : null;
+            const localDate = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+            const localTime = date => `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+            return {
+                id: record.id,
+                memberId: record.member_id,
+                date: localDate(start),
+                timeIn: localTime(start),
+                timeOut: end ? localTime(end) : null
+            };
+        });
+    }
+    if (productsResult.error) {
+        console.error('Could not load products from Supabase:', productsResult.error);
+    } else {
+        supabaseProducts = productsResult.data.map(product => ({
+            id: product.id,
+            name: product.name,
+            category: product.category === 'supplement' ? 'Supplement' : 'Merch',
+            price: Number(product.price_per_unit) || 0,
+            stock: Number(product.stock) || 0,
+            size: product.size || '',
+            image: product.image_path || ''
+        }));
+    }
+}
+
+window.addEventListener('load', () => {
+    window.setTimeout(() => document.getElementById('page-loader')?.classList.add('hidden-loader'), 2500);
+});
         signature: row.signature_path || row.signature_data || null,
         qrCode: `IRONGRIND|${row.id}`
     };
