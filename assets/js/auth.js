@@ -109,7 +109,7 @@ async function handleLogin(event) {
             if (recovery.error) {
                 await supabaseClient.auth.signOut();
                 console.error('Could not complete saved registration:', recovery.error);
-                showError(`We could not submit your saved application: ${recovery.error.message}`);
+                showError('We could not submit your saved application. Please try again or contact the gym for help.');
                 return;
             }
             if (recovery.recovered) {
@@ -176,7 +176,7 @@ async function handleLogin(event) {
 
         if (error) await supabaseClient.auth.signOut();
 
-        showError('Invalid email or password. If you registered recently, wait for admin approval and use the password for your Supabase account.');
+        showError('Invalid email or password. If you recently registered, your application must be approved before you can access the member portal.');
     } catch (error) {
         console.error('Login failed:', error);
         showError('Unable to connect to the login service. Please try again.');

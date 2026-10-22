@@ -183,7 +183,7 @@ async function submitRegistration(event) {
             return;
         }
         if (!data.user) {
-            showError('Supabase did not return an account. Please try again.');
+            showError('We could not create your account. Please try again.');
             return;
         }
 
@@ -253,7 +253,7 @@ async function insertSupabaseApplication(draft) {
 
     if (error) {
         console.error('Application save failed:', error);
-        showError(`Your account was created, but the application could not be saved: ${error.message}`);
+        showError('Your account was created, but we could not submit your application. Your form is saved in this browser. Please try again or contact the gym for help.');
         return false;
     }
     app.id = data.id;

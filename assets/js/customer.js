@@ -546,20 +546,20 @@ async function submitMembershipForm(event) {
 
     const client = window.ironGrindSupabase;
     if (!client) {
-        renewalFormMessage('Renewal not submitted: the connection to Supabase did not load. Refresh the page and try again.', 'error');
+        renewalFormMessage('Renewal could not be submitted right now. Refresh the page and try again.', 'error');
         return;
     }
     const { data: authData, error: authError } = await client.auth.getUser();
     const user = authData?.user;
     if (authError || !user) {
-        renewalFormMessage('Your Supabase session could not be verified. Sign in again, then retry.', 'error');
+        renewalFormMessage('Your sign-in session has expired. Sign in again, then retry.', 'error');
         return;
     }
 
     if (!supabaseMember) await loadSupabaseMember();
     const member = supabaseMember;
     if (!member || !isUUID(member.id) || member.authUserId !== user.id) {
-        renewalFormMessage('No Supabase member record is linked to this login. Contact the gym admin.', 'error');
+        renewalFormMessage('We could not find a membership linked to this login. Contact the gym admin for help.', 'error');
         return;
     }
     const name = member.name?.trim() || '';
@@ -578,7 +578,8 @@ async function submitMembershipForm(event) {
             .limit(1)
             .maybeSingle();
         if (lookupError) {
-            renewalFormMessage(`Could not check existing renewal requests: ${lookupError.message}`, 'error');
+            console.error('Could not check existing renewal requests:', lookupError);
+            renewalFormMessage('We could not check your renewal status right now. Please try again or contact the gym.', 'error');
             return;
         }
         if (existing) {
@@ -608,7 +609,7 @@ async function submitMembershipForm(event) {
         });
         if (insertError) {
             console.error('Supabase renewal request failed:', insertError);
-            renewalFormMessage(`Could not submit renewal request: ${insertError.message}`, 'error');
+            renewalFormMessage('We could not submit your renewal request right now. Please try again or contact the gym.', 'error');
             return;
         }
 
@@ -616,7 +617,7 @@ async function submitMembershipForm(event) {
         return;
     } catch (error) {
         console.error('Unexpected renewal submission error:', error);
-        renewalFormMessage(`Renewal could not be submitted: ${error?.message || 'Please refresh and try again.'}`, 'error');
+        renewalFormMessage('Renewal could not be submitted right now. Please refresh and try again.', 'error');
     } finally {
         if (submitButton) {
             submitButton.disabled = false;
