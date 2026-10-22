@@ -120,9 +120,9 @@ body.dashboard-body .low-stock-item { background-color: rgba(13,18,25,0.64); bor
 .empty-state { text-align: center; padding: 30px; color: #6a748b; font-size: 0.85rem; }
 .badge-status { padding: 4px 12px; border-radius: 40px; font-size: 0.7rem; font-weight: 600; display: inline-block; }
 .badge-status.in { background: rgba(46, 204, 113, 0.15); color: #2ecc71; }
-.badge-status.out { background: rgba(241, 196, 15, 0.15); color: #f1c40f; }
+.badge-status.out { background: rgba(241, 196, 15, 0.15); color: #f0c30e; }
 .badge-status.paid { background: rgba(46, 204, 113, 0.15); color: #2ecc71; }
-.badge-status.reserved { background: rgba(241, 196, 15, 0.15); color: #f1c40f; }
+.badge-status.reserved { background: rgba(241, 196, 15, 0.15); color: #f0c30e; }
 .badge-status.expired { background: rgba(231, 76, 60, 0.15); color: #d31212; }
 
 /* ========== WALK-IN MODAL IMPROVEMENTS ========== */
