@@ -5,6 +5,8 @@
 // ===== AUTH GUARD =====
 let session;
 let supabaseMember = null;
+let supabaseAttendance = null;
+let supabaseProducts = null;
 (function guardCustomer() {
     session = JSON.parse(
         localStorage.getItem('irongrind_session') ||
@@ -274,8 +276,9 @@ function renderAttendanceHistory() {
         return;
     }
 
-    const all = loadDB('attendance').filter(a =>
-        a.memberId === m.id || a.memberName === m.name
+    const attendanceRows = supabaseAttendance || loadDB('attendance');
+    const all = attendanceRows.filter(a =>
+        String(a.memberId) === String(m.id) || (!supabaseAttendance && a.memberName === m.name)
     );
 
     // Summary counts
@@ -330,7 +333,7 @@ function renderAttendanceHistory() {
 
 // ===== STORE (VIEW ONLY) =====
 function renderStore() {
-    const products = loadDB('products');
+    const products = supabaseProducts || loadDB('products');
     const supp = products.filter(p => p.category === 'Supplement');
     const merch = products.filter(p => p.category === 'Merch');
 
@@ -544,6 +547,41 @@ async function loadSupabaseMember() {
         signature: row.signature_path || row.signature_data || null,
         qrCode: `IRONGRIND|${row.id}`
     };
+
+    const [attendanceResult, productsResult] = await Promise.all([
+        client.from('attendance').select('*').eq('member_id', row.id).order('time_in', { ascending: false }),
+        client.from('products').select('*').eq('is_active', true).order('name')
+    ]);
+    if (attendanceResult.error) {
+        console.error('Could not load member attendance from Supabase:', attendanceResult.error);
+    } else {
+        supabaseAttendance = attendanceResult.data.map(record => {
+            const start = new Date(record.time_in);
+            const end = record.time_out ? new Date(record.time_out) : null;
+            const localDate = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+            const localTime = date => `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+            return {
+                id: record.id,
+                memberId: record.member_id,
+                date: localDate(start),
+                timeIn: localTime(start),
+                timeOut: end ? localTime(end) : null
+            };
+        });
+    }
+    if (productsResult.error) {
+        console.error('Could not load products from Supabase:', productsResult.error);
+    } else {
+        supabaseProducts = productsResult.data.map(product => ({
+            id: product.id,
+            name: product.name,
+            category: product.category === 'supplement' ? 'Supplement' : 'Merch',
+            price: Number(product.price_per_unit) || 0,
+            stock: Number(product.stock) || 0,
+            size: product.size || '',
+            image: product.image_path || ''
+        }));
+    }
 }
 
 window.addEventListener('load', () => {

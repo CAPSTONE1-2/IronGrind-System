@@ -54,6 +54,64 @@ function loadDB(key) {
     catch { return []; }
 }
 function saveDB(key, data) { localStorage.setItem('ig_' + key, JSON.stringify(data)); }
+function isUUID(value) { return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || '')); }
+
+function mapSupabaseProduct(row) {
+    return {
+        id: row.id,
+        name: row.name,
+        category: row.category === 'supplement' ? 'Supplement' : 'Merch',
+        price: Number(row.price_per_unit) || 0,
+        stock: Number(row.stock) || 0,
+        size: row.size || '',
+        inventoryUnit: row.unit === 'gram' ? 'gram' : 'item',
+        image: row.image_path || '',
+        isActive: row.is_active !== false
+    };
+}
+
+function mapSupabaseSale(row) {
+    const items = (row.sale_items || []).map(item => ({
+        name: item.item_name,
+        productId: item.product_id,
+        category: item.category === 'supplement' ? 'Supplement' : item.category === 'merchandise' ? 'Merch' : 'Membership',
+        quantity: Number(item.quantity),
+        quantityUnit: item.unit === 'gram' ? 'g' : item.unit === 'item' ? 'item' : '',
+        unitPrice: Number(item.unit_price),
+        total: Number(item.line_total)
+    }));
+    const soldAt = new Date(row.sold_at);
+    return {
+        id: row.receipt_number,
+        databaseId: row.id,
+        customer: row.customer_name,
+        source: row.customer_type === 'walk_in' ? 'walk-in' : 'member',
+        memberId: row.member_id,
+        items: items.map(item => `${item.name} x${item.quantity}${item.quantityUnit === 'g' ? 'g' : ''}`).join(', '),
+        lineItems: items,
+        total: Number(row.total),
+        date: Number.isNaN(soldAt.getTime()) ? todayStr() : soldAt.toISOString().slice(0, 10),
+        createdAt: row.sold_at,
+        status: row.status === 'voided' ? 'Voided' : 'Paid'
+    };
+}
+
+function mapSupabaseAttendance(row) {
+    const timeIn = new Date(row.time_in);
+    const timeOut = row.time_out ? new Date(row.time_out) : null;
+    const localDate = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    const localTime = date => `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+    const member = members.find(item => String(item.id) === String(row.member_id));
+    return {
+        id: row.id,
+        memberId: row.member_id,
+        memberName: member?.name || row.members?.full_name || 'Member',
+        date: Number.isNaN(timeIn.getTime()) ? todayStr() : localDate(timeIn),
+        timeIn: Number.isNaN(timeIn.getTime()) ? '' : localTime(timeIn),
+        timeOut: timeOut && !Number.isNaN(timeOut.getTime()) ? localTime(timeOut) : null,
+        databaseTimeIn: row.time_in
+    };
+}
 
 /* ========== TOAST & MODAL ========== */
 let toastTimer;
@@ -632,6 +690,41 @@ async function loadSupabaseMembershipData() {
     renderDashboard();
     renderMembers();
     renderApprovals();
+}
+
+async function loadSupabaseOperationalData() {
+    const client = window.ironGrindSupabase;
+    if (!client) return;
+    const [productsResult, salesResult, attendanceResult] = await Promise.all([
+        client.from('products').select('*').eq('is_active', true).order('name'),
+        client.from('sales').select('*, sale_items(*)').order('sold_at', { ascending: false }),
+        client.from('attendance').select('*, members(full_name)').order('time_in', { ascending: false })
+    ]);
+
+    if (productsResult.error) {
+        console.error('Could not load Supabase products:', productsResult.error);
+        toast(`Could not load inventory from Supabase: ${productsResult.error.message}`, 'error');
+    } else {
+        products = productsResult.data.map(mapSupabaseProduct);
+    }
+    if (salesResult.error) {
+        console.error('Could not load Supabase sales:', salesResult.error);
+        toast(`Could not load sales from Supabase: ${salesResult.error.message}`, 'error');
+    } else {
+        sales = salesResult.data.map(mapSupabaseSale);
+    }
+    if (attendanceResult.error) {
+        console.error('Could not load Supabase attendance:', attendanceResult.error);
+        toast(`Could not load attendance from Supabase: ${attendanceResult.error.message}`, 'error');
+    } else {
+        attendance = attendanceResult.data.map(mapSupabaseAttendance);
+    }
+    renderStore();
+    renderSales();
+    renderAttendance();
+    renderDashboard();
+    renderReports();
+    renderWalkinSalesReport();
 }
 
 function rejectApplication(id) {
@@ -1221,7 +1314,7 @@ function findMemberFromQR(value) {
     return members.find(member => String(member.id) === identifier || member.username === identifier) || null;
 }
 
-function recordMemberCheckIn(member) {
+async function recordMemberCheckIn(member) {
     if (!member || member.expiry < todayStr()) {
         toast('Membership is expired. Check the member’s renewal status.', 'error');
         return;
@@ -1230,19 +1323,44 @@ function recordMemberCheckIn(member) {
     if (attendance.find(a => a.memberId === member.id && a.date === today && !a.timeOut)) {
         toast(`${member.name} is already checked in.`, 'error'); return;
     }
-    const timeIn = new Date().toTimeString().slice(0, 5);
-    attendance.push({ id: uid('A'), memberId: member.id, memberName: member.name, date: today, timeIn, timeOut: null });
-    saveDB('attendance', attendance);
+    const now = new Date();
+    const timeIn = now.toTimeString().slice(0, 5);
+    if (window.ironGrindSupabase) {
+        if (!isUUID(member.id)) {
+            toast('This member is not linked to a Supabase member record, so attendance was not saved.', 'error');
+            return;
+        }
+        const { data: { user }, error: authError } = await window.ironGrindSupabase.auth.getUser();
+        if (authError || !user) { toast('Your Supabase session expired. Please sign in again.', 'error'); return; }
+        const { data, error } = await window.ironGrindSupabase.from('attendance').insert({
+            member_id: member.id,
+            time_in: now.toISOString(),
+            recorded_by: user.id
+        }).select('*').single();
+        if (error) { toast(`Could not save attendance: ${error.message}`, 'error'); return; }
+        attendance.unshift(mapSupabaseAttendance(data));
+    } else {
+        attendance.push({ id: uid('A'), memberId: member.id, memberName: member.name, date: today, timeIn, timeOut: null });
+        saveDB('attendance', attendance);
+    }
     renderAttendance();
     renderDashboard();
     toast(`${member.name} checked in at ${timeIn}.`, 'success');
 }
 
-function checkOut(id) {
+async function checkOut(id) {
     const a = attendance.find(x => x.id === id);
     if (!a) return;
-    a.timeOut = new Date().toTimeString().slice(0, 5);
-    saveDB('attendance', attendance);
+    const now = new Date();
+    if (window.ironGrindSupabase) {
+        const { data, error } = await window.ironGrindSupabase.from('attendance')
+            .update({ time_out: now.toISOString() }).eq('id', id).is('time_out', null).select('id').maybeSingle();
+        if (error) { toast(`Could not save check-out: ${error.message}`, 'error'); return; }
+        if (!data) { toast('This visit was already checked out. Refresh attendance to see the latest record.', 'error'); return; }
+    } else {
+        saveDB('attendance', attendance);
+    }
+    a.timeOut = now.toTimeString().slice(0, 5);
     renderAttendance();
     renderDashboard();
     toast(`${a.memberName} checked out.`, 'success');
@@ -1330,9 +1448,26 @@ async function submitAddProduct() {
     if (!name || !Number.isFinite(price) || price <= 0 || !Number.isFinite(stock) || stock < 0) { toast('Enter a name, a price greater than zero, and a valid stock amount.', 'error'); return; }
     const image = await getProductPhoto('apImage');
     if (image === false) return;
-    products.push({ id: uid('P'), name, category, price, stock, ...(category === 'Merch' && size ? { size } : {}), inventoryUnit: category === 'Supplement' ? 'gram' : 'item', ...(image ? { image } : {}) });
-    try { saveDB('products', products); }
-    catch { products.pop(); toast('Could not save product photo. Try a smaller image or remove photos from other products.', 'error'); return; }
+    const product = { name, category, price, stock, ...(category === 'Merch' && size ? { size } : {}), inventoryUnit: category === 'Supplement' ? 'gram' : 'item', ...(image ? { image } : {}) };
+    if (window.ironGrindSupabase) {
+        const { data, error } = await window.ironGrindSupabase.from('products').insert({
+            name,
+            category: category === 'Supplement' ? 'supplement' : 'merchandise',
+            price_per_unit: price,
+            unit: category === 'Supplement' ? 'gram' : 'item',
+            size: category === 'Merch' ? (size || null) : null,
+            stock: category === 'Merch' ? stock : null,
+            image_path: image || null,
+            is_active: true
+        }).select('*').single();
+        if (error) { toast(`Could not save product to Supabase: ${error.message}`, 'error'); return; }
+        products.push(mapSupabaseProduct(data));
+    } else {
+        product.id = uid('P');
+        products.push(product);
+        try { saveDB('products', products); }
+        catch { products.pop(); toast('Could not save product photo. Try a smaller image or remove photos from other products.', 'error'); return; }
+    }
     closeModal();
     renderStore();
     renderDashboard();
@@ -1368,16 +1503,33 @@ async function submitEditProduct(id) {
     const image = await getProductPhoto('epImage');
     if (image === false) return;
     const oldProduct = { ...p };
-    p.name = document.getElementById('epName').value.trim();
-    if (p.category === 'Merch') p.size = document.getElementById('epSize').value.trim();
-    else delete p.size;
-    p.price = newPrice;
-    if (p.category === 'Merch') p.stock = Number(document.getElementById('epStock').value);
-    p.inventoryUnit = p.category === 'Supplement' ? 'gram' : 'item';
-    if (image) p.image = image;
-    else if (document.getElementById('epRemoveImage').checked) delete p.image;
-    try { saveDB('products', products); }
-    catch { Object.assign(p, oldProduct); toast('Could not save product photo. Try a smaller image or remove photos from other products.', 'error'); return; }
+    const updatedProduct = { ...p, name: document.getElementById('epName').value.trim(), price: newPrice };
+    if (p.category === 'Merch') {
+        updatedProduct.size = document.getElementById('epSize').value.trim();
+        updatedProduct.stock = Number(document.getElementById('epStock').value);
+    } else delete updatedProduct.size;
+    updatedProduct.inventoryUnit = p.category === 'Supplement' ? 'gram' : 'item';
+    if (image) updatedProduct.image = image;
+    else if (document.getElementById('epRemoveImage').checked) updatedProduct.image = '';
+    if (window.ironGrindSupabase) {
+        if (!isUUID(id)) { toast('This product is not linked to a Supabase record.', 'error'); return; }
+        const { data, error } = await window.ironGrindSupabase.from('products').update({
+            name: updatedProduct.name,
+            category: p.category === 'Supplement' ? 'supplement' : 'merchandise',
+            price_per_unit: updatedProduct.price,
+            unit: p.category === 'Supplement' ? 'gram' : 'item',
+            size: p.category === 'Merch' ? (updatedProduct.size || null) : null,
+            stock: p.category === 'Merch' ? updatedProduct.stock : null,
+            image_path: updatedProduct.image || null,
+            updated_at: new Date().toISOString()
+        }).eq('id', id).select('*').single();
+        if (error) { toast(`Could not update product in Supabase: ${error.message}`, 'error'); return; }
+        Object.assign(p, mapSupabaseProduct(data));
+    } else {
+        Object.assign(p, updatedProduct);
+        try { saveDB('products', products); }
+        catch { Object.assign(p, oldProduct); toast('Could not save product photo. Try a smaller image or remove photos from other products.', 'error'); return; }
+    }
     closeModal();
     renderStore();
     renderDashboard();
@@ -1425,11 +1577,16 @@ function deleteProduct(id) {
     askConfirmation('Delete product?', `Delete ${p.name}? This action cannot be undone.`, 'Delete', () => completeProductDeletion(id), true);
 }
 
-function completeProductDeletion(id) {
+async function completeProductDeletion(id) {
     const p = products.find(x => x.id === id);
     if (!p) return;
+    if (window.ironGrindSupabase) {
+        const { error } = await window.ironGrindSupabase.from('products')
+            .update({ is_active: false, updated_at: new Date().toISOString() }).eq('id', id);
+        if (error) { toast(`Could not archive product in Supabase: ${error.message}`, 'error'); return; }
+    }
     products = products.filter(x => x.id !== id);
-    saveDB('products', products);
+    if (!window.ironGrindSupabase) saveDB('products', products);
     renderStore();
     renderDashboard();
     toast(`Deleted ${p.name}.`, 'error');
@@ -1479,7 +1636,7 @@ function updateSaleTotalPreview() {
     if (output) output.textContent = formatPeso(product && Number.isFinite(quantity) ? product.price * quantity : 0);
 }
 
-function submitNewSale() {
+async function submitNewSale() {
     const customer = document.getElementById('nsCustomer').value.trim();
     const pid = document.getElementById('nsProduct').value;
     const qty = Number(document.getElementById('nsQty').value);
@@ -1487,28 +1644,68 @@ function submitNewSale() {
     const supplement = p?.category === 'Supplement';
     if (!customer) { toast('Enter the walk-in customer name.', 'error'); document.getElementById('nsCustomer').focus(); return; }
     if (!p || !Number.isFinite(qty) || qty <= 0 || (!supplement && (!Number.isInteger(qty) || qty > p.stock))) { toast('Enter a valid amount within available stock.', 'error'); return; }
-    if (!supplement) p.stock -= qty;
-    const total = p.price * qty;
     const saleId = nextSaleReceiptId();
     const quantityUnit = supplement ? 'g' : 'item';
-    sales.unshift({
-        id: saleId,
-        customer,
-        source: 'walk-in',
-        category: p.category,
-        productId: p.id,
-        productName: p.name,
-        quantity: qty,
-        quantityUnit,
-        items: `${p.name} x${qty}${supplement ? 'g' : ''}`,
-        lineItems: [{ name: p.name, productId: p.id, category: p.category, quantity: qty, quantityUnit, unitPrice: p.price, total }],
-        total,
-        date: todayStr(),
-        createdAt: new Date().toISOString(),
-        status: 'Paid'
-    });
-    saveDB('products', products);
-    saveDB('sales', sales);
+    let sale;
+    if (window.ironGrindSupabase) {
+        if (!isUUID(p.id)) { toast('This product is not stored in Supabase and cannot be sold yet.', 'error'); return; }
+        const { data, error } = await window.ironGrindSupabase.rpc('record_walk_in_sale', {
+            p_receipt_number: saleId,
+            p_customer_name: customer,
+            p_product_id: p.id,
+            p_quantity: qty
+        });
+        if (error) { toast(`Could not record sale in Supabase: ${error.message}`, 'error'); return; }
+        const line = {
+            name: data.item_name,
+            productId: data.product_id,
+            category: data.category === 'supplement' ? 'Supplement' : 'Merch',
+            quantity: Number(data.quantity),
+            quantityUnit: data.unit === 'gram' ? 'g' : 'item',
+            unitPrice: Number(data.unit_price),
+            total: Number(data.line_total)
+        };
+        p.stock = data.stock ?? p.stock;
+        sale = {
+            id: data.receipt_number,
+            databaseId: data.id,
+            customer: data.customer_name,
+            source: 'walk-in',
+            category: p.category,
+            productId: data.product_id,
+            productName: line.name,
+            quantity: line.quantity,
+            quantityUnit: line.quantityUnit,
+            items: `${line.name} x${line.quantity}${supplement ? 'g' : ''}`,
+            lineItems: [line],
+            total: Number(data.total),
+            date: String(data.sold_at).slice(0, 10),
+            createdAt: data.sold_at,
+            status: 'Paid'
+        };
+    } else {
+        if (!supplement) p.stock -= qty;
+        const total = p.price * qty;
+        sale = {
+            id: saleId,
+            customer,
+            source: 'walk-in',
+            category: p.category,
+            productId: p.id,
+            productName: p.name,
+            quantity: qty,
+            quantityUnit,
+            items: `${p.name} x${qty}${supplement ? 'g' : ''}`,
+            lineItems: [{ name: p.name, productId: p.id, category: p.category, quantity: qty, quantityUnit, unitPrice: p.price, total }],
+            total,
+            date: todayStr(),
+            createdAt: new Date().toISOString(),
+            status: 'Paid'
+        };
+        saveDB('products', products);
+    }
+    sales.unshift(sale);
+    if (!window.ironGrindSupabase) saveDB('sales', sales);
     closeModal();
     renderStore();
     renderSales();
@@ -1979,7 +2176,9 @@ function exportAllReports() {
 
 /* ========== INIT ========== */
 document.addEventListener('DOMContentLoaded', () => {
-    // Seed defaults if empty
+    // Demo data is only created for offline mode. Supabase-backed dashboards
+    // should start from the database instead of presenting fake records.
+    if (!window.ironGrindSupabase) {
     if (!localStorage.getItem('ig_members')) {
         saveDB('members', [
             { id: 'M001', name: 'Juan Dela Cruz', plan: 'Monthly', startDate: '2025-03-15', expiry: '2025-04-15', status: 'active', paid: true, goal: 'Muscle Gain', contact: '09171234567' },
@@ -2017,6 +2216,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (!localStorage.getItem('ig_pendingApprovals')) saveDB('pendingApprovals', []);
     if (!localStorage.getItem('ig_users')) saveDB('users', []);
+    }
 
     members = loadDB('members');
     products = loadDB('products');
@@ -2034,7 +2234,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderAttendance();
     renderSales();
     renderReports();
-    loadSupabaseMembershipData();
+    loadSupabaseMembershipData().then(loadSupabaseOperationalData);
 
     window.setInterval(() => {
         captureExpiredMemberships();
