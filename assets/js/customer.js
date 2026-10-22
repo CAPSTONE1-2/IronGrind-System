@@ -542,6 +542,8 @@ async function submitMembershipForm(event) {
         const submittedAt = new Date().toISOString();
         const estimatedEndDate = addDays(todayStr(), plan === 'Monthly' ? 30 : plan === 'Half Month' ? 15 : 1);
         const { error: insertError } = await client.from('membership_applications').insert({
+            // Older Supabase schema still requires this legacy auth link.
+            user_id: user.id,
             auth_user_id: user.id,
             member_id: member.id,
             application_type: 'renewal',
