@@ -33,6 +33,70 @@ function closeForgotPassword() {
     document.getElementById('forgotPasswordModal').classList.add('hidden');
 }
 
+async function recoverConfirmedRegistration(client, user) {
+    let draft;
+    try { draft = JSON.parse(localStorage.getItem('ig_registration_draft') || 'null'); }
+    catch { draft = null; }
+    if (!draft || draft.userId !== user.id) return { recovered: false };
+    if (!draft.savedAt || Date.now() - draft.savedAt > 24 * 60 * 60 * 1000) {
+        localStorage.removeItem('ig_registration_draft');
+        return { recovered: false, expired: true };
+    }
+
+    const { data: existing, error: lookupError } = await client
+        .from('membership_applications')
+        .select('id')
+        .eq('auth_user_id', user.id)
+        .eq('application_type', 'registration')
+        .limit(1)
+        .maybeSingle();
+    if (lookupError) return { recovered: false, error: lookupError };
+    if (existing) {
+        localStorage.removeItem('ig_registration_draft');
+        return { recovered: false, alreadySubmitted: true };
+    }
+
+    const app = draft.application || {};
+    const emergency = app.emergencyContact || {};
+    const submittedAt = new Date().toISOString();
+    const { error: insertError } = await client.from('membership_applications').insert({
+        user_id: user.id,
+        auth_user_id: user.id,
+        member_id: null,
+        application_type: 'registration',
+        full_name: app.fullName,
+        email: app.email || user.email,
+        username: app.username,
+        mobile: app.mobile,
+        date_of_birth: app.dob,
+        age: app.age,
+        sex: app.sex,
+        height: app.height,
+        height_unit: app.heightUnit,
+        weight: app.weight,
+        emergency_name: emergency.name,
+        emergency_relationship: emergency.relationship,
+        emergency_contact: emergency.contact,
+        plan: app.plan,
+        plan_price: app.planPrice,
+        start_date: app.startDate,
+        end_date: app.endDate,
+        fitness_goals: app.goals || [],
+        health_conditions: app.healthConditions || [],
+        other_medical_conditions: app.otherMedicalConditions || '',
+        signature_data: app.signature || null,
+        status: 'pending',
+        submitted_at: submittedAt,
+        created_at: submittedAt,
+        reviewed_at: null,
+        reviewed_by: null
+    });
+    if (insertError) return { recovered: false, error: insertError };
+
+    localStorage.removeItem('ig_registration_draft');
+    return { recovered: true };
+}
+
 async function handleLogin(event) {
     event.preventDefault();
     hideError();
@@ -54,6 +118,19 @@ async function handleLogin(event) {
         const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
 
         if (!error && data.user) {
+            const recovery = await recoverConfirmedRegistration(supabaseClient, data.user);
+            if (recovery.error) {
+                await supabaseClient.auth.signOut();
+                console.error('Could not complete saved registration:', recovery.error);
+                showError(`Your email is confirmed, but we could not submit your saved application: ${recovery.error.message}`);
+                return;
+            }
+            if (recovery.recovered) {
+                await supabaseClient.auth.signOut();
+                showError('Your email is confirmed and your registration has now been submitted. It is waiting for admin approval.');
+                return;
+            }
+
             const { data: profile, error: profileError } = await supabaseClient
                 .from('profiles')
                 .select('role, username, full_name')
@@ -79,7 +156,7 @@ async function handleLogin(event) {
                     return;
                 }
                 if (!member) {
-                    const { data: application } = await supabaseClient
+                    const { data: application, error: applicationError } = await supabaseClient
                         .from('membership_applications')
                         .select('status')
                         .eq('auth_user_id', data.user.id)
@@ -87,9 +164,15 @@ async function handleLogin(event) {
                         .limit(1)
                         .maybeSingle();
                     await supabaseClient.auth.signOut();
+                    if (applicationError) {
+                        showError('We could not check your application status. Please contact the gym admin.');
+                        return;
+                    }
                     showError(application?.status === 'rejected'
                         ? 'Your application was not approved. Please contact the gym admin.'
-                        : 'Your membership application is awaiting approval.');
+                        : application
+                            ? 'Your membership application is awaiting admin approval.'
+                            : 'No registration application was found for this account. Please contact the gym admin to recover your registration.');
                     return;
                 }
             }
