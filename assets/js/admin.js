@@ -1543,7 +1543,7 @@ function startQRScanner() {
             <div id="qrScanProcessing" class="qr-scan-processing" hidden role="status" aria-live="polite">
                 <span class="qr-scan-spinner" aria-hidden="true"><i class="fas fa-qrcode"></i></span>
                 <strong>Recording attendance</strong>
-                <span>Reading member details…</span>
+                <span>Checking whether this member is entering or leaving…</span>
             </div>
         </div>
         <p id="qrCameraStatus" class="qr-camera-status" role="status">Starting camera…</p>
@@ -1562,14 +1562,14 @@ function startQRScanner() {
             const status = document.getElementById('qrCameraStatus');
             if (processing) processing.hidden = false;
             if (status) status.textContent = 'QR detected. Recording attendance…';
-            window.setTimeout(() => {
+            window.setTimeout(async () => {
                 closeModal();
                 const member = findMemberFromQR(scannedText);
                 if (!member) {
                     toast('QR code not recognized. Scan a QR code issued by Iron Grind.', 'error');
                     return;
                 }
-                recordMemberCheckIn(member);
+                await recordMemberAttendanceScan(member);
             }, 650);
         },
         () => {}
@@ -1602,15 +1602,22 @@ function findMemberFromQR(value) {
     return members.find(member => String(member.id) === identifier || member.username === identifier) || null;
 }
 
-async function recordMemberCheckIn(member) {
-    if (!member || member.expiry < todayStr()) {
+async function recordMemberAttendanceScan(member) {
+    if (!member) return;
+
+    // The same member QR toggles the open visit closed when scanned again.
+    // Check this before expiry so staff can always check a member out.
+    const openVisit = attendance.find(a => String(a.memberId) === String(member.id) && !a.timeOut);
+    if (openVisit) {
+        await checkOut(openVisit.id);
+        return;
+    }
+
+    if (member.expiry && member.expiry < todayStr()) {
         toast('Membership is expired. Check the member’s renewal status.', 'error');
         return;
     }
     const today = todayStr();
-    if (attendance.find(a => a.memberId === member.id && a.date === today && !a.timeOut)) {
-        toast(`${member.name} is already checked in.`, 'error'); return;
-    }
     const now = new Date();
     const timeIn = now.toTimeString().slice(0, 5);
     if (window.ironGrindSupabase) {
@@ -1633,7 +1640,7 @@ async function recordMemberCheckIn(member) {
     }
     renderAttendance();
     renderDashboard();
-    toast(`${member.name} checked in at ${timeIn}.`, 'success');
+    toast(`${member.name} checked in at ${timeIn}. Scan their QR again to check them out.`, 'success');
 }
 
 async function checkOut(id) {
