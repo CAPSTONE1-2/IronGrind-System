@@ -78,7 +78,7 @@ function updateDatesFromPlan() {
 }
 document.querySelectorAll('input[name="regPlan"]').forEach(r => r.addEventListener('change', updateDatesFromPlan));
 
-function submitRegistration(event) {
+async function submitRegistration(event) {
     event.preventDefault();
     hideError();
 
@@ -132,14 +132,8 @@ function submitRegistration(event) {
     if (password.length < 6) { showError('Password must be at least 6 characters.'); return; }
     if (password !== confirm) { showError('Passwords do not match.'); return; }
 
-    const users = loadDB('users');
-    const pending = loadDB('pendingApprovals');
-    if (users.find(u => u.username === username)) { showError('Username already taken.'); return; }
-    if (pending.find(p => p.username === username)) { showError('An application with this username is pending.'); return; }
-    if (users.some(u => u.email?.toLowerCase() === email) || pending.some(p => p.email?.toLowerCase() === email)) { showError('An account or application with this email already exists.'); return; }
-
     const application = {
-        id: 'APP' + Date.now(),
+        id: null,
         fullName, dob, age, sex, mobile,
         height: height ? Number(height) : null,
         heightUnit,
@@ -149,17 +143,131 @@ function submitRegistration(event) {
         startDate, endDate,
         healthConditions, otherMedicalConditions, goals,
         signature: registrationSignature.toDataURL(),
-        email, username, password,
+        email, username,
         submittedAt: new Date().toISOString(),
         status: 'pending'
     };
 
-    pending.push(application);
-    saveDB('pendingApprovals', pending);
-    showSuccessModal(application);
+    const submitButton = document.querySelector('#registrationForm button[type="submit"]');
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating account…';
+    try {
+        const { data, error } = await window.ironGrindSupabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: { username, full_name: fullName },
+                emailRedirectTo: `${window.location.origin}${window.location.pathname}?completeApplication=1`
+            }
+        });
+
+        if (error) {
+            showError(error.message.includes('already registered')
+                ? 'An account already exists for this email. Sign in or contact the gym admin.'
+                : error.message);
+            return;
+        }
+        if (!data.user) {
+            showError('Supabase did not return an account. Please try again.');
+            return;
+        }
+
+        application.id = data.user.id;
+        application.submittedAt = new Date().toISOString();
+        const draft = { userId: data.user.id, application, savedAt: Date.now() };
+
+        if (data.session) {
+            const saved = await insertSupabaseApplication(draft);
+            if (!saved) return;
+            showSuccessModal(application, false);
+        } else {
+            // Supabase requires email confirmation before RLS permits submission.
+            // Keep the form data briefly in this browser, never the password.
+            localStorage.setItem('ig_registration_draft', JSON.stringify(draft));
+            showSuccessModal(application, true);
+        }
+    } catch (error) {
+        console.error('Registration submission failed:', error);
+        showError('Could not connect to the registration service. Please try again.');
+    } finally {
+        submitButton.disabled = false;
+        submitButton.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Membership Application';
+    }
 }
 
-function showSuccessModal(app) {
+async function insertSupabaseApplication(draft) {
+    const app = draft.application;
+    const emergency = app.emergencyContact || {};
+    const userId = draft.userId;
+    const row = {
+        user_id: userId,
+        auth_user_id: userId,
+        member_id: null,
+        application_type: 'registration',
+        full_name: app.fullName,
+        email: app.email,
+        username: app.username,
+        mobile: app.mobile,
+        date_of_birth: app.dob,
+        age: app.age,
+        sex: app.sex,
+        height: app.height,
+        height_unit: app.heightUnit,
+        weight: app.weight,
+        emergency_name: emergency.name,
+        emergency_relationship: emergency.relationship,
+        emergency_contact: emergency.contact,
+        plan: app.plan,
+        plan_price: app.planPrice,
+        start_date: app.startDate,
+        end_date: app.endDate,
+        fitness_goals: app.goals,
+        health_conditions: app.healthConditions,
+        other_medical_conditions: app.otherMedicalConditions,
+        signature_data: app.signature,
+        status: 'pending',
+        submitted_at: app.submittedAt,
+        created_at: app.submittedAt,
+        reviewed_at: null,
+        reviewed_by: null
+    };
+    const { data, error } = await window.ironGrindSupabase
+        .from('membership_applications')
+        .insert(row)
+        .select('id')
+        .single();
+
+    if (error) {
+        console.error('Application save failed:', error);
+        showError(`Your account was created, but the application could not be saved: ${error.message}`);
+        return false;
+    }
+    app.id = data.id;
+    localStorage.removeItem('ig_registration_draft');
+    return true;
+}
+
+async function completeConfirmedRegistration() {
+    if (new URLSearchParams(window.location.search).get('completeApplication') !== '1') return;
+    let draft;
+    try { draft = JSON.parse(localStorage.getItem('ig_registration_draft') || 'null'); }
+    catch { draft = null; }
+    if (!draft || Date.now() - draft.savedAt > 24 * 60 * 60 * 1000) {
+        localStorage.removeItem('ig_registration_draft');
+        showError('Your saved application expired. Sign in and contact the gym admin to continue.');
+        return;
+    }
+    const { data: { session }, error } = await window.ironGrindSupabase.auth.getSession();
+    if (error || !session || session.user.id !== draft.userId) {
+        showError('Email confirmation was not detected in this browser. Sign in with the confirmed email, then contact the gym admin to continue.');
+        return;
+    }
+    if (await insertSupabaseApplication(draft)) showSuccessModal(draft.application, false);
+}
+
+document.addEventListener('DOMContentLoaded', completeConfirmedRegistration);
+
+function showSuccessModal(app, confirmationRequired = false) {
     openModal(`
         <div style="text-align:center; padding:8px 0;">
             <div style="width:72px; height:72px; border-radius:50%; background:rgba(46,204,113,0.15); color:#2ecc71; display:flex; align-items:center; justify-content:center; font-size:2rem; margin:0 auto 16px;">
@@ -177,7 +285,9 @@ function showSuccessModal(app) {
             </div>
             <div style="background:rgba(255,107,43,0.08); border:1px solid rgba(255,107,43,0.25); border-radius:14px; padding:14px; font-size:0.8rem; color:#8b95a9; text-align:left; margin-top:16px;">
                 <i class="fas fa-info-circle" style="color:#ff6b2b;"></i>
-                Visit the gym to complete your payment. Once approved, log in with your chosen username and password.
+                ${confirmationRequired
+                    ? 'Check your email and confirm your account. Return to this browser after confirmation to finish submitting your application. Your form is saved here temporarily; your password is not stored.'
+                    : 'Visit the gym to complete your payment. Once approved, sign in with your email and password.'}
             </div>
         </div>
         <div class="modal-actions">

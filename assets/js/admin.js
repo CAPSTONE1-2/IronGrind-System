@@ -352,6 +352,11 @@ function completeApproval(id) {
     if (idx === -1) return;
     const p = pendingApprovals[idx];
 
+    if (p.supabaseRecord && p.source !== 'dashboard-renewal') {
+        completeSupabaseRegistrationApproval(p);
+        return;
+    }
+
     // Member portal renewal requests update the existing member account.
     // Keep the old subscription snapshot before replacing its dates and plan.
     if (p.source === 'dashboard-renewal') {
@@ -443,6 +448,187 @@ function completeApproval(id) {
     renderApprovals();
     renderMembers();
     renderDashboard();
+}
+
+async function completeSupabaseRegistrationApproval(application) {
+    const supabaseClient = window.ironGrindSupabase;
+    const { data: authResult, error: authError } = await supabaseClient.auth.getUser();
+    if (authError || !authResult.user) {
+        toast('Your Supabase session expired. Please sign in again.', 'error');
+        return;
+    }
+
+    const appRow = application.supabaseRecord;
+    const userId = appRow.auth_user_id || appRow.user_id;
+    if (!userId) {
+        toast('This application is missing its Auth user link.', 'error');
+        return;
+    }
+
+    // Reuse an existing member row if a previous approval attempt inserted it
+    // but failed before the application status could be updated.
+    let memberRow = null;
+    const existing = await supabaseClient.from('members').select('*').eq('auth_user_id', userId).maybeSingle();
+    if (existing.error) {
+        toast(`Could not check for an existing member: ${existing.error.message}`, 'error');
+        return;
+    }
+    memberRow = existing.data;
+
+    if (!memberRow) {
+        const emergency = appRow.emergency_contact && typeof appRow.emergency_contact === 'object'
+            ? appRow.emergency_contact
+            : {
+                name: appRow.emergency_name || '',
+                relationship: appRow.emergency_relationship || '',
+                contact: appRow.emergency_contact || ''
+            };
+        const expiry = appRow.end_date || application.endDate;
+        const memberPayload = {
+            user_id: userId,
+            auth_user_id: userId,
+            application_id: appRow.id,
+            full_name: appRow.full_name,
+            email: appRow.email,
+            username: appRow.username,
+            mobile: appRow.mobile,
+            date_of_birth: appRow.date_of_birth,
+            age: appRow.age,
+            sex: appRow.sex,
+            height: appRow.height,
+            height_unit: appRow.height_unit,
+            weight: appRow.weight,
+            weight_kg: appRow.weight,
+            emergency_contact: emergency,
+            plan: appRow.plan,
+            plan_price: appRow.plan_price,
+            start_date: appRow.start_date,
+            end_date: expiry,
+            expiry_date: expiry,
+            status: 'active',
+            paid: Number(appRow.plan_price) || 0,
+            fitness_goals: appRow.fitness_goals || [],
+            health_conditions: appRow.health_conditions || [],
+            other_medical_conditions: appRow.other_medical_conditions || '',
+            signature_data: appRow.signature_data || null,
+            signature_path: appRow.signature_data || null,
+            registration_source: 'Online application'
+        };
+        const inserted = await supabaseClient.from('members').insert(memberPayload).select('*').single();
+        if (inserted.error) {
+            toast(`Could not create the member record: ${inserted.error.message}. Run the online-registration migration first.`, 'error');
+            return;
+        }
+        memberRow = inserted.data;
+    }
+
+    const updated = await supabaseClient.from('membership_applications').update({
+        status: 'approved',
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: authResult.user.id
+    }).eq('id', appRow.id).eq('status', 'pending');
+    if (updated.error) {
+        toast(`Member saved, but the application status could not be updated: ${updated.error.message}`, 'error');
+        return;
+    }
+
+    const member = mapSupabaseMember(memberRow, application.username, application.email);
+    const memberIndex = members.findIndex(item => String(item.id) === String(member.id));
+    if (memberIndex >= 0) members[memberIndex] = member;
+    else members.push(member);
+    saveDB('members', members);
+    pendingApprovals = pendingApprovals.filter(item => String(item.id) !== String(application.id));
+    saveDB('pendingApprovals', pendingApprovals);
+    renderApprovals();
+    renderMembers();
+    renderDashboard();
+    toast(`${member.name}'s membership was approved and saved to Supabase.`, 'success');
+}
+
+function mapSupabaseMember(row, username = '', email = '') {
+    const paidValue = row.paid;
+    return {
+        id: row.id,
+        authUserId: row.auth_user_id || row.user_id,
+        name: row.full_name,
+        plan: row.plan,
+        planPrice: Number(row.plan_price) || (typeof paidValue === 'number' ? paidValue : 0),
+        startDate: row.start_date,
+        expiry: row.expiry_date || row.end_date,
+        status: row.status,
+        paid: typeof paidValue === 'boolean' ? paidValue : Number(paidValue) > 0,
+        goal: (row.fitness_goals || [])[0] || 'General Fitness',
+        contact: row.mobile,
+        email: row.email || email,
+        username: row.username || username,
+        height: row.height,
+        heightUnit: row.height_unit,
+        weight: row.weight_kg ?? row.weight,
+        healthConditions: row.health_conditions || [],
+        otherMedicalConditions: row.other_medical_conditions || '',
+        signature: row.signature_path || row.signature_data || null,
+        qrCode: `IRONGRIND|${row.id}`,
+        registrationSource: row.registration_source || 'Online application'
+    };
+}
+
+async function loadSupabaseMembershipData() {
+    const supabaseClient = window.ironGrindSupabase;
+    if (!supabaseClient) return;
+    const [applicationsResult, membersResult] = await Promise.all([
+        supabaseClient.from('membership_applications').select('*').eq('status', 'pending'),
+        supabaseClient.from('members').select('*')
+    ]);
+
+    if (applicationsResult.error) {
+        console.error('Could not load Supabase applications:', applicationsResult.error);
+    } else {
+        const remoteApps = applicationsResult.data.map(row => ({
+            id: row.id,
+            fullName: row.full_name,
+            dob: row.date_of_birth,
+            age: row.age,
+            sex: row.sex,
+            mobile: row.mobile,
+            height: row.height,
+            heightUnit: row.height_unit,
+            weight: row.weight_kg ?? row.weight,
+            emergencyContact: row.emergency_contact && typeof row.emergency_contact === 'object'
+                ? row.emergency_contact
+                : { name: row.emergency_name, relationship: row.emergency_relationship, contact: row.emergency_contact },
+            plan: row.plan,
+            planPrice: Number(row.plan_price) || 0,
+            startDate: row.start_date,
+            endDate: row.end_date,
+            healthConditions: row.health_conditions || [],
+            otherMedicalConditions: row.other_medical_conditions || '',
+            goals: row.fitness_goals || [],
+            signature: row.signature_path || row.signature_data || null,
+            email: row.email,
+            username: row.username,
+            submittedAt: row.submitted_at || row.created_at,
+            status: row.status,
+            source: row.application_type === 'renewal' ? 'dashboard-renewal' : 'supabase-registration',
+            supabaseRecord: row
+        }));
+        const localApps = pendingApprovals.filter(item => !item.supabaseRecord);
+        pendingApprovals = [...localApps, ...remoteApps];
+        saveDB('pendingApprovals', localApps);
+    }
+
+    if (membersResult.error) {
+        console.error('Could not load Supabase members:', membersResult.error);
+    } else {
+        const remoteMembers = membersResult.data.map(row => mapSupabaseMember(row));
+        const localOnly = members.filter(local => !remoteMembers.some(remote => String(remote.id) === String(local.id))
+            && !local.authUserId);
+        members = [...localOnly, ...remoteMembers];
+        saveDB('members', members);
+    }
+
+    renderDashboard();
+    renderMembers();
+    renderApprovals();
 }
 
 function rejectApplication(id) {
