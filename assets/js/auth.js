@@ -1,12 +1,3 @@
-function loadUsers() {
-    try {
-        const users = JSON.parse(localStorage.getItem('ig_users') || '[]');
-        return Array.isArray(users) ? users : [];
-    } catch {
-        return [];
-    }
-}
-
 function togglePassword() {
     const input = document.getElementById('loginPassword');
     const icon = document.getElementById('togglePwIcon');
@@ -60,7 +51,6 @@ async function recoverConfirmedRegistration(client, user) {
     const emergency = app.emergencyContact || {};
     const submittedAt = new Date().toISOString();
     const { error: insertError } = await client.from('membership_applications').insert({
-        user_id: user.id,
         auth_user_id: user.id,
         member_id: null,
         application_type: 'registration',
@@ -73,10 +63,8 @@ async function recoverConfirmedRegistration(client, user) {
         sex: app.sex,
         height: app.height,
         height_unit: app.heightUnit,
-        weight: app.weight,
-        emergency_name: emergency.name,
-        emergency_relationship: emergency.relationship,
-        emergency_contact: emergency.contact,
+        weight_kg: app.weight,
+        emergency_contact_data: emergency,
         plan: app.plan,
         plan_price: app.planPrice,
         start_date: app.startDate,
@@ -84,10 +72,9 @@ async function recoverConfirmedRegistration(client, user) {
         fitness_goals: app.goals || [],
         health_conditions: app.healthConditions || [],
         other_medical_conditions: app.otherMedicalConditions || '',
-        signature_data: app.signature || null,
+        signature_path: app.signature || null,
         status: 'pending',
         submitted_at: submittedAt,
-        created_at: submittedAt,
         reviewed_at: null,
         reviewed_by: null
     });
@@ -189,29 +176,7 @@ async function handleLogin(event) {
 
         if (error) await supabaseClient.auth.signOut();
 
-        // Existing member accounts still use the current localStorage flow
-        // until member registration and records are migrated to Supabase.
-        const user = loadUsers().find(item => item.email?.toLowerCase() === email && item.password === password);
-        if (user) {
-            saveLoginSession({
-                role: 'customer',
-                username: user.username,
-                fullName: user.fullName || user.username || email,
-                loginTime: new Date().toISOString()
-            }, remember);
-            return;
-        }
-
-        let pending = [];
-        try {
-            const saved = JSON.parse(localStorage.getItem('ig_pendingApprovals') || '[]');
-            if (Array.isArray(saved)) pending = saved;
-        } catch {
-            // Ignore malformed pending data and show the normal login error.
-        }
-        showError(pending.some(item => item.email?.toLowerCase() === email)
-            ? 'Your application is still pending approval.'
-            : 'Invalid email or password.');
+        showError('Invalid email or password. If you registered recently, wait for admin approval and use the password for your Supabase account.');
     } catch (error) {
         console.error('Login failed:', error);
         showError('Unable to connect to the login service. Please try again.');
@@ -226,4 +191,14 @@ function saveLoginSession(session, remember) {
     sessionStorage.removeItem('irongrind_session');
     (remember ? localStorage : sessionStorage).setItem('irongrind_session', JSON.stringify(session));
     window.location.replace(session.role === 'admin' ? 'admin.html' : 'customer.html');
+}
+// Remove plaintext passwords written by the retired browser-only login flow.
+try {
+    const storedUsers = JSON.parse(localStorage.getItem('ig_users') || '[]');
+    if (Array.isArray(storedUsers)) {
+        const sanitizedUsers = storedUsers.map(({ password, ...user }) => user);
+        localStorage.setItem('ig_users', JSON.stringify(sanitizedUsers));
+    }
+} catch {
+    localStorage.removeItem('ig_users');
 }

@@ -1,12 +1,12 @@
 function localDateStr(date = new Date()) {
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Manila', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(date);
+    const part = type => parts.find(item => item.type === type)?.value;
+    return `${part('year')}-${part('month')}-${part('day')}`;
 }
 function todayStr() { return localDateStr(); }
 function addDays(dateStr, days) {
     const [year, month, day] = dateStr.split('-').map(Number);
-    const d = new Date(year, month - 1, day);
-    d.setDate(d.getDate() + days);
-    return localDateStr(d);
+    return new Date(Date.UTC(year, month - 1, day + days, 12)).toISOString().slice(0, 10);
 }
 function loadDB(key) {
     try { return JSON.parse(localStorage.getItem('ig_' + key)) || []; }
@@ -218,7 +218,6 @@ async function insertSupabaseApplication(draft) {
     const emergency = app.emergencyContact || {};
     const userId = draft.userId;
     const row = {
-        user_id: userId,
         auth_user_id: userId,
         member_id: null,
         application_type: 'registration',
@@ -231,10 +230,8 @@ async function insertSupabaseApplication(draft) {
         sex: app.sex,
         height: app.height,
         height_unit: app.heightUnit,
-        weight: app.weight,
-        emergency_name: emergency.name,
-        emergency_relationship: emergency.relationship,
-        emergency_contact: emergency.contact,
+        weight_kg: app.weight,
+        emergency_contact_data: emergency,
         plan: app.plan,
         plan_price: app.planPrice,
         start_date: app.startDate,
@@ -242,10 +239,9 @@ async function insertSupabaseApplication(draft) {
         fitness_goals: app.goals,
         health_conditions: app.healthConditions,
         other_medical_conditions: app.otherMedicalConditions,
-        signature_data: app.signature,
+        signature_path: app.signature,
         status: 'pending',
         submitted_at: app.submittedAt,
-        created_at: app.submittedAt,
         reviewed_at: null,
         reviewed_by: null
     };

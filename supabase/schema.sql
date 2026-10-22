@@ -86,6 +86,7 @@ create table if not exists public.membership_applications (
     height_unit text check (height_unit is null or height_unit in ('cm', 'in', 'ft')),
     weight_kg numeric(7, 2),
     emergency_contact jsonb not null default '{}'::jsonb,
+    emergency_contact_data jsonb not null default '{}'::jsonb,
     plan text not null,
     plan_price numeric(12, 2) not null default 0 check (plan_price >= 0),
     start_date date,
@@ -109,7 +110,13 @@ alter table public.membership_applications
         check (application_type in ('registration', 'renewal')),
     add column if not exists submitted_at timestamptz not null default now(),
     add column if not exists email text,
-    add column if not exists username text;
+    add column if not exists username text,
+    add column if not exists weight_kg numeric(7, 2),
+    add column if not exists emergency_contact_data jsonb not null default '{}'::jsonb,
+    add column if not exists signature_path text;
+
+alter table public.members
+    add column if not exists application_id uuid references public.membership_applications (id) on delete set null;
 
 -- Earlier tables called the auth link `user_id` and the submission time `created_at`.
 do $$
@@ -234,6 +241,9 @@ $$;
 
 do $$
 begin
+    -- Older project setup created a second profile trigger. Remove that known
+    -- duplicate so one Auth signup creates exactly one profile row.
+    execute 'drop trigger if exists on_auth_user_created_profile on auth.users';
     if not exists (
         select 1
         from pg_catalog.pg_trigger
@@ -306,17 +316,21 @@ grant select, insert, update, delete on public.members, public.membership_applic
     public.attendance, public.products, public.sales, public.sale_items,
     public.membership_history to authenticated;
 
+drop policy if exists "profiles_read_self_or_admin" on public.profiles;
 create policy "profiles_read_self_or_admin" on public.profiles
     for select to authenticated
     using (id = (select auth.uid()) or (select private.is_admin()));
+drop policy if exists "profiles_update_self_or_admin" on public.profiles;
 create policy "profiles_update_self_or_admin" on public.profiles
     for update to authenticated
     using (id = (select auth.uid()) or (select private.is_admin()))
     with check (id = (select auth.uid()) or (select private.is_admin()));
 
+drop policy if exists "members_read_self_or_admin" on public.members;
 create policy "members_read_self_or_admin" on public.members
     for select to authenticated
     using (auth_user_id = (select auth.uid()) or (select private.is_admin()));
+drop policy if exists "members_admin_manage" on public.members;
 create policy "members_admin_manage" on public.members
     for all to authenticated
     using ((select private.is_admin()))
@@ -431,9 +445,11 @@ $$;
 revoke all on function public.update_own_member_personal_info(jsonb) from public, anon, authenticated;
 grant execute on function public.update_own_member_personal_info(jsonb) to authenticated;
 
+drop policy if exists "applications_read_self_or_admin" on public.membership_applications;
 create policy "applications_read_self_or_admin" on public.membership_applications
     for select to authenticated
     using (auth_user_id = (select auth.uid()) or (select private.is_admin()));
+drop policy if exists "applications_submit_own_pending" on public.membership_applications;
 create policy "applications_submit_own_pending" on public.membership_applications
     for insert to authenticated
     with check (
@@ -452,11 +468,13 @@ create policy "applications_submit_own_pending" on public.membership_application
             )
         )
     );
+drop policy if exists "applications_admin_manage" on public.membership_applications;
 create policy "applications_admin_manage" on public.membership_applications
     for all to authenticated
     using ((select private.is_admin()))
     with check ((select private.is_admin()));
 
+drop policy if exists "attendance_read_member_or_admin" on public.attendance;
 create policy "attendance_read_member_or_admin" on public.attendance
     for select to authenticated
     using (
@@ -466,19 +484,23 @@ create policy "attendance_read_member_or_admin" on public.attendance
             where m.id = member_id and m.auth_user_id = (select auth.uid())
         )
     );
+drop policy if exists "attendance_admin_manage" on public.attendance;
 create policy "attendance_admin_manage" on public.attendance
     for all to authenticated
     using ((select private.is_admin()))
     with check ((select private.is_admin()));
 
+drop policy if exists "products_read_active_or_admin" on public.products;
 create policy "products_read_active_or_admin" on public.products
     for select to authenticated
     using (is_active or (select private.is_admin()));
+drop policy if exists "products_admin_manage" on public.products;
 create policy "products_admin_manage" on public.products
     for all to authenticated
     using ((select private.is_admin()))
     with check ((select private.is_admin()));
 
+drop policy if exists "sales_read_member_or_admin" on public.sales;
 create policy "sales_read_member_or_admin" on public.sales
     for select to authenticated
     using (
@@ -488,11 +510,13 @@ create policy "sales_read_member_or_admin" on public.sales
             where m.id = member_id and m.auth_user_id = (select auth.uid())
         )
     );
+drop policy if exists "sales_admin_manage" on public.sales;
 create policy "sales_admin_manage" on public.sales
     for all to authenticated
     using ((select private.is_admin()))
     with check ((select private.is_admin()));
 
+drop policy if exists "sale_items_read_member_or_admin" on public.sale_items;
 create policy "sale_items_read_member_or_admin" on public.sale_items
     for select to authenticated
     using (
@@ -504,11 +528,13 @@ create policy "sale_items_read_member_or_admin" on public.sale_items
             where s.id = sale_id and m.auth_user_id = (select auth.uid())
         )
     );
+drop policy if exists "sale_items_admin_manage" on public.sale_items;
 create policy "sale_items_admin_manage" on public.sale_items
     for all to authenticated
     using ((select private.is_admin()))
     with check ((select private.is_admin()));
 
+drop policy if exists "membership_history_read_member_or_admin" on public.membership_history;
 create policy "membership_history_read_member_or_admin" on public.membership_history
     for select to authenticated
     using (
@@ -518,6 +544,7 @@ create policy "membership_history_read_member_or_admin" on public.membership_his
             where m.id = member_id and m.auth_user_id = (select auth.uid())
         )
     );
+drop policy if exists "membership_history_admin_manage" on public.membership_history;
 create policy "membership_history_admin_manage" on public.membership_history
     for all to authenticated
     using ((select private.is_admin()))

@@ -34,14 +34,14 @@ function updateCustomerName(name, updateSettingsField = false) {
 
 // ===== HELPERS =====
 function localDateStr(date = new Date()) {
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Manila', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(date);
+    const part = type => parts.find(item => item.type === type)?.value;
+    return `${part('year')}-${part('month')}-${part('day')}`;
 }
 function todayStr() { return localDateStr(); }
 function addDays(dateStr, days) {
     const [year, month, day] = dateStr.split('-').map(Number);
-    const d = new Date(year, month - 1, day);
-    d.setDate(d.getDate() + days);
-    return localDateStr(d);
+    return new Date(Date.UTC(year, month - 1, day + days, 12)).toISOString().slice(0, 10);
 }
 function formatPeso(n) { return '₱' + Number(n).toLocaleString('en-PH'); }
 function formatAttendanceClock(value) {
@@ -588,10 +588,6 @@ async function submitMembershipForm(event) {
         const submittedAt = new Date().toISOString();
         const estimatedEndDate = addDays(todayStr(), plan === 'Monthly' ? 30 : plan === 'Half Month' ? 15 : 1);
         const { error: insertError } = await client.from('membership_applications').insert({
-            // Legacy projects still have a NOT NULL `user_id` column.
-            // Keep it in sync with the canonical auth_user_id until that
-            // legacy constraint is removed from the database.
-            user_id: user.id,
             auth_user_id: user.id,
             member_id: member.id,
             application_type: 'renewal',

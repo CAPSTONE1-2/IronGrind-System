@@ -30,14 +30,14 @@ let qrScanHandled = false;
 
 /* ========== HELPERS ========== */
 function localDateStr(date = new Date()) {
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Manila', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(date);
+    const part = type => parts.find(item => item.type === type)?.value;
+    return `${part('year')}-${part('month')}-${part('day')}`;
 }
 function todayStr() { return localDateStr(); }
 function addDays(dateStr, days) {
     const [year, month, day] = dateStr.split('-').map(Number);
-    const d = new Date(year, month - 1, day);
-    d.setDate(d.getDate() + days);
-    return localDateStr(d);
+    return new Date(Date.UTC(year, month - 1, day + days, 12)).toISOString().slice(0, 10);
 }
 function formatPeso(n) { return '₱' + Number(n).toLocaleString('en-PH'); }
 function formatAttendanceClock(value) {
@@ -135,8 +135,8 @@ function mapApprovedRenewalApplication(row) {
 function mapSupabaseAttendance(row) {
     const timeIn = new Date(row.time_in);
     const timeOut = row.time_out ? new Date(row.time_out) : null;
-    const localDate = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-    const localTime = date => `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+    const localDate = date => localDateStr(date);
+    const localTime = date => new Intl.DateTimeFormat('en-PH', { timeZone: 'Asia/Manila', hour: '2-digit', minute: '2-digit', hour12: false }).format(date);
     const member = members.find(item => String(item.id) === String(row.member_id));
     return {
         id: row.id,
@@ -209,7 +209,6 @@ function showAdminSection(section, event) {
     if (section === 'store') {
         document.getElementById('storeLocked').classList.remove('hidden');
         document.getElementById('storeUnlocked').classList.add('hidden');
-        document.getElementById('storePasswordInput').value = '';
     }
     if (section === 'membership') switchMemberTab(currentMemberTab);
     if (section === 'attendance') renderAttendance();
@@ -494,7 +493,6 @@ function completeApproval(id) {
     users.push({
         email: p.email,
         username: p.username,
-        password: p.password,
         fullName: p.fullName,
         role: 'customer',
         createdAt: new Date().toISOString()
@@ -572,8 +570,10 @@ async function completeSupabaseRegistrationApproval(application) {
     memberRow = existing.data;
 
     if (!memberRow) {
-        const emergency = appRow.emergency_contact && typeof appRow.emergency_contact === 'object'
-            ? appRow.emergency_contact
+        const emergency = appRow.emergency_contact_data && typeof appRow.emergency_contact_data === 'object'
+            ? appRow.emergency_contact_data
+            : appRow.emergency_contact && typeof appRow.emergency_contact === 'object'
+                ? appRow.emergency_contact
             : {
                 name: appRow.emergency_name || '',
                 relationship: appRow.emergency_relationship || '',
@@ -581,7 +581,6 @@ async function completeSupabaseRegistrationApproval(application) {
             };
         const expiry = appRow.end_date || application.endDate;
         const memberPayload = {
-            user_id: userId,
             auth_user_id: userId,
             application_id: appRow.id,
             full_name: appRow.full_name,
@@ -593,8 +592,7 @@ async function completeSupabaseRegistrationApproval(application) {
             sex: appRow.sex,
             height: appRow.height,
             height_unit: appRow.height_unit,
-            weight: appRow.weight,
-            weight_kg: appRow.weight,
+            weight_kg: appRow.weight_kg ?? appRow.weight,
             emergency_contact: emergency,
             plan: appRow.plan,
             plan_price: appRow.plan_price,
@@ -606,8 +604,7 @@ async function completeSupabaseRegistrationApproval(application) {
             fitness_goals: appRow.fitness_goals || [],
             health_conditions: appRow.health_conditions || [],
             other_medical_conditions: appRow.other_medical_conditions || '',
-            signature_data: appRow.signature_data || null,
-            signature_path: null,
+            signature_path: appRow.signature_path || appRow.signature_data || null,
             registration_source: 'Online application'
         };
         const inserted = await supabaseClient.from('members').insert(memberPayload).select('*').single();
@@ -838,8 +835,10 @@ async function loadSupabaseMembershipData() {
             height: row.height,
             heightUnit: row.height_unit,
             weight: row.weight_kg ?? row.weight,
-            emergencyContact: row.emergency_contact && typeof row.emergency_contact === 'object'
-                ? row.emergency_contact
+            emergencyContact: row.emergency_contact_data && typeof row.emergency_contact_data === 'object'
+                ? row.emergency_contact_data
+                : row.emergency_contact && typeof row.emergency_contact === 'object'
+                    ? row.emergency_contact
                 : { name: row.emergency_name, relationship: row.emergency_relationship, contact: row.emergency_contact },
             plan: row.plan,
             planPrice: Number(row.plan_price) || 0,
@@ -1260,55 +1259,7 @@ async function submitNewMember() {
         return;
     }
 
-    // ---- Create Member ----
-    const memberId = uid('M');
-    const saleId = nextSaleReceiptId();
-    users.push({ email, username, password, fullName: name, role: 'customer', createdAt: new Date().toISOString() });
-    saveDB('users', users);
-    members.push({
-        id: memberId,
-        name,
-        username,
-        registrationSource: 'Walk-in',
-        plan,
-        planPrice: Number(price),
-        startDate: startDate,
-        expiry: endDate || addDays(startDate, days),
-        status: 'active',
-        paid: true,
-        goal: goals[0] || 'General Fitness',
-        contact,
-        email,
-        dob, age, sex, height, weight,
-        healthConditions,
-        emergencyContact: { name: ecName, relationship: ecRelation, contact: ecContact },
-        signature: signatureData,   // base64 PNG
-        registeredAt: new Date().toISOString(),
-        receiptId: saleId,
-        qrCode: 'IRONGRIND|' + memberId
-    });
-    saveDB('members', members);
-
-    // ---- Record Sale ----
-    sales.unshift({
-        id: saleId,
-        customer: name,
-        items: plan + ' Membership (Admin registration)',
-        lineItems: [{ name: `${plan} Membership`, quantity: 1, unitPrice: Number(price), total: Number(price) }],
-        total: Number(price),
-        date: todayStr(),
-        createdAt: new Date().toISOString(),
-        status: 'Paid'
-    });
-    saveDB('sales', sales);
-
-    // ---- Close & Refresh ----
-    signaturePad = null;
-    closeModal();
-    renderMembers();
-    renderDashboard();
-    toast(`✅ ${name} registered with signature.`, 'success');
-
+    toast('Supabase is unavailable. Member accounts can only be created securely when the database connection is active.', 'error');
 }
 
 function openChangePlanModal(id) {
@@ -1764,15 +1715,9 @@ function exportAttendance() {
 
 /* ========== STORE ========== */
 function unlockStore() {
-    const input = document.getElementById('storePasswordInput');
-    if (input.value.trim() === 'irongrind2025') {
-        document.getElementById('storeLocked').classList.add('hidden');
-        document.getElementById('storeUnlocked').classList.remove('hidden');
-        renderStore();
-    } else {
-        toast('Incorrect password. Hint: irongrind2025', 'error');
-        input.value = '';
-    }
+    document.getElementById('storeLocked').classList.add('hidden');
+    document.getElementById('storeUnlocked').classList.remove('hidden');
+    renderStore();
 }
 
 function renderStore() {
@@ -1863,7 +1808,7 @@ function editProduct(id) {
     if (!p) return;
     openModal(`
         <h3><i class="fas fa-edit"></i> Edit Product</h3>
-        <p class="modal-sub">Password required to change price. Supplement prices are recorded per gram.</p>
+        <p class="modal-sub">Supplement prices are recorded per gram. Supabase checks admin access when saving.</p>
         <div class="form-group product-photo-field"><label for="epImage">Product photo (optional)</label><input type="file" id="epImage" accept="image/*" onchange="previewProductPhoto(this, 'epImagePreview')"><div id="epImagePreview" class="product-photo-preview">${p.image ? `<img src="${p.image}" alt="Current product photo">` : '<span>No photo selected</span>'}</div><label class="product-photo-remove"><input type="checkbox" id="epRemoveImage"> Remove current photo</label><small>Choose a new image to replace the current one.</small></div>
         <div class="form-group" style="margin-bottom:14px;"><label>Name</label><input type="text" id="epName" value="${p.name}"></div>
         ${p.category === 'Merch' ? `<div class="form-group" style="margin-bottom:14px;"><label>Size (optional)</label><input type="text" id="epSize" value="${p.size || ''}"></div>` : ''}
@@ -1871,7 +1816,6 @@ function editProduct(id) {
             <div class="form-group"><label>Price (per gram for supplements, per item for merchandise) ₱</label><input type="number" id="epPrice" min="0" step="0.01" value="${p.price}"></div>
             ${p.category === 'Merch' ? `<div class="form-group"><label>Stock (items)</label><input type="number" id="epStock" min="0" step="1" value="${p.stock}"></div>` : ''}
         </div>
-        <div class="form-group" style="margin-top:14px;"><label>Password (for price change)</label><input type="password" id="epPassword" placeholder="irongrind2025"></div>
         <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="submitEditProduct('${p.id}')">Save</button></div>
     `);
 }
@@ -1881,9 +1825,7 @@ async function submitEditProduct(id) {
     if (!p) return;
     const newPrice = Number(document.getElementById('epPrice').value);
     const stockInput = p.category === 'Merch' ? document.getElementById('epStock').value.trim() : '0';
-    const pw = document.getElementById('epPassword').value;
     if (!Number.isFinite(newPrice) || newPrice <= 0 || !Number.isFinite(Number(stockInput)) || Number(stockInput) < 0) { toast('Enter a valid price and stock amount.', 'error'); return; }
-    if (newPrice !== p.price && pw !== 'irongrind2025') { toast('Wrong password.', 'error'); return; }
     const image = await getProductPhoto('epImage');
     if (image === false) return;
     const oldProduct = { ...p };
@@ -2679,7 +2621,8 @@ document.addEventListener('DOMContentLoaded', () => {
     sales = loadDB('sales');
     attendance = loadDB('attendance');
     pendingApprovals = loadDB('pendingApprovals');
-    users = loadDB('users');
+    users = loadDB('users').map(({ password, ...safeUser }) => safeUser);
+    saveDB('users', users);
     planArchives = loadDB('planArchives');
     membershipArchives = loadDB('membershipArchives');
     captureExpiredMemberships();
@@ -2697,8 +2640,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderMembers();
     }, 60 * 1000);
 
-    const pwInput = document.getElementById('storePasswordInput');
-    if (pwInput) pwInput.addEventListener('keydown', e => { if (e.key === 'Enter') unlockStore(); });
 });
 
 window.addEventListener('load', () => {

@@ -160,12 +160,10 @@
                 <div id="storeLocked" class="store-lock">
                     <i class="fas fa-lock"></i>
                     <h3>Store &amp; Inventory is Locked</h3>
-                    <p>Enter the security password to manage products, edit prices, and process sales.</p>
+                    <p>Store access is managed by your signed-in admin account.</p>
                     <div class="password-input-group">
-                        <input type="password" id="storePasswordInput" placeholder="Enter security password...">
-                        <button class="btn-primary" onclick="unlockStore()"><i class="fas fa-unlock"></i></button>
+                        <button class="btn-primary" onclick="unlockStore()"><i class="fas fa-unlock"></i> Open Store</button>
                     </div>
-                    <p style="font-size:0.7rem; color:#4d566b; margin-top:12px;">Hint: Try "irongrind2025"</p>
                 </div>
                 <div id="storeUnlocked" class="hidden">
                     <div class="panel">
@@ -240,6 +238,6 @@
 <script src="assets/js/supabase-client.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="assets/js/signature.js"></script>
-<script src="assets/js/admin.js?v=20261023-local-dates"></script>
+<script src="assets/js/admin.js?v=20261023-review-fixes"></script>
 </body>
 </html>
