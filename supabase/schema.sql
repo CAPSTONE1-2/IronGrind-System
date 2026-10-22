@@ -149,6 +149,10 @@ create table if not exists public.products (
         or (category = 'merchandise' and unit = 'item'))
 );
 
+-- Existing product tables may predate the active/inactive inventory flag.
+alter table public.products
+    add column if not exists is_active boolean not null default true;
+
 create table if not exists public.sales (
     id uuid primary key default gen_random_uuid(),
     receipt_number text not null unique,
