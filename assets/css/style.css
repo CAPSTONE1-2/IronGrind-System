@@ -299,6 +299,9 @@ label:has(input[name="wiPlan"]:checked) {
 .modal-sub { color: #8b95a9; font-size: 0.85rem; margin-bottom: 20px; }
 .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
 .modal-actions button { flex: 1; justify-content: center; }
+#forgotPasswordModal .modal-actions .btn-secondary { background: #1e2533; border: 1px solid #343d4e; color: #e8edf5; padding: 8px 18px; border-radius: 30px; font-family: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: background 0.2s ease, border-color 0.2s ease; }
+#forgotPasswordModal .modal-actions .btn-secondary:hover { background: #2d3548; border-color: #48536a; }
+#forgotPasswordModal .modal-actions .btn-secondary:focus-visible { outline: 2px solid #d31212; outline-offset: 3px; }
 .member-onboarding { padding: 6px 2px 2px; text-align: center; }
 .onboarding-mark { display: grid; place-items: center; width: 58px; height: 58px; margin: 0 auto 14px; border: 1px solid rgba(211,18,18,0.3); border-radius: 18px; background: rgba(211,18,18,0.1); color: #ef2929; font-size: 1.35rem; }
 .onboarding-eyebrow { margin-bottom: 8px; color: #d31212; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.12em; }
