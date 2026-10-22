@@ -148,8 +148,9 @@ function logout() {
     confirmLogout();
 }
 
-function completeLogout() {
+async function completeLogout() {
     closeModal();
+    await window.ironGrindSupabase?.auth.signOut();
     localStorage.removeItem('irongrind_session');
     sessionStorage.removeItem('irongrind_session');
     document.getElementById('page-loader')?.classList.remove('hidden-loader');

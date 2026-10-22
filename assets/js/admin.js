@@ -143,7 +143,8 @@ function switchApprovalType(type) {
 }
 
 function logout() {
-    askConfirmation('Log out?', 'Are you sure you want to log out?', 'Log out', () => {
+    askConfirmation('Log out?', 'Are you sure you want to log out?', 'Log out', async () => {
+        await window.ironGrindSupabase?.auth.signOut();
         localStorage.removeItem('irongrind_session');
         sessionStorage.removeItem('irongrind_session');
         document.getElementById('page-loader')?.classList.remove('hidden-loader');

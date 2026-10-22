@@ -104,6 +104,8 @@ async function handleLogin(event) {
             return;
         }
 
+        if (error) await supabaseClient.auth.signOut();
+
         // Existing member accounts still use the current localStorage flow
         // until member registration and records are migrated to Supabase.
         const user = loadUsers().find(item => item.email?.toLowerCase() === email && item.password === password);

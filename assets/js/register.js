@@ -250,12 +250,15 @@ async function insertSupabaseApplication(draft) {
 }
 
 async function completeConfirmedRegistration() {
-    if (new URLSearchParams(window.location.search).get('completeApplication') !== '1') return;
     let draft;
     try { draft = JSON.parse(localStorage.getItem('ig_registration_draft') || 'null'); }
     catch { draft = null; }
-    if (!draft || Date.now() - draft.savedAt > 24 * 60 * 60 * 1000) {
+    if (draft && Date.now() - draft.savedAt > 24 * 60 * 60 * 1000) {
         localStorage.removeItem('ig_registration_draft');
+        draft = null;
+    }
+    if (new URLSearchParams(window.location.search).get('completeApplication') !== '1') return;
+    if (!draft) {
         showError('Your saved application expired. Sign in and contact the gym admin to continue.');
         return;
     }
