@@ -329,6 +329,7 @@ function renderApprovals(type = currentApprovalType) {
                         <span style="font-size:0.68rem; text-transform:uppercase; color:#6a748b; font-weight:600;">Username</span>
                         <span><code style="color:#ff6b2b;">${p.username}</code></span>
                     </div>
+                    ${p.email ? `<div style="display:flex; flex-direction:column; gap:4px; font-size:0.82rem;"><span style="font-size:0.68rem; text-transform:uppercase; color:#6a748b; font-weight:600;">Email</span><span>${escapeHTML(p.email)}</span></div>` : ''}
                     <div style="display:flex; flex-direction:column; gap:4px; font-size:0.82rem;">
                         <span style="font-size:0.68rem; text-transform:uppercase; color:#6a748b; font-weight:600;">Other Medical Conditions</span>
                         <span>${p.otherMedicalConditions ? escapeHTML(p.otherMedicalConditions) : 'None reported'}</span>
@@ -397,6 +398,7 @@ function completeApproval(id) {
     }
 
     users.push({
+        email: p.email,
         username: p.username,
         password: p.password,
         fullName: p.fullName,
@@ -417,6 +419,7 @@ function completeApproval(id) {
         paid: true,
         goal: p.goals[0] || 'General Fitness',
         contact: p.mobile,
+        email: p.email || '',
         username: p.username,
         height: p.height ?? null,
         heightUnit: p.heightUnit || null,

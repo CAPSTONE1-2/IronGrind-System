@@ -105,6 +105,7 @@ function submitRegistration(event) {
     if (otherMedicalChoice.checked && !otherMedicalConditions) { showError('Please specify your other medical condition details.'); return; }
     if (!registrationSignature || registrationSignature.isEmpty()) { showError('Please add your digital signature.'); return; }
 
+    const email = document.getElementById('regEmail').value.trim().toLowerCase();
     const username = document.getElementById('regUsername').value.trim().toLowerCase();
     const password = document.getElementById('regPassword').value;
     const confirm = document.getElementById('regConfirmPassword').value;
@@ -112,6 +113,7 @@ function submitRegistration(event) {
     if (!fullName || !dob || !mobile) { showError('Please complete all required personal information.'); return; }
     if (age < 12) { showError('You must be at least 12 years old to register.'); return; }
     if (!ecName || !ecRelation || !ecContact) { showError('Please complete the emergency contact details.'); return; }
+    if (!email || !document.getElementById('regEmail').checkValidity()) { showError('Enter a valid email address for your account.'); return; }
     if (username.length < 4) { showError('Username must be at least 4 characters.'); return; }
     if (!/^[a-z0-9_.]+$/.test(username)) { showError('Username can only contain letters, numbers, underscores, and dots.'); return; }
     if (password.length < 6) { showError('Password must be at least 6 characters.'); return; }
@@ -121,6 +123,7 @@ function submitRegistration(event) {
     const pending = loadDB('pendingApprovals');
     if (users.find(u => u.username === username)) { showError('Username already taken.'); return; }
     if (pending.find(p => p.username === username)) { showError('An application with this username is pending.'); return; }
+    if (users.some(u => u.email?.toLowerCase() === email) || pending.some(p => p.email?.toLowerCase() === email)) { showError('An account or application with this email already exists.'); return; }
 
     const application = {
         id: 'APP' + Date.now(),
@@ -133,7 +136,7 @@ function submitRegistration(event) {
         startDate, endDate,
         healthConditions, otherMedicalConditions, goals,
         signature: registrationSignature.toDataURL(),
-        username, password,
+        email, username, password,
         submittedAt: new Date().toISOString(),
         status: 'pending'
     };
@@ -156,6 +159,7 @@ function showSuccessModal(app) {
                 <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span style="color:#8b95a9;">Plan:</span><strong>${app.plan}</strong></div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span style="color:#8b95a9;">Amount:</span><strong>₱${app.planPrice.toLocaleString()}</strong></div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span style="color:#8b95a9;">Username:</span><strong>${app.username}</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span style="color:#8b95a9;">Email:</span><strong>${app.email}</strong></div>
                 <div style="display:flex; justify-content:space-between;"><span style="color:#8b95a9;">Status:</span><span class="badge-status reserved">Pending</span></div>
             </div>
             <div style="background:rgba(255,107,43,0.08); border:1px solid rgba(255,107,43,0.25); border-radius:14px; padding:14px; font-size:0.8rem; color:#8b95a9; text-align:left; margin-top:16px;">
