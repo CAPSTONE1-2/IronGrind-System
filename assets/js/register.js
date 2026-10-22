@@ -30,6 +30,14 @@ function closeModal() { document.getElementById('modalOverlay').classList.add('h
 
 const registrationSignature = initDigitalSignature('registrationSignature', 'clearRegistrationSignature');
 
+const phoneInputs = [document.getElementById('regMobile'), document.getElementById('regEcContact')];
+phoneInputs.forEach(input => {
+    input.addEventListener('input', function() {
+        const digitCount = this.value.replace(/\D/g, '').length;
+        this.setCustomValidity(this.value && digitCount < 11 ? 'Enter at least 11 digits.' : '');
+    });
+});
+
 const registrationHeight = document.getElementById('regHeight');
 const registrationHeightUnit = document.getElementById('regHeightUnit');
 let previousHeightUnit = registrationHeightUnit.value;
@@ -124,8 +132,11 @@ async function submitRegistration(event) {
     const confirm = document.getElementById('regConfirmPassword').value;
 
     if (!fullName || !dob || !mobile) { showError('Please complete all required personal information.'); return; }
+    if (mobile.replace(/\D/g, '').length < 11) { showError('Mobile number must contain at least 11 digits.'); return; }
     if (age < 12) { showError('You must be at least 12 years old to register.'); return; }
     if (!ecName || !ecRelation || !ecContact) { showError('Please complete the emergency contact details.'); return; }
+    if (ecContact.replace(/\D/g, '').length < 11) { showError('Emergency contact number must contain at least 11 digits.'); return; }
+    if (email.length > 300) { showError('Email address must be 300 characters or fewer.'); return; }
     if (!email || !document.getElementById('regEmail').checkValidity()) { showError('Enter a valid email address for your account.'); return; }
     if (username.length < 4) { showError('Username must be at least 4 characters.'); return; }
     if (!/^[a-z0-9_.]+$/.test(username)) { showError('Username can only contain letters, numbers, underscores, and dots.'); return; }

@@ -37,7 +37,7 @@
                 <div class="form-row form-row-three">
                     <div class="form-group"><label>Age</label><input type="number" id="regAge" readonly></div>
                     <div class="form-group"><label>Sex</label><select id="regSex"><option>Male</option><option>Female</option><option>Prefer not to say</option></select></div>
-                    <div class="form-group"><label>Mobile *</label><input type="tel" id="regMobile" placeholder="0917 123 4567" required></div>
+                    <div class="form-group"><label>Mobile *</label><input type="tel" id="regMobile" placeholder="0917 123 4567" inputmode="tel" required></div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -58,7 +58,7 @@
                 <div class="form-row form-row-three">
                     <div class="form-group"><label>Name *</label><input type="text" id="regEcName" placeholder="Maria Dela Cruz" required></div>
                     <div class="form-group"><label>Relationship *</label><input type="text" id="regEcRelation" placeholder="Mother" required></div>
-                    <div class="form-group"><label>Contact Number *</label><input type="tel" id="regEcContact" placeholder="0917 123 4567" required></div>
+                    <div class="form-group"><label>Contact Number *</label><input type="tel" id="regEcContact" placeholder="0917 123 4567" inputmode="tel" required></div>
                 </div>
             </div>
 
@@ -169,7 +169,7 @@
                 <p style="font-size:0.8rem; color:#8b95a9; margin-bottom:16px;">Add your email and choose a username and password. You will sign in with your email after the admin approves your membership.</p>
                 <div class="form-group" style="margin-bottom:16px;">
                     <label for="regEmail">Email Address *</label>
-                    <input type="email" id="regEmail" placeholder="you@example.com" autocomplete="email" required>
+                    <input type="email" id="regEmail" placeholder="you@example.com" autocomplete="email" maxlength="300" required>
                 </div>
                 <div class="form-row">
                     <div class="form-group"><label for="regUsername">Username *</label><input type="text" id="regUsername" placeholder="juan_dc" autocomplete="username" required minlength="4"></div>
