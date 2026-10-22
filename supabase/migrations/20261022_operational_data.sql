@@ -9,6 +9,12 @@ alter table public.products
     add column if not exists price_per_unit numeric(12, 2) not null default 0,
     add column if not exists unit text not null default 'item';
 
+-- Supplements are sold by gram and do not use stock counts; merchandise does.
+alter table public.products alter column stock drop not null;
+update public.products
+set stock = null
+where lower(category) = 'supplement';
+
 -- Match the unit expected by the current product catalog and POS.
 update public.products
 set unit = case when lower(category) = 'supplement' then 'gram' else 'item' end
