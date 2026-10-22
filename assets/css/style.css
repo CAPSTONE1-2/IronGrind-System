@@ -47,6 +47,9 @@ body.dashboard-body .low-stock-item { background-color: rgba(13,18,25,0.64); bor
 .header-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .user-chip { display: flex; align-items: center; gap: 8px; background: #1a1f2b; border: 1px solid #2d3548; padding: 8px 16px; border-radius: 30px; font-size: 0.85rem; font-weight: 500; }
 .user-chip i { color: #d31212; }
+.btn-settings { display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 1px solid #2d3548; border-radius: 10px; background: transparent; color: #e8edf5; font-size: 1rem; cursor: pointer; }
+.btn-settings:hover, .btn-settings:focus-visible { border-color: #d31212; color: #ef4545; }
+.btn-settings:focus-visible, .settings-close:focus-visible { outline: 2px solid #d31212; outline-offset: 3px; }
 .btn-logout { background: transparent; border: 1px solid #2d3548; color: #e8edf5; padding: 8px 18px; border-radius: 30px; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: inherit; }
 .btn-logout:hover { background: #d31212; border-color: #d31212; color: #fff; }
 
@@ -382,6 +385,13 @@ label:has(input[name="wiPlan"]:checked) {
 .settings-credential-form { margin-top: 26px; padding-top: 4px; border-top: 1px solid rgba(190,201,220,0.14); }
 .settings-form-status { min-height: 1.25em; margin: 10px 0 0; font-size: 13px; }
 .settings-credential-form .form-group { margin-bottom: 14px; }
+.member-settings-dialog { width: min(900px, calc(100vw - 32px)); max-height: min(90vh, 900px); margin: auto; padding: 24px; overflow-y: auto; color: #e8edf5; background: #11161f; border: 1px solid #343c4c; border-radius: 16px; box-shadow: 0 24px 80px rgba(0,0,0,0.55); }
+.member-settings-dialog::backdrop { background: rgba(0,0,0,0.76); backdrop-filter: blur(5px); }
+.member-settings-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 1px solid rgba(190,201,220,0.14); }
+.member-settings-heading h2 { display: flex; align-items: center; gap: 10px; font-size: 1.15rem; }
+.member-settings-heading h2 i { color: #d31212; }
+.settings-close { display: grid; place-items: center; flex: 0 0 38px; width: 38px; height: 38px; padding: 0; border: 1px solid #2d3548; border-radius: 8px; background: transparent; color: #a4adc2; cursor: pointer; }
+.settings-close:hover { color: #fff; border-color: #d31212; background: rgba(211,18,18,0.12); }
 @media (max-width: 640px) { .settings-choice-list { grid-template-columns: 1fr; } }
 .member-collapsible > .panel-header { margin-bottom: 0; }
 .member-collapsible > summary:focus-visible { outline: 2px solid #d31212; outline-offset: 4px; border-radius: 8px; }

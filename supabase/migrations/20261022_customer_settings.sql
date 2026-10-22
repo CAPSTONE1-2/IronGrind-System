@@ -9,7 +9,7 @@ as $$
 declare
     v_member_id uuid;
     v_full_name text;
-    v_mobile number;
+    v_mobile numeric;
     v_dob date;
     v_sex text;
     v_height numeric;
