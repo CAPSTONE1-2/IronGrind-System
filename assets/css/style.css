@@ -162,15 +162,15 @@ label:has(input[name="wiPlan"]:checked) {
 .member-details p { font-size: 0.75rem; color: #6a748b; }
 .member-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .renew-btn { background: transparent; border: 1px solid #2d3548; color: #e8edf5; padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 500; cursor: pointer; font-family: inherit; }
-.renew-btn:hover { background: #1e2533; border-color: #d31212; }
+.renew-btn:hover { background: #1e2533; border-color: #cc0f0f; }
 .approve-badge { background: rgba(46, 204, 113, 0.15); color: #2ecc71; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
 .approve-badge.pending { background: rgba(241, 196, 15, 0.15); color: #f1c40f; }
-.approve-badge.expired { background: rgba(231, 76, 60, 0.15); color: #d31212; }
+.approve-badge.expired { background: rgba(231, 76, 60, 0.15); color: #cc0f0f; }
 
 /* ========== QR SCANNER ========== */
 .qr-scanner-box { background: #0d1219; border: 2px dashed #2d3548; border-radius: 20px; padding: 30px; text-align: center; margin-bottom: 20px; cursor: pointer; }
-.qr-scanner-box:hover { border-color: #d31212; }
-.qr-scanner-box i { font-size: 2.5rem; color: #d31212; margin-bottom: 12px; }
+.qr-scanner-box:hover { border-color: #cc0f0f; }
+.qr-scanner-box i { font-size: 2.5rem; color: #cc0f0f; margin-bottom: 12px; }
 .qr-scanner-box h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 6px; }
 .qr-scanner-box p { font-size: 0.8rem; color: #6a748b; }
 .qr-camera-modal { text-align: center; }
