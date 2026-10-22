@@ -13,6 +13,16 @@ create table if not exists public.profiles (
     created_at timestamptz not null default now()
 );
 
+-- Existing profiles tables may predate the email field used by the Auth trigger.
+alter table public.profiles
+    add column if not exists email text;
+
+update public.profiles p
+set email = u.email
+from auth.users u
+where u.id = p.id
+  and p.email is null;
+
 create table if not exists public.members (
     id uuid primary key default gen_random_uuid(),
     auth_user_id uuid references auth.users (id) on delete set null,
