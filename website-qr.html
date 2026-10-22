@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0b0d12">
+    <meta name="description" content="Scan to visit Iron Grind Fitness Gym online.">
+    <title>Visit Iron Grind | Scan the QR</title>
+    <style>
+        :root { color-scheme: dark; font-family: Inter, "Segoe UI", Arial, sans-serif; }
+        * { box-sizing: border-box; }
+        body { min-height: 100vh; margin: 0; display: grid; place-items: center; padding: 32px 18px; color: #f7f8fa; background: radial-gradient(ellipse at 50% 0%, #29202a 0, #11141b 43%, #090b0f 100%); }
+        main { position: relative; width: min(100%, 680px); overflow: hidden; padding: 48px 52px 38px; text-align: center; background: linear-gradient(155deg, #191d26, #10131a 70%); border: 1px solid #353a46; border-radius: 26px; box-shadow: 0 30px 90px #0009; }
+        main::before { position: absolute; inset: 0 0 auto; height: 7px; content: ""; background: linear-gradient(90deg, #a80f17, #fa252c 48%, #a80f17); }
+        .brand { display: flex; align-items: center; justify-content: center; gap: 14px; }
+        .brand img { width: 66px; height: 66px; object-fit: contain; border-radius: 50%; background: #08090c; }
+        .brand-copy { text-align: left; }
+        .mark { color: #ff343b; font-size: .72rem; font-weight: 800; letter-spacing: .2em; text-transform: uppercase; }
+        .brand-name { margin-top: 4px; font-size: 1.18rem; font-weight: 850; letter-spacing: .035em; }
+        h1 { margin: 34px 0 9px; font-size: clamp(2rem, 5vw, 3.1rem); line-height: 1.05; letter-spacing: -.045em; }
+        h1 span { color: #ff3038; }
+        .intro { max-width: 440px; margin: 0 auto; color: #b4bbc7; font-size: 1.02rem; line-height: 1.6; }
+        .scan-label { margin: 28px 0 13px; color: #f3f4f6; font-size: .78rem; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; }
+        .qr-frame { position: relative; display: grid; place-items: center; width: min(100%, 340px); margin: 0 auto 20px; padding: 17px; background: #fff; border: 1px solid #fff; border-radius: 18px; box-shadow: 0 0 0 7px #ed202833, 0 18px 48px #0008; }
+        #qrcode { display: grid; place-items: center; width: 100%; aspect-ratio: 1; }
+        #qrcode canvas, #qrcode img { display: block; width: 100% !important; height: auto !important; image-rendering: pixelated; }
+        .url { display: inline-block; margin-top: 4px; color: #c9ced8; font-size: .88rem; overflow-wrap: anywhere; text-decoration: none; }
+        .url:hover { color: #fff; }
+        .bottom-note { margin: 25px 0 0; color: #858d9b; font-size: .82rem; }
+        .actions { display: flex; justify-content: center; gap: 10px; margin-top: 25px; }
+        button { min-width: 140px; padding: 12px 18px; color: #fff; font-size: .92rem; font-weight: 750; background: #e51d25; border: 1px solid #fa343a; border-radius: 11px; cursor: pointer; transition: background .16s ease, transform .16s ease; }
+        button:hover { background: #f02a32; transform: translateY(-1px); }
+        button.secondary { color: #e4e7ed; background: #282e39; border-color: #3a414e; }
+        button.secondary:hover { background: #343b48; }
+        #status { min-height: 1.2em; margin-bottom: 0; color: #b4bbc7; font-size: .82rem; }
+        @media (max-width: 520px) { main { padding: 36px 22px 28px; border-radius: 21px; } .brand img { width: 54px; height: 54px; } .brand-name { font-size: .98rem; } .intro { font-size: .93rem; } .actions { flex-direction: column; } button { width: 100%; } }
+        @media print {
+            @page { size: A5 portrait; margin: 10mm; }
+            body { min-height: 0; padding: 0; color: #111; background: #fff; }
+            main { width: 100%; padding: 9mm 6mm; color: #111; background: #fff; border: 0; border-radius: 0; box-shadow: none; }
+            main::before { height: 4px; }
+            .brand img { width: 18mm; height: 18mm; }
+            .mark { color: #b20f17; }
+            .brand-name, h1, .scan-label { color: #111; }
+            h1 { margin-top: 8mm; font-size: 28pt; }
+            .intro, .url, .bottom-note, #status { color: #333; }
+            .qr-frame { width: 68mm; padding: 4mm; box-shadow: none; border: 1px solid #ddd; }
+            .actions { display: none; }
+            .bottom-note { margin-top: 7mm; }
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <div class="brand">
+            <img src="assets/images/iron-grind-mark.png" alt="Iron Grind Fitness Gym logo">
+            <div class="brand-copy"><div class="mark">Iron Grind Fitness Gym</div><div class="brand-name">TRAIN STRONG. LIVE STRONG.</div></div>
+        </div>
+        <h1>Your gym,<br><span>one scan away.</span></h1>
+        <p class="intro">Stay connected with Iron Grind Fitness Gym. Scan here to visit our website.</p>
+        <div class="scan-label">Open your camera and scan</div>
+        <div class="qr-frame"><div id="qrcode" role="img" aria-label="QR code linking to the Iron Grind website"></div></div>
+        <a class="url" id="siteUrl" href="https://irongrind.github.io/">irongrind.github.io</a>
+        <p class="bottom-note">We’ll see you at the gym.</p>
+        <div class="actions">
+            <button id="downloadButton" type="button">Download QR</button>
+            <button class="secondary" type="button" onclick="window.print()">Print</button>
+        </div>
+        <p id="status" aria-live="polite"></p>
+    </main>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+        const siteUrl = 'https://irongrind.github.io/';
+        const qrRoot = document.getElementById('qrcode');
+        const status = document.getElementById('status');
+        if (typeof QRCode === 'undefined') {
+            status.textContent = 'Could not load the QR generator. Check your internet connection and reload.';
+        } else {
+            new QRCode(qrRoot, {
+                text: siteUrl,
+                width: 256,
+                height: 256,
+                colorDark: '#11161f',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        }
+        document.getElementById('downloadButton').addEventListener('click', () => {
+            const canvas = qrRoot.querySelector('canvas');
+            const image = qrRoot.querySelector('img');
+            const dataUrl = canvas?.toDataURL('image/png') || image?.src;
+            if (!dataUrl) {
+                status.textContent = 'The QR code is not ready yet. Reload and try again.';
+                return;
+            }
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = 'iron-grind-website-qr.png';
+            link.click();
+        });
+    </script>
+</body>
+</html>
