@@ -38,6 +38,41 @@ begin
 end;
 $$;
 
+-- Keep a legacy NOT NULL `price` column populated while the app writes the
+-- current canonical `price_per_unit` column. The JSON record check also lets
+-- this function work on databases where the old column is absent.
+create or replace function public.sync_legacy_product_price()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+declare
+    product_record jsonb;
+begin
+    product_record := to_jsonb(new);
+    if product_record ? 'price' then
+        product_record := jsonb_set(product_record, '{price}', to_jsonb(new.price_per_unit), true);
+        new := jsonb_populate_record(new, product_record);
+    end if;
+    return new;
+end;
+$$;
+
+do $$
+begin
+    if not exists (
+        select 1 from pg_catalog.pg_trigger
+        where tgname = 'products_sync_legacy_price'
+          and tgrelid = 'public.products'::regclass
+          and not tgisinternal
+    ) then
+        execute 'create trigger products_sync_legacy_price '
+            || 'before insert or update of price_per_unit on public.products '
+            || 'for each row execute function public.sync_legacy_product_price()';
+    end if;
+end;
+$$;
+
 create or replace function public.record_walk_in_sale(
     p_receipt_number text,
     p_customer_name text,
