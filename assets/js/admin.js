@@ -16,6 +16,7 @@ let members = [];
 let products = [];
 let archivedProducts = [];
 let sales = [];
+let approvedRenewalApplications = [];
 let attendance = [];
 let pendingApprovals = [];
 let users = [];
@@ -95,6 +96,21 @@ function mapSupabaseSale(row) {
         date: Number.isNaN(soldAt.getTime()) ? todayStr() : soldAt.toISOString().slice(0, 10),
         createdAt: row.sold_at,
         status: row.status === 'voided' ? 'Voided' : 'Paid'
+    };
+}
+
+function mapApprovedRenewalApplication(row) {
+    const member = members.find(item => String(item.id) === String(row.member_id));
+    const receipt = `IG-R-${String(row.id).slice(0, 8).toUpperCase()}`;
+    return {
+        id: receipt,
+        customer: member?.name || row.full_name || 'Name not recorded',
+        memberId: row.member_id,
+        source: 'dashboard-renewal',
+        items: `${row.plan || member?.plan || 'Membership'} Membership Renewal`,
+        total: Number(row.plan_price) || 0,
+        date: row.reviewed_at ? new Date(row.reviewed_at).toISOString().slice(0, 10) : '',
+        status: 'Paid'
     };
 }
 
@@ -837,10 +853,13 @@ async function loadSupabaseMembershipData() {
 async function loadSupabaseOperationalData() {
     const client = window.ironGrindSupabase;
     if (!client) return;
-    const [productsResult, salesResult, attendanceResult] = await Promise.all([
+    const [productsResult, salesResult, attendanceResult, renewalsResult] = await Promise.all([
         client.from('products').select('*').order('name'),
         client.from('sales').select('*, sale_items(*)').order('sold_at', { ascending: false }),
-        client.from('attendance').select('*, members(full_name)').order('time_in', { ascending: false })
+        client.from('attendance').select('*, members(full_name)').order('time_in', { ascending: false }),
+        client.from('membership_applications').select('*')
+            .eq('application_type', 'renewal').eq('status', 'approved')
+            .order('reviewed_at', { ascending: false })
     ]);
 
     if (productsResult.error) {
@@ -862,6 +881,13 @@ async function loadSupabaseOperationalData() {
         toast(`Could not load attendance from Supabase: ${attendanceResult.error.message}`, 'error');
     } else {
         attendance = attendanceResult.data.map(mapSupabaseAttendance);
+    }
+    if (renewalsResult.error) {
+        console.error('Could not load approved renewal applications:', renewalsResult.error);
+        approvedRenewalApplications = [];
+        toast(`Could not load approved renewals for the report: ${renewalsResult.error.message}`, 'error');
+    } else {
+        approvedRenewalApplications = renewalsResult.data.map(mapApprovedRenewalApplication);
     }
     renderStore();
     renderSales();
@@ -2127,6 +2153,20 @@ function getRenewalPlan(sale) {
     return member?.plan || '—';
 }
 
+function getRenewalReportRows() {
+    const salesByReceipt = new Map(sales.map(sale => [String(sale.id), sale]));
+    const approvedPortalRenewals = approvedRenewalApplications.map(application => {
+        const recordedSale = salesByReceipt.get(String(application.id));
+        return recordedSale ? { ...recordedSale, source: 'dashboard-renewal' } : application;
+    });
+    const approvedReceiptIds = new Set(approvedPortalRenewals.map(sale => String(sale.id)));
+    const otherRenewalSales = sales.filter(sale =>
+        isRenewalSale(sale) && !approvedReceiptIds.has(String(sale.id))
+    );
+    return [...approvedPortalRenewals, ...otherRenewalSales]
+        .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+}
+
 function viewReport(type) {
     let body = '';
     if (type === 'membership') {
@@ -2160,7 +2200,7 @@ function viewReport(type) {
         body = `<table class="attendance-table"><thead><tr><th>Receipt</th><th>Customer</th><th>Total</th><th>Date</th></tr></thead><tbody>
             ${sales.map(s => `<tr><td>${s.id}</td><td>${s.customer}</td><td>${formatPeso(s.total)}</td><td>${s.date}</td></tr>`).join('')}</tbody></table>`;
     } else if (type === 'renewals') {
-        const renewals = sales.filter(isRenewalSale).sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+        const renewals = getRenewalReportRows();
         const income = renewals.reduce((total, sale) => total + Number(sale.total || 0), 0);
         body = `<p class="modal-sub">${renewals.length} completed renewal${renewals.length === 1 ? '' : 's'} · Total collected: <strong>${formatPeso(income)}</strong></p>
             ${renewals.length ? `<div class="table-scroll"><table class="attendance-table"><thead><tr><th>Receipt</th><th>Member</th><th>Renewed Plan</th><th>Channel</th><th>Amount</th><th>Date</th></tr></thead><tbody>
@@ -2236,7 +2276,7 @@ function printReportPDF(type) {
         dateForRow = row => row.date;
     } else if (type === 'renewals') {
         columns = ['Receipt', 'Member', 'Renewed Plan', 'Channel', 'Amount', 'Date'];
-        rows = sales.filter(isRenewalSale).map(sale => ({
+        rows = getRenewalReportRows().map(sale => ({
             cells: [sale.id, sale.customer || 'Name not recorded', getRenewalPlan(sale), getRenewalChannel(sale), formatPeso(sale.total), sale.date || '—'],
             date: sale.date
         }));
