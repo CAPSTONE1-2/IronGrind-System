@@ -31,6 +31,30 @@ update public.members
 set auth_user_id = user_id
 where auth_user_id is null and user_id is not null;
 
+update public.members
+set expiry_date = end_date
+where expiry_date is null and end_date is not null;
+
+update public.members
+set plan_price = paid
+where plan_price = 0 and paid > 0;
+
+update public.members
+set weight_kg = weight
+where weight_kg is null and weight is not null;
+
+update public.members m
+set email = u.email
+from auth.users u
+where u.id = coalesce(m.auth_user_id, m.user_id)
+  and m.email is null;
+
+update public.members m
+set username = p.username
+from public.profiles p
+where p.id = coalesce(m.auth_user_id, m.user_id)
+  and m.username is null;
+
 update public.membership_applications
 set auth_user_id = user_id
 where auth_user_id is null and user_id is not null;

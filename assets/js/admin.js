@@ -511,7 +511,7 @@ async function completeSupabaseRegistrationApproval(application) {
             health_conditions: appRow.health_conditions || [],
             other_medical_conditions: appRow.other_medical_conditions || '',
             signature_data: appRow.signature_data || null,
-            signature_path: appRow.signature_data || null,
+            signature_path: null,
             registration_source: 'Online application'
         };
         const inserted = await supabaseClient.from('members').insert(memberPayload).select('*').single();
@@ -582,6 +582,7 @@ async function loadSupabaseMembershipData() {
 
     if (applicationsResult.error) {
         console.error('Could not load Supabase applications:', applicationsResult.error);
+        toast(`Could not load online applications: ${applicationsResult.error.message}`, 'error');
     } else {
         const remoteApps = applicationsResult.data.map(row => ({
             id: row.id,
@@ -618,6 +619,7 @@ async function loadSupabaseMembershipData() {
 
     if (membersResult.error) {
         console.error('Could not load Supabase members:', membersResult.error);
+        toast(`Could not load online members: ${membersResult.error.message}`, 'error');
     } else {
         const remoteMembers = membersResult.data.map(row => mapSupabaseMember(row));
         const localOnly = members.filter(local => !remoteMembers.some(remote => String(remote.id) === String(local.id))
