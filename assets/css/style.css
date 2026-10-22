@@ -79,22 +79,22 @@ body.dashboard-body .low-stock-item { background-color: rgba(13,18,25,0.64); bor
 .stat-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.6px; color: #6a748b; font-weight: 600; margin-bottom: 8px; }
 .stat-value { font-size: 2rem; font-weight: 700; line-height: 1.2; }
 .stat-sub { font-size: 0.75rem; color: #8b95a9; margin-top: 6px; display: flex; align-items: center; gap: 6px; }
-.stat-sub i { font-size: 0.7rem; color: #2ecc71; }
-.stat-sub.danger i { color: #d31212; }
+.stat-sub i { font-size: 0.7rem; color: #13b657; }
+.stat-sub.danger i { color: #cc0f0f; }
 
 /* ========== PANEL ========== */
 .panel { min-width: 0; background: #11161f; border: 1px solid #1e2533; border-radius: 24px; padding: 24px; }
 .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px; }
 .panel-header h2 { font-size: 1.1rem; font-weight: 600; display: flex; align-items: center; gap: 10px; }
-.panel-header h2 i { color: #d31212; }
+.panel-header h2 i { color: #cc0f0f; }
 
 /* ========== BUTTONS ========== */
 .btn-sm { background: #1e2533; border: 1px solid #2d3548; color: #e8edf5; padding: 8px 16px; border-radius: 30px; font-size: 0.8rem; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-family: inherit; }
 .btn-sm:hover { background: #2d3548; }
-.btn-primary { background: #d31212; border: none; color: #fff; padding: 8px 18px; border-radius: 30px; font-weight: 600; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-family: inherit; }
+.btn-primary { background: #cc0f0f; border: none; color: #fff; padding: 8px 18px; border-radius: 30px; font-weight: 600; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-family: inherit; }
 .btn-primary:hover { background: #a50c0c; }
-.btn-danger { background: #b42323; border: 1px solid #d34242; color: #fff; padding: 8px 18px; border-radius: 30px; font-weight: 600; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-family: inherit; }
-.btn-danger:hover { background: #d31212; }
+.btn-danger { background: #cc0f0f; border: 1px solid #cc0f0f#cc0f0f; color: #fff; padding: 8px 18px; border-radius: 30px; font-weight: 600; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-family: inherit; }
+.btn-danger:hover { background: #cc0f0f; }
 .confirm-dialog { text-align: center; }
 .confirm-dialog-icon { display: grid; place-items: center; width: 48px; height: 48px; margin: 0 auto 14px; border-radius: 50%; background: rgba(211,18,18,0.12); color: #e34b4b; font-size: 1.1rem; }
 .confirm-dialog .modal-sub { margin: 10px 0 20px; line-height: 1.55; }
