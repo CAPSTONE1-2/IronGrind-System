@@ -160,10 +160,12 @@
                 <div id="storeLocked" class="store-lock">
                     <i class="fas fa-lock"></i>
                     <h3>Store &amp; Inventory is Locked</h3>
-                    <p>Store access is managed by your signed-in admin account.</p>
-                    <div class="password-input-group">
-                        <button class="btn-primary" onclick="unlockStore()"><i class="fas fa-unlock"></i> Open Store</button>
-                    </div>
+                    <p>Enter the Store password to view inventory. Contact the administrator if you need access.</p>
+                    <form class="password-input-group" onsubmit="event.preventDefault(); runWithButtonLoading(this.querySelector('button'), unlockStore, 'Checking…');">
+                        <input type="password" id="storeAccessPassword" placeholder="Store password" autocomplete="current-password" aria-label="Store password" required>
+                        <button type="submit" class="btn-primary"><i class="fas fa-unlock"></i> Open Store</button>
+                    </form>
+                    <p id="storeAccessStatus" class="store-access-status" role="status" aria-live="polite"></p>
                 </div>
                 <div id="storeUnlocked" class="hidden">
                     <div class="panel">

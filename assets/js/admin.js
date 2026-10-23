@@ -1828,7 +1828,33 @@ function exportAttendance() {
 }
 
 /* ========== STORE ========== */
-function unlockStore() {
+async function unlockStore() {
+    const passwordInput = document.getElementById('storeAccessPassword');
+    const status = document.getElementById('storeAccessStatus');
+    const password = passwordInput?.value || '';
+    if (!password) {
+        status.textContent = 'Enter the Store password to continue.';
+        return;
+    }
+    const client = window.ironGrindSupabase;
+    if (!client) {
+        status.textContent = 'Store password verification is unavailable. Reload and try again.';
+        return;
+    }
+
+    status.textContent = 'Checking password…';
+    const { data, error } = await client.functions.invoke('verify-store-password', {
+        body: { password },
+    });
+    if (error || !data?.authorized) {
+        status.textContent = error?.message || data?.error || 'Incorrect Store password.';
+        passwordInput.value = '';
+        passwordInput.focus();
+        return;
+    }
+
+    status.textContent = '';
+    passwordInput.value = '';
     document.getElementById('storeLocked').classList.add('hidden');
     document.getElementById('storeUnlocked').classList.remove('hidden');
     renderStore();
