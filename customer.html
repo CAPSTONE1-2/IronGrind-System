@@ -79,7 +79,7 @@
                     <div class="form-row form-row-three">
                         <div class="form-group"><label for="settingsAge">Age</label><input type="number" id="settingsAge" readonly></div>
                         <div class="form-group"><label for="settingsSex">Sex</label><select id="settingsSex"><option>Male</option><option>Female</option><option>Prefer not to say</option></select></div>
-                        <div class="form-group"><label for="settingsMobile">Mobile</label><input type="tel" id="settingsMobile" autocomplete="tel" placeholder="0917 123 4567" inputmode="tel"></div>
+                        <div class="form-group"><label for="settingsMobile">Mobile</label><input type="tel" id="settingsMobile" autocomplete="tel" placeholder="09171234567" inputmode="numeric" maxlength="11" pattern="09[0-9]{9}"></div>
                     </div>
                     <div class="form-row">
                         <div class="form-group"><label for="settingsHeight">Height</label><div class="settings-height-input"><input type="number" id="settingsHeight" min="0.01" step="any" placeholder="170"><select id="settingsHeightUnit" aria-label="Height unit"><option value="cm">cm</option><option value="ft">ft</option><option value="in">inches</option></select></div></div>
@@ -90,7 +90,7 @@
                     <div class="form-row form-row-three">
                         <div class="form-group"><label for="settingsEmergencyName">Name</label><input type="text" id="settingsEmergencyName"></div>
                         <div class="form-group"><label for="settingsEmergencyRelationship">Relationship</label><input type="text" id="settingsEmergencyRelationship"></div>
-                        <div class="form-group"><label for="settingsEmergencyMobile">Contact Number</label><input type="tel" id="settingsEmergencyMobile" inputmode="tel"></div>
+                        <div class="form-group"><label for="settingsEmergencyMobile">Contact Number</label><input type="tel" id="settingsEmergencyMobile" inputmode="numeric" maxlength="11" pattern="09[0-9]{9}" placeholder="09171234567" autocomplete="tel"></div>
                     </div>
 
                     <h3 class="settings-section-title">Health and Fitness</h3>

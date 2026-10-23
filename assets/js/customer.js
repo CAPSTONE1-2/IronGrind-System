@@ -839,6 +839,13 @@ function populateMemberSettings(member) {
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
+    ['settingsMobile', 'settingsEmergencyMobile'].forEach(id => {
+        const input = document.getElementById(id);
+        if (!input) return;
+        input.addEventListener('input', () => {
+            input.value = input.value.replace(/\D/g, '').slice(0, 11);
+        });
+    });
     document.getElementById('membershipForm')?.addEventListener('submit', submitMembershipForm);
     document.getElementById('memberSettingsForm')?.addEventListener('submit', submitMemberSettings);
     document.getElementById('memberEmailForm')?.addEventListener('submit', submitMemberEmail);
