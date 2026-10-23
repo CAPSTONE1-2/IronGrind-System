@@ -187,6 +187,25 @@ function openModal(html) {
     document.getElementById('modalContent').innerHTML = html;
     document.getElementById('modalOverlay').classList.remove('hidden');
 }
+async function runWithButtonLoading(button, action, loadingLabel = 'Working…') {
+    if (!button || button.disabled) return;
+    const originalHTML = button.innerHTML;
+    button.disabled = true;
+    button.classList.add('is-loading');
+    button.setAttribute('aria-busy', 'true');
+    button.innerHTML = `<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> ${escapeHTML(loadingLabel)}`;
+    try {
+        await action();
+    } catch (error) {
+        console.error('Button action failed:', error);
+        toast(error?.message || 'The action could not be completed. Please try again.', 'error');
+    } finally {
+        button.disabled = false;
+        button.classList.remove('is-loading');
+        button.removeAttribute('aria-busy');
+        button.innerHTML = originalHTML;
+    }
+}
 function closeModal() {
     document.getElementById('modalOverlay').classList.add('hidden');
     document.getElementById('modalContent').parentElement.classList.remove('report-pdf-modal');
@@ -451,7 +470,7 @@ function renderApprovals(type = currentApprovalType) {
             ${p.signature ? `<div style="background:#11161f; border-radius:14px; padding:16px; margin-bottom:16px;"><div style="font-size:0.68rem; text-transform:uppercase; color:#6a748b; font-weight:600; margin-bottom:8px;">Member Signature</div><img src="${p.signature}" alt="${p.fullName}'s digital signature" style="display:block; max-width:100%; width:360px; height:120px; object-fit:contain; background:#fff; border-radius:8px;"></div>` : ''}
             <div style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;">
                 <button class="btn-sm" onclick="rejectApplication('${p.id}')"><i class="fas fa-times"></i> Reject</button>
-                <button class="btn-primary" onclick="approveApplication('${p.id}')"><i class="fas fa-check-circle"></i> ${p.source === 'dashboard-renewal' ? 'Approve Renewal' : 'Approve &amp; Create Account'}</button>
+                    <button class="btn-primary" onclick="runWithButtonLoading(this, () => approveApplication('${p.id}'), 'Processing…')"><i class="fas fa-check-circle"></i> ${p.source === 'dashboard-renewal' ? 'Approve Renewal' : 'Approve &amp; Create Account'}</button>
             </div>
         </div>
     `).join('');
@@ -1194,7 +1213,7 @@ function openAddMemberModal() {
         <!-- ACTIONS -->
         <div class="modal-actions" style="position:sticky; bottom:0; background:#11161f; padding-top:12px;">
             <button class="btn-sm" onclick="closeModal()">Cancel</button>
-            <button class="btn-primary" onclick="submitNewMember()"><i class="fas fa-check"></i> Add Member &amp; Generate QR</button>
+            <button class="btn-primary" onclick="runWithButtonLoading(this, submitNewMember, 'Creating member…')"><i class="fas fa-check"></i> Add Member &amp; Generate QR</button>
         </div>
     `);
 
@@ -1314,7 +1333,7 @@ async function submitNewMember() {
     if (window.ironGrindSupabase) {
         const { data: authData, error: authError } = await window.ironGrindSupabase.auth.getUser();
         if (authError || !authData.user) { toast('Your Supabase session expired. Please sign in again.', 'error'); return; }
-        const { error } = await window.ironGrindSupabase.functions.invoke('admin-create-member', {
+        const { data: createdMember, error } = await window.ironGrindSupabase.functions.invoke('admin-create-member', {
             body: {
                 email, username, password, fullName: name, mobile: contact,
                 dateOfBirth: dob, age, sex, height, heightUnit: height ? 'cm' : null,
@@ -1340,6 +1359,7 @@ async function submitNewMember() {
         await loadSupabaseMembershipData();
         await loadSupabaseOperationalData();
         toast(`${name} was registered in Supabase and their membership payment was recorded.`, 'success');
+        if (createdMember?.receipt_number) showSaleReceipt(createdMember.receipt_number);
         return;
     }
 
@@ -1484,7 +1504,7 @@ function renewMember(id) {
             <option value="Half Month|400" ${selectedPlan === 'Half Month' ? 'selected' : ''}>Half Month — ₱400</option>
             <option value="Walk-in|80" ${selectedPlan === 'Walk-in' ? 'selected' : ''}>Walk-in — ₱80</option>
         </select></div>
-        <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="completeMemberRenewal('${member.id}')"><i class="fas fa-receipt"></i> Complete Renewal</button></div>
+        <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="runWithButtonLoading(this, () => completeMemberRenewal('${member.id}'), 'Saving renewal…')"><i class="fas fa-receipt"></i> Complete Renewal</button></div>
     `);
     setupPhMobileInput(document.getElementById('crContact'));
 }
@@ -1845,7 +1865,7 @@ function openAddProductModal() {
             <div class="form-group"><label>Price (per gram for supplements, per item for merchandise) ₱</label><input type="number" id="apPrice" min="0" step="0.01" placeholder="e.g. 2.50 per gram"></div>
             <div id="apStockGroup" class="form-group" style="display:none"><label>Stock (items)</label><input type="number" id="apStock" min="0" step="1" placeholder="Enter available stock"></div>
         </div>
-        <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="submitAddProduct()">Add</button></div>
+        <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="runWithButtonLoading(this, submitAddProduct, 'Adding product…')">Add</button></div>
     `);
 }
 
@@ -1905,7 +1925,7 @@ function editProduct(id) {
             <div class="form-group"><label>Price (per gram for supplements, per item for merchandise) ₱</label><input type="number" id="epPrice" min="0" step="0.01" value="${p.price}"></div>
             ${p.category === 'Merch' ? `<div class="form-group"><label>Stock (items)</label><input type="number" id="epStock" min="0" step="1" value="${p.stock}"></div>` : ''}
         </div>
-        <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="submitEditProduct('${p.id}')">Save</button></div>
+        <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="runWithButtonLoading(this, () => submitEditProduct('${p.id}'), 'Saving…')">Save</button></div>
     `);
 }
 
@@ -2029,7 +2049,7 @@ function openNewSaleModal() {
         <div class="form-group" style="margin-bottom:14px;"><label id="nsQtyLabel">Quantity</label><input type="number" id="nsQty" value="1" min="0.01" step="0.01" oninput="updateSaleTotalPreview()"></div>
         <p class="modal-sub" id="nsPriceHint"></p>
         <div class="sale-total-preview">Sale total <strong id="nsTotalPreview">₱0</strong></div>
-        <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="submitNewSale()">Complete</button></div>
+        <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="runWithButtonLoading(this, submitNewSale, 'Recording sale…')">Complete</button></div>
     `);
     updateSaleQuantityMode();
 }

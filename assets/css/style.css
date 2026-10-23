@@ -100,6 +100,13 @@ body.dashboard-body .low-stock-item { background-color: rgba(13,18,25,0.64); bor
 .btn-primary:hover { background: #b60404; }
 .btn-danger { background: #b60404; border: 1px solid #b60404; color: #fff; padding: 8px 18px; border-radius: 30px; font-weight: 600; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-family: inherit; }
 .btn-danger:hover { background: #b60404; }
+.btn-primary.is-loading,
+.btn-sm.is-loading,
+.btn-danger.is-loading { opacity: .82; cursor: wait; }
+.btn-primary:disabled,
+.btn-sm:disabled,
+.btn-danger:disabled { cursor: wait; }
+.fa-spinner { display: inline-block; }
 .confirm-dialog { text-align: center; }
 .confirm-dialog-icon { display: grid; place-items: center; width: 48px; height: 48px; margin: 0 auto 14px; border-radius: 50%; background: rgba(211,18,18,0.12); color: #e34b4b; font-size: 1.1rem; }
 .confirm-dialog .modal-sub { margin: 10px 0 20px; line-height: 1.55; }
