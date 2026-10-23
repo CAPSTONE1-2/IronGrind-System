@@ -2656,43 +2656,171 @@ function printReportPDF(type, inAppPreview = false) {
     }
 }
 
-function exportAllReports() {
+function reportDateBelongsToMonth(value, month) {
+    if (!value) return false;
+    const text = String(value);
+    if (/^\d{4}-\d{2}$/.test(text) || /^\d{4}-\d{2}-\d{2}$/.test(text)) return text.slice(0, 7) === month;
+    const parsed = new Date(text);
+    return !Number.isNaN(parsed.getTime()) && localDateStr(parsed).slice(0, 7) === month;
+}
+
+function createMonthlyReportPDF(type, month) {
+    const JsPDF = window.jspdf?.jsPDF;
+    if (!JsPDF) throw new Error('PDF generator did not load. Check the internet connection and reload the admin page.');
+
+    const reportNames = {
+        membership: 'Membership Report',
+        'member-status': 'Active - Inactive Members Report',
+        archives: 'Archives Report',
+        payment: 'Payment Report',
+        attendance: 'Attendance Report',
+        renewals: 'Membership Renewal Report',
+        inventory: 'Inventory Report',
+        sales: 'Sales Report'
+    };
+    const sections = [];
+    const rowsFor = (headers, rows) => ({ headers, rows });
+    const membersForMonth = members.filter(member => !isPastMembershipArchiveGrace(member)
+        && reportDateBelongsToMonth(member.startDate || member.registeredAt, month));
+
+    if (type === 'membership') {
+        sections.push(rowsFor(['Member', 'Plan', 'Started', 'Expires'], membersForMonth.map(member => [member.name, member.plan, member.startDate || '-', member.expiry || '-'])));
+    } else if (type === 'member-status') {
+        sections.push(rowsFor(['Member', 'Username', 'Registration Source', 'Plan', 'Expires'], members.map(member => [
+            member.name,
+            member.username || '-',
+            member.registrationSource || 'Not recorded',
+            member.plan || '-',
+            member.expiry || '-'
+        ])));
+    } else if (type === 'archives') {
+        captureExpiredMemberships();
+        const archivedRows = [
+            ...membershipArchives.filter(isMembershipArchiveReady)
+                .filter(record => reportDateBelongsToMonth(record.archivedAt || record.expiry, month))
+                .map(record => ['Expired membership', record.memberName, record.username || '-', record.plan, record.expiry || '-']),
+            ...planArchives.filter(record => reportDateBelongsToMonth(record.changedAt, month))
+                .map(record => ['Plan change', record.memberName, `${record.previousPlan || '-'} to ${record.newPlan || '-'}`, record.previousExpiry || '-', record.changedAt || '-']),
+            ...archivedProducts.filter(record => reportDateBelongsToMonth(record.archivedAt, month))
+                .map(record => ['Archived product', record.name, record.category, record.size || '-', record.archivedAt || '-'])
+        ];
+        sections.push(rowsFor(['Record Type', 'Member / Product', 'Username / Details', 'Plan / Previous Expiry', 'Archived / Changed'], archivedRows));
+    } else if (type === 'payment' || type === 'sales') {
+        const filteredSales = sales.filter(sale => reportDateBelongsToMonth(sale.date || sale.createdAt, month));
+        sections.push(rowsFor(['Receipt', 'Customer', 'Total', 'Date', 'Status'], filteredSales.map(sale => [sale.id || '-', sale.customer || 'Name not recorded', `PHP ${Number(sale.total || 0).toFixed(2)}`, sale.date || '-', sale.status || 'Unknown'])));
+    } else if (type === 'attendance') {
+        const filteredAttendance = attendance.filter(record => reportDateBelongsToMonth(record.date, month));
+        sections.push(rowsFor(['Member', 'Date', 'Time in', 'Time out'], filteredAttendance.map(record => [record.memberName, record.date || '-', formatAttendanceClock(record.timeIn), formatAttendanceClock(record.timeOut)])));
+    } else if (type === 'renewals') {
+        const renewals = getRenewalReportRows().filter(record => reportDateBelongsToMonth(record.date, month));
+        sections.push(rowsFor(['Receipt', 'Member', 'Renewed Plan', 'Channel', 'Amount', 'Date', 'Receipt Status'], renewals.map(record => [
+            record.saleRecorded === false ? 'Not recorded' : record.id || '-',
+            record.customer || 'Name not recorded',
+            getRenewalPlan(record),
+            getRenewalChannel(record),
+            `PHP ${Number(record.total || 0).toFixed(2)}`,
+            record.date || '-',
+            record.saleRecorded === false ? 'Missing receipt' : 'Recorded'
+        ])));
+    } else if (type === 'inventory') {
+        sections.push(rowsFor(['Product', 'Category', 'Price', 'Stock'], products.map(product => [
+            `${product.name}${product.size ? ` (${product.size})` : ''}`,
+            product.category === 'Supplement' ? 'Supplement' : 'Merchandise',
+            `PHP ${Number(product.price || 0).toFixed(2)}${product.category === 'Supplement' ? ' / g' : ' / item'}`,
+            product.category === 'Supplement' ? 'Not tracked' : String(product.stock ?? 0)
+        ])));
+    }
+
+    const doc = new JsPDF({ orientation: ['archives', 'payment', 'sales', 'renewals'].includes(type) ? 'landscape' : 'portrait', unit: 'pt', format: 'a4' });
+    const reportTitle = reportNames[type] || 'Iron Grind Report';
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.setTextColor(211, 18, 18);
+    doc.text('IRON GRIND FITNESS GYM', 40, 38);
+    doc.setFontSize(12);
+    doc.setTextColor(32, 36, 44);
+    doc.text(reportTitle, 40, 59);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(100, 108, 120);
+    doc.text(`Report month: ${month}  |  Generated: ${new Date().toLocaleString()}`, 40, 74);
+
+    let cursorY = 88;
+    sections.forEach(section => {
+        if (!section.rows.length) {
+            doc.setFontSize(10);
+            doc.text('No records for the selected month.', 40, cursorY + 12);
+            cursorY += 32;
+            return;
+        }
+        doc.autoTable({
+            head: [section.headers],
+            body: section.rows.map(row => row.map(value => String(value ?? '-'))),
+            startY: cursorY,
+            margin: { left: 40, right: 40, bottom: 32 },
+            styles: { font: 'helvetica', fontSize: 8, cellPadding: 5, overflow: 'linebreak' },
+            headStyles: { fillColor: [40, 46, 56], textColor: [255, 255, 255], fontStyle: 'bold' },
+            alternateRowStyles: { fillColor: [246, 247, 249] },
+            didDrawPage: data => {
+                const pageCount = doc.internal.getNumberOfPages();
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(8);
+                doc.setTextColor(120, 126, 136);
+                doc.text(`Iron Grind Fitness Gym | ${month}`, 40, doc.internal.pageSize.getHeight() - 16);
+                doc.text(`Page ${data.pageNumber} of ${pageCount}`, doc.internal.pageSize.getWidth() - 40, doc.internal.pageSize.getHeight() - 16, { align: 'right' });
+            }
+        });
+        cursorY = (doc.lastAutoTable?.finalY || cursorY) + 20;
+    });
+    if (!sections.length) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.text('No records for the selected month.', 40, cursorY);
+    }
+    return doc.output('blob');
+}
+
+async function exportAllReports() {
     const selectedMonth = document.getElementById('reportsExportMonth')?.value || '';
     if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(selectedMonth)) {
         toast('Choose a month before exporting.', 'error');
         return;
     }
-
-    const belongsToMonth = value => {
-        if (!value) return false;
-        const text = String(value);
-        if (/^\d{4}-\d{2}/.test(text)) {
-            if (text.length === 10 || /^\d{4}-\d{2}$/.test(text)) return text.slice(0, 7) === selectedMonth;
-            const parsed = new Date(text);
-            return !Number.isNaN(parsed.getTime()) && localDateStr(parsed).slice(0, 7) === selectedMonth;
-        }
-        const parsed = new Date(text);
-        return !Number.isNaN(parsed.getTime()) && localDateStr(parsed).slice(0, 7) === selectedMonth;
+    if (!window.JSZip || !window.jspdf?.jsPDF || !window.jspdf.jsPDF.API.autoTable) {
+        toast('The PDF or ZIP tools did not load. Check the internet connection, then reload this page.', 'error');
+        return;
+    }
+    const types = ['membership', 'member-status', 'archives', 'payment', 'attendance', 'renewals', 'inventory', 'sales'];
+    const names = {
+        membership: 'Membership Report',
+        'member-status': 'Active - Inactive Members Report',
+        archives: 'Archives Report',
+        payment: 'Payment Report',
+        attendance: 'Attendance Report',
+        renewals: 'Membership Renewal Report',
+        inventory: 'Inventory Report',
+        sales: 'Sales Report'
     };
-
-    const data = {
-        exportMonth: selectedMonth,
-        monthFiltering: 'Dated records are limited to exportMonth. Members and products are current snapshots.',
-        members,
-        products,
-        archivedProducts: archivedProducts.filter(product => belongsToMonth(product.archivedAt)),
-        sales: sales.filter(sale => belongsToMonth(sale.date || sale.createdAt)),
-        attendance: attendance.filter(record => belongsToMonth(record.date)),
-        planArchives: planArchives.filter(record => belongsToMonth(record.changedAt)),
-        membershipArchives: membershipArchives.filter(record => belongsToMonth(record.archivedAt || record.expiry)),
-        approvedRenewalApplications: approvedRenewalApplications.filter(application => belongsToMonth(application.date)),
-        generatedAt: new Date().toISOString()
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `irongrind-reports-${selectedMonth}.json`; a.click();
-    URL.revokeObjectURL(url);
-    toast(`Exported reports for ${selectedMonth}.`, 'success');
+    try {
+        toast(`Preparing PDFs for ${selectedMonth}…`, 'success');
+        const zip = new JSZip();
+        const reportFolder = zip.folder('Iron Grind Reports');
+        types.forEach(type => {
+            const pdfBlob = createMonthlyReportPDF(type, selectedMonth);
+            reportFolder.file(`${names[type]} (${selectedMonth}).pdf`, pdfBlob);
+        });
+        const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+        const url = URL.createObjectURL(zipBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Iron Grind Reports (${selectedMonth}).zip`;
+        link.click();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+        toast(`Exported ${types.length} PDFs for ${selectedMonth}.`, 'success');
+    } catch (error) {
+        console.error('Could not export monthly PDF reports:', error);
+        toast(error.message || 'Could not create the monthly report archive.', 'error');
+    }
 }
 
 /* ========== INIT ========== */

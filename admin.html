@@ -222,10 +222,10 @@
                         <div class="report-export-controls">
                             <label for="reportsExportMonth">Month</label>
                             <input id="reportsExportMonth" type="month" aria-label="Choose a month for dated report records">
-                            <button class="btn-sm" onclick="exportAllReports()"><i class="fas fa-download"></i> Export All</button>
+                            <button class="btn-sm" onclick="exportAllReports()"><i class="fas fa-download"></i> Export All PDFs</button>
                         </div>
                     </div>
-                    <p class="modal-sub">Dated records are filtered to the selected month. Members and inventory are included as current snapshots.</p>
+                    <p class="modal-sub">Export downloads one ZIP folder containing a PDF for each report. Dated records use the selected month; members and inventory show current snapshots.</p>
                     <div class="product-grid" id="reportsGrid"></div>
                 </div>
             </div>
@@ -242,7 +242,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="assets/js/supabase-client.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="assets/js/signature.js"></script>
-<script src="assets/js/admin.js?v=20261023-admin-display-name"></script>
+<script src="assets/js/admin.js?v=20261023-reports-zip-pdf"></script>
 </body>
 </html>
