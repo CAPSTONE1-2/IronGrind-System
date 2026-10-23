@@ -291,7 +291,8 @@ function logout() {
 
 /* ========== RENDER: DASHBOARD ========== */
 function renderDashboard() {
-    document.getElementById('statTotalMembers').textContent = members.length;
+    const currentMemberships = members.filter(member => !isPastMembershipArchiveGrace(member));
+    document.getElementById('statTotalMembers').textContent = currentMemberships.length;
 
     const today = todayStr();
     const todayAtt = attendance.filter(a => a.date === today);
