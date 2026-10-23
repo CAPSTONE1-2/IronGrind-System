@@ -1847,7 +1847,9 @@ async function unlockStore() {
         body: { password },
     });
     if (error || !data?.authorized) {
-        status.textContent = error?.message || data?.error || 'Incorrect Store password.';
+        status.textContent = error
+            ? 'Could not verify the password. Check that the Supabase function is deployed and STORE_ACCESS_PASSWORD is configured.'
+            : (data?.error || 'Incorrect Store password.');
         passwordInput.value = '';
         passwordInput.focus();
         return;
