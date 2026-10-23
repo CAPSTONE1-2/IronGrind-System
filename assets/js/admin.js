@@ -363,9 +363,13 @@ function renderMembers() {
 
     const listEl = document.getElementById('membersList');
     if (filtered.length === 0) {
-        const hasArchived = members.some(isPastMembershipArchiveGrace);
+        const hasArchived = members.some(member =>
+            isPastMembershipArchiveGrace(member)
+            && (currentPlanFilter === 'all' || member.plan === currentPlanFilter)
+            && (!query || member.name.toLowerCase().includes(query))
+        );
         listEl.innerHTML = hasArchived
-            ? '<div class="empty-state">No members found. Expired memberships beyond the 10-day grace period are in <button class="btn-sm" onclick="viewReport(\'archives\')">Membership Archives</button>.</div>'
+            ? '<div class="empty-state membership-empty-state"><span>No current members match these filters. Expired memberships beyond the 10-day grace period are archived.</span><button class="btn-sm" onclick="viewReport(\'archives\')"><i class="fas fa-box-archive"></i> Membership Archives</button></div>'
             : '<div class="empty-state">No members found.</div>';
         return;
     }

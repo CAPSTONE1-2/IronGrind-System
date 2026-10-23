@@ -130,6 +130,7 @@ body.dashboard-body .low-stock-item { background-color: rgba(13,18,25,0.64); bor
 .attendance-table td { padding: 12px; font-size: 0.9rem; border-bottom: 1px solid #161c27; }
 .attendance-table tr:last-child td { border-bottom: none; }
 .empty-state { text-align: center; padding: 30px; color: #6a748b; font-size: 0.85rem; }
+.membership-empty-state { display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .badge-status { padding: 4px 12px; border-radius: 40px; font-size: 0.7rem; font-weight: 600; display: inline-block; }
 .badge-status.in { background: rgba(46, 204, 113, 0.15); color: #33e27c; }
 .badge-status.out { background: rgba(241, 196, 15, 0.15); color: #f0c30e; }
