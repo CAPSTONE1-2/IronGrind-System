@@ -2786,8 +2786,20 @@ async function exportAllReports() {
         toast('Choose a month before exporting.', 'error');
         return;
     }
-    if (!window.JSZip || !window.jspdf?.jsPDF || !window.jspdf.jsPDF.API.autoTable) {
-        toast('The PDF or ZIP tools did not load. Check the internet connection, then reload this page.', 'error');
+    const JsPDF = window.jspdf?.jsPDF;
+    const pdfTableReady = typeof JsPDF === 'function' && typeof new JsPDF().autoTable === 'function';
+    const missingTools = [
+        !window.JSZip && 'ZIP generator',
+        !pdfTableReady && 'PDF table generator'
+    ].filter(Boolean);
+    if (missingTools.length) {
+        console.error('Report export tools are unavailable:', {
+            missingTools,
+            jsPDF: typeof JsPDF,
+            autoTable: typeof JsPDF === 'function' ? typeof new JsPDF().autoTable : 'unavailable',
+            JSZip: typeof window.JSZip
+        });
+        toast(`Could not load ${missingTools.join(' and ')}. Reload the page and try again.`, 'error');
         return;
     }
     const types = ['membership', 'member-status', 'archives', 'payment', 'attendance', 'renewals', 'inventory', 'sales'];
