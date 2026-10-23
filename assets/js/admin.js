@@ -31,6 +31,7 @@ let adminRealtimeChannel = null;
 let realtimeRefreshTimer = null;
 let realtimeRefreshBusy = false;
 let realtimeRefreshPending = false;
+let reportPreviewZoom = 110;
 
 /* ========== HELPERS ========== */
 function localDateStr(date = new Date()) {
@@ -174,6 +175,7 @@ function openModal(html) {
 }
 function closeModal() {
     document.getElementById('modalOverlay').classList.add('hidden');
+    document.getElementById('modalContent').parentElement.classList.remove('report-pdf-modal');
     stopQRScanner();
 }
 let pendingConfirmationAction = null;
@@ -2471,11 +2473,44 @@ function viewReport(type) {
             : `${type.charAt(0).toUpperCase() + type.slice(1)} Report`;
     openModal(`<h3><i class="fas fa-chart-bar"></i> ${title}</h3>
         <div style="max-height:60vh; overflow:auto; margin-top:16px;">${body}</div>
-        <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Close</button><button class="btn-primary" onclick="printReportPDF('${type}')"><i class="fas fa-file-pdf"></i> View as PDF</button></div>`);
+        <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Close</button><button class="btn-primary" onclick="viewReportPDF('${type}')"><i class="fas fa-file-pdf"></i> View as PDF</button></div>`);
 }
 
-function printReportPDF(type) {
-    const reportWindow = window.open('', '_blank');
+function setReportPreviewZoom(change) {
+    reportPreviewZoom = Math.max(80, Math.min(160, reportPreviewZoom + change));
+    const frame = document.getElementById('reportPdfPreviewFrame');
+    if (!frame?.contentDocument?.body) return;
+    frame.contentDocument.body.style.zoom = `${reportPreviewZoom}%`;
+    const label = document.getElementById('reportPreviewZoomLabel');
+    if (label) label.textContent = `${reportPreviewZoom}%`;
+}
+
+function viewReportPDF(type) {
+    reportPreviewZoom = 110;
+    openModal(`<div class="report-pdf-preview-toolbar">
+        <strong><i class="fas fa-file-pdf"></i> Report preview</strong>
+        <div class="report-pdf-preview-controls">
+            <button class="btn-sm" aria-label="Zoom out" onclick="setReportPreviewZoom(-10)">−</button>
+            <span id="reportPreviewZoomLabel">110%</span>
+            <button class="btn-sm" aria-label="Zoom in" onclick="setReportPreviewZoom(10)">+</button>
+            <button class="btn-sm" onclick="closeModal()">Close</button>
+        </div>
+    </div><iframe id="reportPdfPreviewFrame" class="report-pdf-preview-frame" title="Scrollable report PDF preview"></iframe>`);
+    document.getElementById('modalContent').parentElement.classList.add('report-pdf-modal');
+    printReportPDF(type, true);
+}
+
+function printReportPDF(type, inAppPreview = false) {
+    let reportWindow;
+    if (inAppPreview) {
+        reportWindow = document.getElementById('reportPdfPreviewFrame')?.contentWindow;
+        if (!reportWindow) {
+            toast('Could not open the report preview.', 'error');
+            return;
+        }
+    } else {
+        reportWindow = window.open('', '_blank');
+    }
     if (!reportWindow) {
         toast('Allow pop-ups to print or save this report as a PDF.', 'error');
         return;
@@ -2611,10 +2646,14 @@ function printReportPDF(type) {
             @media print { thead { display: table-header-group; } }
         </style></head><body><header class="masthead"><img src="${logoURL}" alt="Iron Grind"><div><div class="brand">Iron Grind Fitness Gym</div><h1>${escapeHTML(reportTitle)}</h1></div></header><div class="meta"><span>${rows.length} ${rows.length === 1 ? 'total record' : 'total records'}</span><span>Generated ${escapeHTML(generatedAt)}</span></div>${reportContent}<footer class="footer">Iron Grind Fitness Gym · Internal report · ${todayStr()}</footer></body></html>`);
     reportWindow.document.close();
-    window.setTimeout(() => {
-        reportWindow.focus();
-        reportWindow.print();
-    }, 300);
+    if (inAppPreview) {
+        window.setTimeout(() => setReportPreviewZoom(0), 100);
+    } else {
+        window.setTimeout(() => {
+            reportWindow.focus();
+            reportWindow.print();
+        }, 300);
+    }
 }
 
 function exportAllReports() {
