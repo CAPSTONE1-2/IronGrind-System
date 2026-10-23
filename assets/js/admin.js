@@ -2471,7 +2471,7 @@ function viewReport(type) {
             : `${type.charAt(0).toUpperCase() + type.slice(1)} Report`;
     openModal(`<h3><i class="fas fa-chart-bar"></i> ${title}</h3>
         <div style="max-height:60vh; overflow:auto; margin-top:16px;">${body}</div>
-        <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Close</button><button class="btn-primary" onclick="printReportPDF('${type}')"><i class="fas fa-file-pdf"></i> PDF Preview / Save PDF</button></div>`);
+        <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Close</button></div>`);
 }
 
 function printReportPDF(type) {
