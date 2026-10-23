@@ -219,8 +219,13 @@
                 <div class="panel">
                     <div class="panel-header">
                         <h2><i class="fas fa-chart-bar"></i> Reports</h2>
-                        <button class="btn-sm" onclick="exportAllReports()"><i class="fas fa-download"></i> Export All</button>
+                        <div class="report-export-controls">
+                            <label for="reportsExportMonth">Month</label>
+                            <input id="reportsExportMonth" type="month" aria-label="Choose a month for dated report records">
+                            <button class="btn-sm" onclick="exportAllReports()"><i class="fas fa-download"></i> Export All</button>
+                        </div>
                     </div>
+                    <p class="modal-sub">Dated records are filtered to the selected month. Members and inventory are included as current snapshots.</p>
                     <div class="product-grid" id="reportsGrid"></div>
                 </div>
             </div>

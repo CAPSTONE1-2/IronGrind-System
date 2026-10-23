@@ -2342,10 +2342,13 @@ function renderReports() {
         { id: 'sales', name: 'Sales Report' }
     ];
     document.getElementById('reportsGrid').innerHTML = reports.map(r => `
-        <div class="product-card" style="cursor:pointer;" onclick="viewReport('${r.id}')">
+        <div class="product-card">
             <span class="cat">Report</span>
             <h4>${r.name}</h4>
-            <button class="btn-sm" style="width:100%; justify-content:center; margin-top:12px;">View</button>
+            <div class="report-card-actions">
+                <button class="btn-sm" onclick="viewReport('${r.id}')"><i class="fas fa-eye"></i> View</button>
+                <button class="btn-sm" onclick="printReportPDF('${r.id}')"><i class="fas fa-file-pdf"></i> Print / Save PDF</button>
+            </div>
         </div>
     `).join('');
 }
@@ -2615,26 +2618,48 @@ function printReportPDF(type) {
 }
 
 function exportAllReports() {
+    const selectedMonth = document.getElementById('reportsExportMonth')?.value || '';
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(selectedMonth)) {
+        toast('Choose a month before exporting.', 'error');
+        return;
+    }
+
+    const belongsToMonth = value => {
+        if (!value) return false;
+        const text = String(value);
+        if (/^\d{4}-\d{2}/.test(text)) {
+            if (text.length === 10 || /^\d{4}-\d{2}$/.test(text)) return text.slice(0, 7) === selectedMonth;
+            const parsed = new Date(text);
+            return !Number.isNaN(parsed.getTime()) && localDateStr(parsed).slice(0, 7) === selectedMonth;
+        }
+        const parsed = new Date(text);
+        return !Number.isNaN(parsed.getTime()) && localDateStr(parsed).slice(0, 7) === selectedMonth;
+    };
+
     const data = {
+        exportMonth: selectedMonth,
+        monthFiltering: 'Dated records are limited to exportMonth. Members and products are current snapshots.',
         members,
         products,
-        archivedProducts,
-        sales,
-        attendance,
-        planArchives,
-        membershipArchives,
-        approvedRenewalApplications,
+        archivedProducts: archivedProducts.filter(product => belongsToMonth(product.archivedAt)),
+        sales: sales.filter(sale => belongsToMonth(sale.date || sale.createdAt)),
+        attendance: attendance.filter(record => belongsToMonth(record.date)),
+        planArchives: planArchives.filter(record => belongsToMonth(record.changedAt)),
+        membershipArchives: membershipArchives.filter(record => belongsToMonth(record.archivedAt || record.expiry)),
+        approvedRenewalApplications: approvedRenewalApplications.filter(application => belongsToMonth(application.date)),
         generatedAt: new Date().toISOString()
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `irongrind-${todayStr()}.json`; a.click();
+    const a = document.createElement('a'); a.href = url; a.download = `irongrind-reports-${selectedMonth}.json`; a.click();
     URL.revokeObjectURL(url);
-    toast('Exported.', 'success');
+    toast(`Exported reports for ${selectedMonth}.`, 'success');
 }
 
 /* ========== INIT ========== */
 document.addEventListener('DOMContentLoaded', () => {
+    const reportsExportMonth = document.getElementById('reportsExportMonth');
+    if (reportsExportMonth && !reportsExportMonth.value) reportsExportMonth.value = localDateStr().slice(0, 7);
     // Demo data is only created for offline mode. Supabase-backed dashboards
     // should start from the database instead of presenting fake records.
     if (!window.ironGrindSupabase) {
