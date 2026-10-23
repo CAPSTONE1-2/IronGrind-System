@@ -37,8 +37,8 @@ const registrationSignature = initDigitalSignature('registrationSignature', 'cle
 const phoneInputs = [document.getElementById('regMobile'), document.getElementById('regEcContact')];
 phoneInputs.forEach(input => {
     input.addEventListener('input', function() {
-        const digitCount = this.value.replace(/\D/g, '').length;
-        this.setCustomValidity(this.value && digitCount < 11 ? 'Enter at least 11 digits.' : '');
+        this.value = this.value.replace(/\D/g, '').slice(0, 11);
+        this.setCustomValidity(this.value && !/^09\d{9}$/.test(this.value) ? 'Enter an 11-digit PH number starting with 09.' : '');
     });
 });
 
@@ -98,13 +98,13 @@ async function submitRegistration(event) {
     const dob = document.getElementById('regDob').value;
     const age = Number(document.getElementById('regAge').value);
     const sex = document.getElementById('regSex').value;
-    const mobile = document.getElementById('regMobile').value.trim();
+    const mobile = document.getElementById('regMobile').value.replace(/\D/g, '');
     const height = document.getElementById('regHeight').value;
     const heightUnit = height ? document.getElementById('regHeightUnit').value : null;
     const weight = document.getElementById('regWeight').value;
     const ecName = document.getElementById('regEcName').value.trim();
     const ecRelation = document.getElementById('regEcRelation').value.trim();
-    const ecContact = document.getElementById('regEcContact').value.trim();
+    const ecContact = document.getElementById('regEcContact').value.replace(/\D/g, '');
 
     const planInput = document.querySelector('input[name="regPlan"]:checked');
     if (!planInput) { showError('Please select a membership plan.'); return; }
@@ -136,10 +136,10 @@ async function submitRegistration(event) {
     const confirm = document.getElementById('regConfirmPassword').value;
 
     if (!fullName || !dob || !mobile) { showError('Please complete all required personal information.'); return; }
-    if (mobile.replace(/\D/g, '').length < 11) { showError('Mobile number must contain at least 11 digits.'); return; }
+    if (!/^09\d{9}$/.test(mobile)) { showError('Enter an 11-digit PH mobile number starting with 09.'); return; }
     if (age < 12) { showError('You must be at least 12 years old to register.'); return; }
     if (!ecName || !ecRelation || !ecContact) { showError('Please complete the emergency contact details.'); return; }
-    if (ecContact.replace(/\D/g, '').length < 11) { showError('Emergency contact number must contain at least 11 digits.'); return; }
+    if (!/^09\d{9}$/.test(ecContact)) { showError('Enter an 11-digit PH emergency contact number starting with 09.'); return; }
     if (email.length > 300) { showError('Email address must be 300 characters or fewer.'); return; }
     if (!email || !document.getElementById('regEmail').checkValidity()) { showError('Enter a valid email address for your account.'); return; }
     if (username.length < 4) { showError('Username must be at least 4 characters.'); return; }

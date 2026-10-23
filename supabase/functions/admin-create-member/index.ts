@@ -46,6 +46,7 @@ Deno.serve(async (request) => {
   const password = String(body.password || '');
   const fullName = String(body.fullName || '').trim();
   const mobile = String(body.mobile || '').trim();
+  const emergencyContact = String(body.emergencyContact || '').trim();
   const plan = String(body.plan || '').trim();
   const price = Number(body.planPrice);
   const startDate = String(body.startDate || '');
@@ -53,6 +54,9 @@ Deno.serve(async (request) => {
   if (!email || !username || password.length < 6 || !fullName || !mobile || !plan
     || !Number.isFinite(price) || price <= 0 || !startDate || !expiryDate) {
     return response({ error: 'Required member or membership details are missing.' }, 400);
+  }
+  if (!/^09\d{9}$/.test(mobile) || !/^09\d{9}$/.test(emergencyContact)) {
+    return response({ error: 'Mobile and emergency contact numbers must each be 11 digits and start with 09.' }, 400);
   }
 
   const adminClient = createClient(url, serviceRoleKey, {
@@ -87,7 +91,7 @@ Deno.serve(async (request) => {
     emergency_contact: {
       name: body.emergencyName || '',
       relationship: body.emergencyRelationship || '',
-      contact: body.emergencyContact || '',
+      contact: emergencyContact,
     },
     plan,
     plan_price: price,

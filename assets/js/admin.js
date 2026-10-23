@@ -77,6 +77,20 @@ function escapeHTML(value) {
     })[char]);
 }
 
+function setupPhMobileInput(input) {
+    if (!input) return;
+    input.type = 'tel';
+    input.inputMode = 'numeric';
+    input.maxLength = 11;
+    input.pattern = '09[0-9]{9}';
+    input.autocomplete = 'tel';
+    input.placeholder = '09171234567';
+    input.value = input.value.replace(/\D/g, '').slice(0, 11);
+    input.addEventListener('input', () => {
+        input.value = input.value.replace(/\D/g, '').slice(0, 11);
+    });
+}
+
 function loadDB(key) {
     try { return JSON.parse(localStorage.getItem('ig_' + key)) || []; }
     catch { return []; }
@@ -1073,7 +1087,7 @@ function openAddMemberModal() {
                         <option>Male</option><option>Female</option><option>Prefer not to say</option>
                     </select>
                 </div>
-                <div class="form-group"><label>Mobile *</label><input type="tel" id="wiContact" placeholder="0917 123 4567"></div>
+                <div class="form-group"><label>Mobile *</label><input type="tel" id="wiContact" inputmode="numeric" maxlength="11" pattern="09[0-9]{9}" placeholder="09171234567" autocomplete="tel"></div>
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Height (cm)</label><input type="number" id="wiHeight" placeholder="170"></div>
@@ -1089,7 +1103,7 @@ function openAddMemberModal() {
             <div class="form-row" style="grid-template-columns:1fr 1fr 1fr;">
                 <div class="form-group"><label>Name *</label><input type="text" id="wiEcName" placeholder="Maria Dela Cruz"></div>
                 <div class="form-group"><label>Relationship *</label><input type="text" id="wiEcRelation" placeholder="Mother"></div>
-                <div class="form-group"><label>Contact Number *</label><input type="tel" id="wiEcContact" placeholder="0917 123 4567"></div>
+                <div class="form-group"><label>Contact Number *</label><input type="tel" id="wiEcContact" inputmode="numeric" maxlength="11" pattern="09[0-9]{9}" placeholder="09171234567" autocomplete="tel"></div>
             </div>
         </div>
 
@@ -1184,6 +1198,9 @@ function openAddMemberModal() {
         </div>
     `);
 
+    setupPhMobileInput(document.getElementById('wiContact'));
+    setupPhMobileInput(document.getElementById('wiEcContact'));
+
     // ---- Attach the signature canvas after the modal is visible ----
     setTimeout(() => {
         if (typeof initDigitalSignature !== 'function') {
@@ -1268,8 +1285,10 @@ async function submitNewMember() {
     if (!dob) { toast('Date of Birth is required.', 'error'); return; }
     if (age < 12) { toast('Member must be at least 12 years old.', 'error'); return; }
     if (!contact) { toast('Mobile Number is required.', 'error'); return; }
+    if (!/^09\d{9}$/.test(contact)) { toast('Enter an 11-digit PH mobile number starting with 09.', 'error'); return; }
     if (!email || !document.getElementById('wiEmail').checkValidity()) { toast('Enter a valid email address for the member account.', 'error'); return; }
     if (!ecName || !ecRelation || !ecContact) { toast('Emergency contact is required.', 'error'); return; }
+    if (!/^09\d{9}$/.test(ecContact)) { toast('Enter an 11-digit PH emergency contact number starting with 09.', 'error'); return; }
     if (username.length < 4 || !/^[a-z0-9_.]+$/.test(username)) {
         toast('Username must be 4+ characters and use only letters, numbers, dots, or underscores.', 'error');
         return;
@@ -1308,7 +1327,12 @@ async function submitNewMember() {
         });
         if (error) {
             const details = error.context?.json ? await error.context.json().catch(() => null) : null;
-            toast(`Could not create member in Supabase: ${details?.error || error.message}. Deploy the admin-create-member Edge Function and run the membership operations migration.`, 'error');
+            const serverMessage = details?.error || '';
+            if (error.name === 'FunctionsFetchError' || /failed to send a request to the edge function/i.test(error.message || '')) {
+                toast('Could not reach Supabase Edge Function admin-create-member. Confirm it is deployed to this project, then check the browser Network/Console for a network or CORS error.', 'error');
+            } else {
+                toast(`Could not create member in Supabase: ${serverMessage || error.message}`, 'error');
+            }
             return;
         }
         signaturePad = null;
@@ -1453,7 +1477,7 @@ function renewMember(id) {
         <p class="modal-sub">Choose the renewal plan and record the counter payment.</p>
         <div class="form-row">
             <div class="form-group"><label for="crName">Full Name *</label><input type="text" id="crName" value="${escapeHTML(member.name || '')}" required></div>
-            <div class="form-group"><label for="crContact">Contact Number *</label><input type="tel" id="crContact" value="${escapeHTML(member.contact || '')}" placeholder="09171234567" required></div>
+            <div class="form-group"><label for="crContact">Contact Number *</label><input type="tel" id="crContact" value="${escapeHTML(member.contact || '')}" inputmode="numeric" maxlength="11" pattern="09[0-9]{9}" placeholder="09171234567" autocomplete="tel" required></div>
         </div>
         <div class="form-group"><label for="crPlan">Membership Plan</label><select id="crPlan">
             <option value="Monthly|800" ${selectedPlan === 'Monthly' ? 'selected' : ''}>Monthly — ₱800</option>
@@ -1462,6 +1486,7 @@ function renewMember(id) {
         </select></div>
         <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="completeMemberRenewal('${member.id}')"><i class="fas fa-receipt"></i> Complete Renewal</button></div>
     `);
+    setupPhMobileInput(document.getElementById('crContact'));
 }
 
 async function completeMemberRenewal(id) {
