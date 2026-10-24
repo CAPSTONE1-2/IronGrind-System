@@ -1,151 +1,186 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" role="img" aria-labelledby="title desc">
-  <title id="title">IronGrind System Architecture</title>
-  <desc id="desc">Architecture showing staff and members using browser pages hosted as static files, connecting through the Supabase JavaScript client to Supabase Auth and a PostgreSQL database protected by row-level security.</desc>
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#11151c"/>
-      <stop offset="1" stop-color="#080a0e"/>
-    </linearGradient>
-    <linearGradient id="red" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#b91c1c"/>
-      <stop offset="1" stop-color="#7f1010"/>
-    </linearGradient>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
-      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000" flood-opacity=".35"/>
-    </filter>
-    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
-      <path d="M1 1 L11 6 L1 11 Z" fill="#d3d9e3"/>
-    </marker>
-    <marker id="arrowRed" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
-      <path d="M1 1 L11 6 L1 11 Z" fill="#ef4444"/>
-    </marker>
-    <style>
-      text{font-family:Inter,Segoe UI,Arial,sans-serif}
-      .title{fill:#f5f6f8;font-size:34px;font-weight:750;letter-spacing:.2px}
-      .subtitle{fill:#9da7b6;font-size:16px}
-      .section{fill:#f3f4f6;font-size:20px;font-weight:700}
-      .label{fill:#f3f4f6;font-size:17px;font-weight:700}
-      .body{fill:#c2c9d4;font-size:14px}
-      .small{fill:#aeb7c5;font-size:12px}
-      .muted{fill:#8792a2;font-size:12px}
-      .card{fill:#151a22;stroke:#343c49;stroke-width:1.5}
-      .inner{fill:#0e1218;stroke:#343c49;stroke-width:1}
-      .flow{fill:none;stroke:#d3d9e3;stroke-width:2.4;marker-end:url(#arrow)}
-      .flowRed{fill:none;stroke:#ef4444;stroke-width:2.5;marker-end:url(#arrowRed)}
-      .dash{fill:none;stroke:#747f8f;stroke-width:1.8;stroke-dasharray:7 7}
-    </style>
-  </defs>
-  <rect width="1600" height="1000" fill="url(#bg)"/>
-  <circle cx="1395" cy="120" r="230" fill="#9b1111" opacity=".08"/>
-  <circle cx="140" cy="900" r="250" fill="#9b1111" opacity=".05"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="1700" height="1870" viewBox="0 0 1700 1870" role="img" aria-labelledby="title desc">
+<title id="title">IronGrind Detailed System Architecture</title>
+<desc id="desc">Implementation-level system architecture for IronGrind, tracing sign-in and role lookup, registration and approval, QR attendance, product inventory, walk-in sales, member portal operations, report queries, Supabase JavaScript requests, row-level security, database tables, and PostgreSQL.</desc>
+<defs>
+ <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#292929"/></marker>
+ <marker id="back" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#777"/></marker>
+ <style>
+ text{font-family:"Times New Roman",serif;fill:#171717}
+ .title{font-size:26px;font-weight:bold}.subtitle{font-size:14px;fill:#555}
+ .actor{fill:#111;stroke:#111}.box{fill:#fff;stroke:#444;stroke-width:1.3}
+ .step{fill:#f7f7f7;stroke:#555;stroke-width:1.2}.dbbox{fill:#fff;stroke:#666;stroke-width:1.1}
+ .authbox{fill:#f3f3f3;stroke:#555;stroke-width:1.4}.db{fill:#111}
+ .arr{fill:none;stroke:#333;stroke-width:1.3;marker-end:url(#arrow)}
+ .ret{fill:none;stroke:#777;stroke-width:1.1;stroke-dasharray:5 4;marker-end:url(#back)}
+ .wire{fill:none;stroke:#555;stroke-width:1.1}.label{font-size:12px;font-weight:bold}
+ .text{font-size:10px}.small{font-size:9px}.tiny{font-size:8px}
+ .lane{font-size:14px;font-weight:bold}
+ </style>
+</defs>
+<rect width="1700" height="1870" fill="#fff"/>
+<text x="850" y="35" text-anchor="middle" class="title">IRON GRIND FITNESS GYM MEMBERSHIP &amp; OPERATIONS MANAGEMENT SYSTEM</text>
+<text x="850" y="58" text-anchor="middle" class="subtitle">Detailed system architecture — browser workflows, Supabase requests, access control, and database records</text>
 
-  <text x="800" y="68" class="title" text-anchor="middle">IRON GRIND</text>
-  <text x="800" y="98" class="subtitle" text-anchor="middle">Fitness Gym Membership &amp; Operations Management System — System Architecture</text>
+<!-- Authentication and role resolution -->
+<g transform="translate(165 79)"><circle cx="18" cy="11" r="9" class="actor"/><path d="M2 45c1-14 6-21 16-21s15 7 16 21z" class="actor"/><text x="18" y="60" text-anchor="middle" class="text">Member / Applicant</text></g>
+<g transform="translate(1480 79)"><circle cx="18" cy="11" r="9" class="actor"/><path d="M2 45c1-14 6-21 16-21s15 7 16 21z" class="actor"/><text x="18" y="60" text-anchor="middle" class="text">Administrator / Staff</text></g>
+<rect x="680" y="80" width="340" height="64" rx="3" class="box"/>
+<text x="850" y="105" text-anchor="middle" class="label">Login Page — index.html</text><text x="850" y="126" text-anchor="middle" class="small">Email + password submitted by either role</text>
+<path d="M200 110H675" class="arr"/><text x="437" y="102" text-anchor="middle" class="small">User input</text>
+<path d="M1480 110H1025" class="arr"/><text x="1250" y="102" text-anchor="middle" class="small">Administrator input</text>
+<path d="M850 144V174" class="arr"/><text x="862" y="164" class="tiny">signInWithPassword()</text>
+<rect x="680" y="179" width="340" height="72" rx="3" class="authbox"/>
+<text x="850" y="205" text-anchor="middle" class="label">🔐 Supabase Auth</text>
+<text x="850" y="225" text-anchor="middle" class="small">Validates credentials and returns user + session</text>
+<text x="850" y="241" text-anchor="middle" class="tiny">Invalid email/password → sign-in error shown</text>
+<path d="M680 215H645V112H675" class="ret"/><text x="632" y="174" text-anchor="end" class="tiny">Authentication result</text>
+<path d="M850 251V278" class="arr"/><text x="862" y="270" class="tiny">successful sign-in</text>
+<rect x="630" y="283" width="440" height="67" rx="3" class="box"/>
+<text x="850" y="309" text-anchor="middle" class="label">Load profile: profiles.role, username, full_name</text>
+<text x="850" y="331" text-anchor="middle" class="small">Select profile by Auth user ID; route according to role</text>
+<path d="M630 316H580V307H545" class="arr"/><text x="603" y="299" text-anchor="middle" class="tiny">role = customer</text>
+<rect x="300" y="278" width="245" height="58" rx="3" class="box"/>
+<text x="422" y="301" text-anchor="middle" class="label">Member lookup</text>
+<text x="422" y="320" text-anchor="middle" class="small">members.auth_user_id = user.id</text>
+<path d="M300 307H240" class="arr"/>
+<rect x="45" y="278" width="195" height="58" rx="3" class="step"/>
+<text x="142" y="301" text-anchor="middle" class="label">customer.html</text>
+<text x="142" y="320" text-anchor="middle" class="small">if linked member exists</text>
+<path d="M422 336V363H142V344" class="ret"/>
+<rect x="45" y="372" width="250" height="52" rx="3" class="step"/>
+<text x="170" y="394" text-anchor="middle" class="text">No member? Check latest application</text>
+<text x="170" y="412" text-anchor="middle" class="tiny">pending / rejected / not found → show status</text>
+<path d="M422 336V398H300" class="arr"/>
+<path d="M1070 316H1120V307H1155" class="arr"/><text x="1094" y="299" text-anchor="middle" class="tiny">role = admin</text>
+<rect x="1155" y="278" width="245" height="58" rx="3" class="box"/>
+<text x="1277" y="301" text-anchor="middle" class="label">Admin role confirmed</text>
+<text x="1277" y="320" text-anchor="middle" class="small">profile.role = admin</text>
+<path d="M1400 307H1450" class="arr"/>
+<rect x="1450" y="278" width="205" height="58" rx="3" class="step"/>
+<text x="1552" y="301" text-anchor="middle" class="label">admin.html</text>
+<text x="1552" y="320" text-anchor="middle" class="small">staff dashboard</text>
 
-  <!-- User roles -->
-  <g filter="url(#shadow)">
-    <rect x="70" y="190" width="260" height="520" rx="22" class="card"/>
-  </g>
-  <text x="200" y="232" class="section" text-anchor="middle">USERS</text>
-  <rect x="100" y="265" width="200" height="145" rx="16" fill="url(#red)"/>
-  <circle cx="200" cy="304" r="18" fill="#fff" opacity=".95"/>
-  <path d="M168 365c3-26 16-39 32-39s29 13 32 39" fill="#fff" opacity=".95"/>
-  <text x="200" y="390" class="label" text-anchor="middle">Administrator / Staff</text>
-  <text x="200" y="440" class="body" text-anchor="middle">
-    <tspan x="200">Reviews applications</tspan>
-    <tspan x="200" dy="22">Records attendance</tspan>
-    <tspan x="200" dy="22">Manages products and sales</tspan>
-    <tspan x="200" dy="22">Views operational reports</tspan>
-  </text>
-  <rect x="100" y="545" width="200" height="125" rx="16" class="inner"/>
-  <circle cx="200" cy="580" r="15" fill="#b91c1c"/>
-  <path d="M174 631c2-20 12-31 26-31s24 11 26 31" fill="#b91c1c"/>
-  <text x="200" y="652" class="label" text-anchor="middle">Member / Applicant</text>
-  <text x="200" y="690" class="small" text-anchor="middle">Registers, views membership, QR and history</text>
+<!-- Registration / Auth sign-up path -->
+<rect x="40" y="450" width="1620" height="116" rx="3" class="authbox"/>
+<text x="850" y="473" text-anchor="middle" class="label">📝 NEW MEMBER REGISTRATION FLOW (register.html)</text>
+<rect x="65" y="489" width="255" height="56" rx="3" class="box"/><text x="192" y="511" text-anchor="middle" class="text">Applicant completes registration</text><text x="192" y="530" text-anchor="middle" class="tiny">form, plan, contact, health, signature</text>
+<path d="M320 517H355" class="arr"/>
+<rect x="360" y="489" width="255" height="56" rx="3" class="box"/><text x="487" y="511" text-anchor="middle" class="text">Supabase Auth signUp()</text><text x="487" y="530" text-anchor="middle" class="tiny">creates auth.users identity</text>
+<path d="M615 517H650" class="arr"/>
+<rect x="655" y="489" width="275" height="56" rx="3" class="step"/><text x="792" y="511" text-anchor="middle" class="text">Auth trigger creates profiles row</text><text x="792" y="530" text-anchor="middle" class="tiny">default application role is customer</text>
+<path d="M930 517H965" class="arr"/>
+<rect x="970" y="489" width="300" height="56" rx="3" class="box"/><text x="1120" y="511" text-anchor="middle" class="text">After session / email confirmation</text><text x="1120" y="530" text-anchor="middle" class="tiny">insert membership application as pending</text>
+<path d="M1270 517H1305" class="arr"/>
+<rect x="1310" y="489" width="320" height="56" rx="3" class="step"/><text x="1470" y="511" text-anchor="middle" class="text">Applicant sees awaiting-review message</text><text x="1470" y="530" text-anchor="middle" class="tiny">draft recovery is browser-local until saved</text>
+<text x="850" y="558" text-anchor="middle" class="tiny">Separate staff-created-member path: admin.html → functions.invoke(admin-create-member) → verify admin → Auth Admin API → service-role admin_create_member_and_sale RPC → members + sales + sale_items</text>
 
-  <!-- Frontend -->
-  <g filter="url(#shadow)">
-    <rect x="415" y="190" width="390" height="520" rx="22" class="card"/>
-  </g>
-  <text x="610" y="232" class="section" text-anchor="middle">WEB APPLICATION</text>
-  <rect x="455" y="260" width="310" height="60" rx="12" fill="#202733" stroke="#495363"/>
-  <text x="610" y="286" class="label" text-anchor="middle">Web Browser</text>
-  <text x="610" y="306" class="small" text-anchor="middle">Desktop, tablet, or mobile</text>
-  <path d="M610 320v25" class="flow"/>
-  <rect x="455" y="350" width="310" height="145" rx="14" class="inner"/>
-  <text x="610" y="382" class="label" text-anchor="middle">Frontend Pages</text>
-  <text x="475" y="414" class="body">
-    <tspan x="475">index.html — sign in</tspan>
-    <tspan x="475" dy="24">register.html — applications</tspan>
-    <tspan x="475" dy="24">admin.html — staff operations</tspan>
-    <tspan x="475" dy="24">customer.html — member portal</tspan>
-  </text>
-  <rect x="455" y="525" width="310" height="80" rx="14" fill="#241315" stroke="#8e2528"/>
-  <text x="610" y="557" class="label" text-anchor="middle">HTML · CSS · JavaScript</text>
-  <text x="610" y="581" class="small" text-anchor="middle">UI, forms, QR workflows, reports</text>
-  <rect x="455" y="625" width="310" height="55" rx="12" fill="#351719" stroke="#a83235"/>
-  <text x="610" y="658" class="label" text-anchor="middle">Supabase JavaScript Client</text>
+<!-- Two authenticated roles -->
+<path d="M142 424V594H850M1552 336V594H850" class="wire"/>
+<rect x="525" y="578" width="650" height="48" rx="3" class="stage"/>
+<text x="850" y="598" text-anchor="middle" class="label">Authenticated browser session → Supabase JavaScript client</text>
+<text x="850" y="617" text-anchor="middle" class="small">Frontend JavaScript makes direct Supabase Auth / table / RPC calls; staff account creation also invokes a Supabase Edge Function</text>
 
-  <!-- Cloud boundary -->
-  <rect x="875" y="155" width="660" height="600" rx="30" fill="#10141b" fill-opacity=".58" stroke="#596474" stroke-width="2" stroke-dasharray="10 8"/>
-  <rect x="1080" y="137" width="190" height="38" rx="19" fill="#252b35"/>
-  <text x="1175" y="162" class="label" text-anchor="middle">SUPABASE CLOUD</text>
+<!-- Workflow lanes -->
+<text x="170" y="662" text-anchor="middle" class="lane">APPLICATION APPROVAL</text>
+<text x="500" y="662" text-anchor="middle" class="lane">QR ATTENDANCE</text>
+<text x="830" y="662" text-anchor="middle" class="lane">INVENTORY &amp; WALK-IN SALE</text>
+<text x="1160" y="662" text-anchor="middle" class="lane">MEMBER PORTAL</text>
+<text x="1490" y="662" text-anchor="middle" class="lane">REPORTS</text>
+<path d="M40 673H1660" class="wire"/>
 
-  <!-- Auth -->
-  <g filter="url(#shadow)">
-    <rect x="930" y="215" width="255" height="190" rx="18" class="card"/>
-  </g>
-  <rect x="952" y="238" width="48" height="48" rx="12" fill="url(#red)"/>
-  <path d="M976 246v12m-8 3h16v15h-16z" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="1015" y="266" class="label">Supabase Auth</text>
-  <text x="952" y="316" class="body">
-    <tspan x="952">Sign-in and session handling</tspan>
-    <tspan x="952" dy="23">User identity and role linkage</tspan>
-    <tspan x="952" dy="23">Password recovery / confirmation</tspan>
-  </text>
+<!-- Lane 1: approval -->
+<g>
+ <rect x="35" y="690" width="270" height="74" rx="3" class="box"/><text x="170" y="714" text-anchor="middle" class="label">1. Admin loads pending applications</text><text x="170" y="734" text-anchor="middle" class="small">SELECT membership_applications</text><text x="170" y="751" text-anchor="middle" class="tiny">status = pending</text>
+ <path d="M170 764V786" class="arr"/>
+ <rect x="35" y="791" width="270" height="84" rx="3" class="box"/><text x="170" y="815" text-anchor="middle" class="label">2. Approve selected application</text><text x="170" y="835" text-anchor="middle" class="small">INSERT members from application</text><text x="170" y="852" text-anchor="middle" class="tiny">status=active; save approved member details</text>
+ <path d="M170 875V897" class="arr"/>
+ <rect x="35" y="902" width="270" height="88" rx="3" class="step"/><text x="170" y="927" text-anchor="middle" class="label">3. Record registration payment</text><text x="170" y="948" text-anchor="middle" class="small">RPC admin_record_registration_sale</text><text x="170" y="968" text-anchor="middle" class="tiny">creates registration sale / line item</text>
+ <path d="M170 990V1012" class="arr"/>
+ <rect x="35" y="1017" width="270" height="78" rx="3" class="box"/><text x="170" y="1042" text-anchor="middle" class="label">4. Mark application approved</text><text x="170" y="1062" text-anchor="middle" class="small">UPDATE membership_applications</text><text x="170" y="1080" text-anchor="middle" class="tiny">reviewed_at / reviewed_by recorded</text>
+ <path d="M170 1095V1120" class="arr"/>
+ <rect x="35" y="1125" width="270" height="88" rx="3" class="dbbox"/><text x="170" y="1150" text-anchor="middle" class="label">Written records</text><text x="52" y="1172" class="small">members</text><text x="52" y="1190" class="small">sales + sale_items</text><text x="52" y="1208" class="small">membership_applications</text>
+</g>
 
-  <!-- Database -->
-  <g filter="url(#shadow)">
-    <rect x="1220" y="215" width="270" height="450" rx="18" class="card"/>
-  </g>
-  <ellipse cx="1355" cy="262" rx="72" ry="22" fill="#8f171a" stroke="#e05a5d" stroke-width="2"/>
-  <path d="M1283 262v52c0 12 32 22 72 22s72-10 72-22v-52" fill="#5f171b" stroke="#e05a5d" stroke-width="2"/>
-  <ellipse cx="1355" cy="314" rx="72" ry="22" fill="#761a1d" stroke="#e05a5d" stroke-width="2"/>
-  <text x="1355" y="278" fill="#fff" font-size="14" font-weight="700" text-anchor="middle">POSTGRESQL</text>
-  <text x="1355" y="373" class="section" text-anchor="middle">Application Data</text>
-  <text x="1247" y="412" class="body">
-    <tspan x="1247">profiles</tspan>
-    <tspan x="1247" dy="25">members</tspan>
-    <tspan x="1247" dy="25">membership_applications</tspan>
-    <tspan x="1247" dy="25">attendance</tspan>
-    <tspan x="1247" dy="25">products</tspan>
-    <tspan x="1247" dy="25">sales · sale_items</tspan>
-    <tspan x="1247" dy="25">membership_history</tspan>
-  </text>
-  <rect x="1245" y="600" width="220" height="42" rx="10" fill="#241315" stroke="#8e2528"/>
-  <text x="1355" y="627" class="small" text-anchor="middle">Row-Level Security (RLS)</text>
+<!-- Lane 2: attendance -->
+<g>
+ <rect x="365" y="690" width="270" height="74" rx="3" class="box"/><text x="500" y="714" text-anchor="middle" class="label">1. Member QR is displayed</text><text x="500" y="734" text-anchor="middle" class="small">QR contains IRONGRIND identifier</text><text x="500" y="751" text-anchor="middle" class="tiny">member ID / account ID / username</text>
+ <path d="M500 764V786" class="arr"/>
+ <rect x="365" y="791" width="270" height="84" rx="3" class="box"/><text x="500" y="815" text-anchor="middle" class="label">2. Staff scans QR</text><text x="500" y="835" text-anchor="middle" class="small">SELECT members by ID / auth ID / username</text><text x="500" y="852" text-anchor="middle" class="tiny">check membership expiry and open visit</text>
+ <path d="M500 875V897" class="arr"/>
+ <rect x="365" y="902" width="270" height="88" rx="3" class="step"/><text x="500" y="927" text-anchor="middle" class="label">3. Save attendance event</text><text x="500" y="948" text-anchor="middle" class="small">No open visit → INSERT time_in</text><text x="500" y="968" text-anchor="middle" class="small">Open visit → UPDATE time_out</text>
+ <path d="M500 990V1012" class="arr"/>
+ <rect x="365" y="1017" width="270" height="78" rx="3" class="box"/><text x="500" y="1042" text-anchor="middle" class="label">4. Refresh attendance view</text><text x="500" y="1062" text-anchor="middle" class="small">Admin log / member visit history</text><text x="500" y="1080" text-anchor="middle" class="tiny">date ordered and displayed in browser</text>
+ <path d="M500 1095V1120" class="arr"/>
+ <rect x="365" y="1125" width="270" height="88" rx="3" class="dbbox"/><text x="500" y="1150" text-anchor="middle" class="label">Read / written records</text><text x="382" y="1172" class="small">members</text><text x="382" y="1190" class="small">attendance(member_id, time_in,</text><text x="382" y="1208" class="small">time_out, recorded_by)</text>
+</g>
 
-  <!-- Flows -->
-  <path d="M330 330h80" class="flow"/>
-  <path d="M330 600h80" class="flow"/>
-  <path d="M805 652h42v-342h75" class="flowRed"/>
-  <path d="M805 652h395v-200h20" class="flowRed"/>
-  <path d="M1185 310h35" class="flow"/>
-  <path d="M1185 350h18v102h17" class="dash"/>
-  <text x="1196" y="433" class="muted" text-anchor="middle">authorized data access</text>
+<!-- Lane 3: inventory and POS -->
+<g>
+ <rect x="695" y="690" width="270" height="74" rx="3" class="box"/><text x="830" y="714" text-anchor="middle" class="label">1. Admin maintains products</text><text x="830" y="734" text-anchor="middle" class="small">SELECT / INSERT / UPDATE products</text><text x="830" y="751" text-anchor="middle" class="tiny">price, unit, active state, stock, image</text>
+ <path d="M830 764V786" class="arr"/>
+ <rect x="695" y="791" width="270" height="84" rx="3" class="box"/><text x="830" y="815" text-anchor="middle" class="label">2. Staff enters walk-in sale</text><text x="830" y="835" text-anchor="middle" class="small">customer name + product + quantity</text><text x="830" y="852" text-anchor="middle" class="tiny">gram quantity for supplements; items for merch</text>
+ <path d="M830 875V897" class="arr"/>
+ <rect x="695" y="902" width="270" height="88" rx="3" class="step"/><text x="830" y="927" text-anchor="middle" class="label">3. Record sale transaction</text><text x="830" y="948" text-anchor="middle" class="small">RPC record_walk_in_sale(...)</text><text x="830" y="968" text-anchor="middle" class="tiny">database function validates / saves sale</text>
+ <path d="M830 990V1012" class="arr"/>
+ <rect x="695" y="1017" width="270" height="78" rx="3" class="box"/><text x="830" y="1042" text-anchor="middle" class="label">4. Return receipt data</text><text x="830" y="1062" text-anchor="middle" class="small">receipt no., line, total, timestamp</text><text x="830" y="1080" text-anchor="middle" class="tiny">decrement item stock when applicable</text>
+ <path d="M830 1095V1120" class="arr"/>
+ <rect x="695" y="1125" width="270" height="88" rx="3" class="dbbox"/><text x="830" y="1150" text-anchor="middle" class="label">Read / written records</text><text x="712" y="1172" class="small">products</text><text x="712" y="1190" class="small">sales</text><text x="712" y="1208" class="small">sale_items</text>
+</g>
 
-  <!-- Hosting / dev note -->
-  <rect x="415" y="785" width="1120" height="110" rx="18" fill="#11161c" stroke="#343c49"/>
-  <text x="450" y="823" class="label">Deployment and development notes</text>
-  <text x="450" y="852" class="body">
-    <tspan x="450">Static web hosting serves the HTML, CSS, JavaScript, and image assets. Supabase provides the hosted authentication and database services.</tspan>
-    <tspan x="450" dy="23">The local Node.js server is for development file serving; it is not the production application API or database.</tspan>
-  </text>
+<!-- Lane 4: member portal -->
+<g>
+ <rect x="1025" y="690" width="270" height="74" rx="3" class="box"/><text x="1160" y="714" text-anchor="middle" class="label">1. Load member dashboard</text><text x="1160" y="734" text-anchor="middle" class="small">SELECT own member by auth_user_id</text><text x="1160" y="751" text-anchor="middle" class="tiny">read own attendance + active products</text>
+ <path d="M1160 764V786" class="arr"/>
+ <rect x="1025" y="791" width="270" height="84" rx="3" class="box"/><text x="1160" y="815" text-anchor="middle" class="label">2. Request a renewal</text><text x="1160" y="835" text-anchor="middle" class="small">INSERT membership_applications</text><text x="1160" y="852" text-anchor="middle" class="tiny">application_type=renewal; status=pending</text>
+ <path d="M1160 875V897" class="arr"/>
+ <rect x="1025" y="902" width="270" height="88" rx="3" class="step"/><text x="1160" y="927" text-anchor="middle" class="label">3. Update personal information</text><text x="1160" y="948" text-anchor="middle" class="small">RPC update_own_member_personal_info</text><text x="1160" y="968" text-anchor="middle" class="tiny">function checks auth.uid() and linked member</text>
+ <path d="M1160 990V1012" class="arr"/>
+ <rect x="1025" y="1017" width="270" height="78" rx="3" class="box"/><text x="1160" y="1042" text-anchor="middle" class="label">4. Display member information</text><text x="1160" y="1062" text-anchor="middle" class="small">status, progress, QR, attendance, catalog</text><text x="1160" y="1080" text-anchor="middle" class="tiny">no online purchasing or payment gateway</text>
+ <path d="M1160 1095V1120" class="arr"/>
+ <rect x="1025" y="1125" width="270" height="88" rx="3" class="dbbox"/><text x="1160" y="1150" text-anchor="middle" class="label">Read / written records</text><text x="1042" y="1172" class="small">members · profiles</text><text x="1042" y="1190" class="small">membership_applications</text><text x="1042" y="1208" class="small">attendance · products</text>
+</g>
 
-  <!-- Legend -->
-  <path d="M78 820h62" class="flow"/>
-  <text x="155" y="825" class="small">User request / response path</text>
-  <path d="M78 858h62" class="flowRed"/>
-  <text x="155" y="863" class="small">Frontend connection to Supabase</text>
-  <text x="800" y="960" class="muted" text-anchor="middle">Architecture is based on the current project pages and Supabase schema; hosting configuration may vary by deployment.</text>
+<!-- Lane 5: reports -->
+<g>
+ <rect x="1355" y="690" width="310" height="74" rx="3" class="box"/><text x="1510" y="714" text-anchor="middle" class="label">1. Staff selects report / date</text><text x="1510" y="734" text-anchor="middle" class="small">filters applied in dashboard workflows</text><text x="1510" y="751" text-anchor="middle" class="tiny">attendance, membership, inventory, sales</text>
+ <path d="M1510 764V786" class="arr"/>
+ <rect x="1355" y="791" width="310" height="84" rx="3" class="box"/><text x="1510" y="815" text-anchor="middle" class="label">2. Query permitted records</text><text x="1510" y="835" text-anchor="middle" class="small">SELECT from operational tables</text><text x="1510" y="852" text-anchor="middle" class="tiny">Supabase returns rows allowed by RLS</text>
+ <path d="M1510 875V897" class="arr"/>
+ <rect x="1355" y="902" width="310" height="88" rx="3" class="step"/><text x="1510" y="927" text-anchor="middle" class="label">3. Present report results</text><text x="1510" y="948" text-anchor="middle" class="small">render tables / summary / available export</text><text x="1510" y="968" text-anchor="middle" class="tiny">report calculation and display run in frontend</text>
+ <path d="M1510 990V1012" class="arr"/>
+ <rect x="1355" y="1017" width="310" height="78" rx="3" class="box"/><text x="1510" y="1042" text-anchor="middle" class="label">Data returned to dashboard</text><text x="1510" y="1062" text-anchor="middle" class="small">member, application, attendance, product,</text><text x="1510" y="1080" text-anchor="middle" class="small">sale and sale-item records, as authorized</text>
+ <path d="M1510 1095V1120" class="arr"/>
+ <rect x="1355" y="1125" width="310" height="88" rx="3" class="dbbox"/><text x="1510" y="1150" text-anchor="middle" class="label">Queried records</text><text x="1372" y="1172" class="small">members · membership_applications</text><text x="1372" y="1190" class="small">attendance · products</text><text x="1372" y="1208" class="small">sales · sale_items · history</text>
+</g>
+
+<!-- Direct client request and RLS boundary -->
+<path d="M170 1213V1250H850M500 1213V1250M830 1213V1250M1160 1213V1250M1510 1213V1250H850" class="wire"/>
+<rect x="200" y="1255" width="1300" height="74" rx="3" class="authbox"/>
+<text x="850" y="1280" text-anchor="middle" class="label">Supabase Data API / PostgreSQL Functions</text>
+<text x="850" y="1301" text-anchor="middle" class="small">.from(table).select / insert / update  ·  .rpc(function, arguments)  ·  .functions.invoke(admin-create-member)</text>
+<text x="850" y="1318" text-anchor="middle" class="tiny">Calls originate in frontend JavaScript using the authenticated Supabase client</text>
+<path d="M850 1329V1358" class="arr"/>
+<rect x="200" y="1363" width="1300" height="66" rx="3" class="step"/>
+<text x="850" y="1388" text-anchor="middle" class="label">Row-Level Security (RLS) + Database Checks</text>
+<text x="850" y="1409" text-anchor="middle" class="small">RLS protects direct authenticated table calls; privileged Edge Function calls use a service role and verify the admin identity</text>
+<path d="M850 1429V1462" class="arr"/><text x="862" y="1452" class="tiny">accepted reads and writes</text>
+
+<!-- Database tables and shared database -->
+<rect x="130" y="1470" width="1340" height="132" rx="3" class="dbbox"/>
+<text x="800" y="1494" text-anchor="middle" class="label">POSTGRESQL APPLICATION TABLES AND AUTH IDENTITY LINK</text>
+<text x="160" y="1522" class="text">profiles</text><text x="160" y="1545" class="text">members</text><text x="160" y="1568" class="text">membership_applications</text>
+<text x="510" y="1522" class="text">attendance</text><text x="510" y="1545" class="text">products</text><text x="510" y="1568" class="text">membership_history</text>
+<text x="870" y="1522" class="text">sales</text><text x="870" y="1545" class="text">sale_items</text><text x="870" y="1568" class="text">receipt and inventory relations</text>
+<text x="1220" y="1522" class="text">auth.users (managed by Auth)</text><text x="1220" y="1545" class="text">user ID links to profiles.id</text><text x="1220" y="1568" class="text">application tables use RLS</text>
+<path d="M800 1602V1630" class="arr"/>
+<ellipse cx="800" cy="1653" rx="230" ry="29" class="db"/>
+<path d="M570 1653v71c0 16 103 29 230 29s230-13 230-29v-71" class="db"/>
+<ellipse cx="800" cy="1724" rx="230" ry="29" class="db"/>
+<text x="800" y="1658" text-anchor="middle" style="fill:#fff;font-size:18px;font-weight:bold">SUPABASE POSTGRESQL DATABASE</text>
+<text x="800" y="1686" text-anchor="middle" style="fill:#fff;font-size:11px">persistent application records</text>
+<text x="800" y="1707" text-anchor="middle" style="fill:#fff;font-size:10px">query results return through the same authenticated client</text>
+
+<rect x="210" y="1783" width="1280" height="42" rx="3" class="step"/>
+<text x="850" y="1809" text-anchor="middle" class="small">Figure 3. System Architecture Diagram — actual browser-to-Supabase workflows; hosting serves static files, while Supabase provides Auth and database services.</text>
+<text x="850" y="1850" text-anchor="middle" class="tiny">Note: Realtime subscriptions are used for selected views only; ordinary database reads and writes do not require Realtime to be enabled.</text>
 </svg>
