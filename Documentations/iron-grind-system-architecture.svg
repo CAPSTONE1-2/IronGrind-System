@@ -98,22 +98,80 @@ text{font-family:"Times New Roman",serif;fill:#111}.title{font-size:24px;font-we
 <text x="1605" y="698" text-anchor="middle" class="hdr">Report Query Service</text>
 <text x="1605" y="716" text-anchor="middle" class="xs">Frontend filters / authorized SELECT</text>
 <text x="1605" y="733" text-anchor="middle" class="xs">Reads: members | attendance | inventory | sales | history</text>
-<text x="875" y="816" text-anchor="middle" class="hdr">📡 SUPABASE CLIENT CALLS AND LABELED DATA FLOWS</text>
-<text x="875" y="835" text-anchor="middle" class="xs">Direct .from(table) queries / writes and .rpc(function) calls; service-role Edge Function is a separate privileged route</text>
-<!-- Parallel request and response paths, one per workflow -->
-<path d="M145 855V1155" class="wire"/><path d="M153 1155V855" class="back"/>
-<text x="134" y="1010" transform="rotate(-90 134 1010)" class="xs">application and membership data</text>
-<path d="M437 855V1155" class="wire"/><path d="M445 1155V855" class="back"/>
-<text x="426" y="1010" transform="rotate(-90 426 1010)" class="xs">member lookup and attendance records</text>
-<path d="M729 855V1155" class="wire"/><path d="M737 1155V855" class="back"/>
-<text x="718" y="1010" transform="rotate(-90 718 1010)" class="xs">product and inventory data</text>
-<path d="M1021 855V1155" class="wire"/><path d="M1029 1155V855" class="back"/>
-<text x="1010" y="1010" transform="rotate(-90 1010 1010)" class="xs">sale, receipt, and stock data</text>
-<path d="M1313 855V1155" class="wire"/><path d="M1321 1155V855" class="back"/>
-<text x="1302" y="1010" transform="rotate(-90 1302 1010)" class="xs">own profile, visit, renewal data</text>
-<path d="M1605 855V1155" class="wire"/><path d="M1613 1155V855" class="back"/>
-<text x="1594" y="1010" transform="rotate(-90 1594 1010)" class="xs">filtered reports and query results</text>
-<rect x="100" y="1165" width="1550" height="88" class="soft"/>
+<!-- Detailed parallel database requests and result paths, grouped by workflow -->
+<path d="M145 741V855" class="line"/>
+<path d="M145 855H109V1155" class="wire"/>
+<text x="105" y="1000" transform="rotate(-90 105 1000)" class="xs">membership_applications INSERT pending</text>
+<path d="M145 855H127V1155" class="wire"/>
+<text x="123" y="1000" transform="rotate(-90 123 1000)" class="xs">members INSERT approved</text>
+<path d="M145 855H145V1155" class="wire"/>
+<text x="141" y="1000" transform="rotate(-90 141 1000)" class="xs">registration sale RPC</text>
+<path d="M145 855H163V1155" class="wire"/>
+<text x="159" y="1000" transform="rotate(-90 159 1000)" class="xs">application UPDATE approved</text>
+<path d="M145 855H181V1155" class="wire"/>
+<text x="177" y="1000" transform="rotate(-90 177 1000)" class="xs">member role lookup</text>
+<path d="M213 1155V855" class="back"/>
+<text x="217" y="1010" transform="rotate(-90 217 1010)" class="xs">query result / response</text>
+<path d="M437 741V855" class="line"/>
+<path d="M437 855H410V1155" class="wire"/>
+<text x="406" y="1000" transform="rotate(-90 406 1000)" class="xs">QR member lookup</text>
+<path d="M437 855H428V1155" class="wire"/>
+<text x="424" y="1000" transform="rotate(-90 424 1000)" class="xs">attendance INSERT time-in</text>
+<path d="M437 855H446V1155" class="wire"/>
+<text x="442" y="1000" transform="rotate(-90 442 1000)" class="xs">attendance UPDATE time-out</text>
+<path d="M437 855H464V1155" class="wire"/>
+<text x="460" y="1000" transform="rotate(-90 460 1000)" class="xs">attendance SELECT history</text>
+<path d="M505 1155V855" class="back"/>
+<text x="509" y="1010" transform="rotate(-90 509 1010)" class="xs">query result / response</text>
+<path d="M729 741V855" class="line"/>
+<path d="M729 855H711V1155" class="wire"/>
+<text x="707" y="1000" transform="rotate(-90 707 1000)" class="xs">products SELECT lookup</text>
+<path d="M729 855H729V1155" class="wire"/>
+<text x="725" y="1000" transform="rotate(-90 725 1000)" class="xs">products INSERT / UPDATE</text>
+<path d="M729 855H747V1155" class="wire"/>
+<text x="743" y="1000" transform="rotate(-90 743 1000)" class="xs">active catalog SELECT</text>
+<path d="M797 1155V855" class="back"/>
+<text x="801" y="1010" transform="rotate(-90 801 1010)" class="xs">query result / response</text>
+<path d="M1021 741V855" class="line"/>
+<path d="M1021 855H985V1155" class="wire"/>
+<text x="981" y="1000" transform="rotate(-90 981 1000)" class="xs">product validation / stock</text>
+<path d="M1021 855H1003V1155" class="wire"/>
+<text x="999" y="1000" transform="rotate(-90 999 1000)" class="xs">sales INSERT receipt</text>
+<path d="M1021 855H1021V1155" class="wire"/>
+<text x="1017" y="1000" transform="rotate(-90 1017 1000)" class="xs">sale_items INSERT lines</text>
+<path d="M1021 855H1039V1155" class="wire"/>
+<text x="1035" y="1000" transform="rotate(-90 1035 1000)" class="xs">products UPDATE stock</text>
+<path d="M1021 855H1057V1155" class="wire"/>
+<text x="1053" y="1000" transform="rotate(-90 1053 1000)" class="xs">receipt result</text>
+<path d="M1089 1155V855" class="back"/>
+<text x="1093" y="1010" transform="rotate(-90 1093 1010)" class="xs">query result / response</text>
+<path d="M1313 741V855" class="line"/>
+<path d="M1313 855H1277V1155" class="wire"/>
+<text x="1273" y="1000" transform="rotate(-90 1273 1000)" class="xs">own member SELECT</text>
+<path d="M1313 855H1295V1155" class="wire"/>
+<text x="1291" y="1000" transform="rotate(-90 1291 1000)" class="xs">own attendance SELECT</text>
+<path d="M1313 855H1313V1155" class="wire"/>
+<text x="1309" y="1000" transform="rotate(-90 1309 1000)" class="xs">active products SELECT</text>
+<path d="M1313 855H1331V1155" class="wire"/>
+<text x="1327" y="1000" transform="rotate(-90 1327 1000)" class="xs">renewal application INSERT</text>
+<path d="M1313 855H1349V1155" class="wire"/>
+<text x="1345" y="1000" transform="rotate(-90 1345 1000)" class="xs">personal info RPC</text>
+<path d="M1381 1155V855" class="back"/>
+<text x="1385" y="1010" transform="rotate(-90 1385 1010)" class="xs">query result / response</text>
+<path d="M1605 741V855" class="line"/>
+<path d="M1605 855H1569V1155" class="wire"/>
+<text x="1565" y="1000" transform="rotate(-90 1565 1000)" class="xs">member / application query</text>
+<path d="M1605 855H1587V1155" class="wire"/>
+<text x="1583" y="1000" transform="rotate(-90 1583 1000)" class="xs">attendance date query</text>
+<path d="M1605 855H1605V1155" class="wire"/>
+<text x="1601" y="1000" transform="rotate(-90 1601 1000)" class="xs">inventory query</text>
+<path d="M1605 855H1623V1155" class="wire"/>
+<text x="1619" y="1000" transform="rotate(-90 1619 1000)" class="xs">sales / sale_items query</text>
+<path d="M1605 855H1641V1155" class="wire"/>
+<text x="1637" y="1000" transform="rotate(-90 1637 1000)" class="xs">history query / export</text>
+<path d="M1673 1155V855" class="back"/>
+<text x="1677" y="1010" transform="rotate(-90 1677 1010)" class="xs">query result / response</text>
+<rect x="40" y="1165" width="1670" height="88" class="soft"/>
 <text x="875" y="1190" text-anchor="middle" class="hdr">Supabase Data API / RPC + Row-Level Security (RLS)</text>
 <text x="875" y="1211" text-anchor="middle" class="xs">Authenticated requests are checked against user role, record ownership, and database rules before reads or writes.</text>
 <text x="875" y="1230" text-anchor="middle" class="xs">Staff-created accounts use admin-create-member Edge Function; it verifies the admin before service-role database operations.</text>
