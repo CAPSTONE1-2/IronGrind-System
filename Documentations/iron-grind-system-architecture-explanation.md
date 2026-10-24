@@ -1,4 +1,4 @@
-# Iron Grind System Architecture Diagram Explanation
+is i# Iron Grind System Architecture Diagram Explanation
 
 Figure 3 presents the main components of the Iron Grind Fitness Gym Membership and Operations Management System and shows how user requests pass through the website and Supabase services to the shared PostgreSQL database. The diagram follows the current project structure: the browser runs the front-end pages, Supabase provides authentication and data services, and PostgreSQL stores the system records.
 
