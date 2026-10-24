@@ -42,7 +42,7 @@ body.dashboard-body .low-stock-item { background-color: rgba(13,18,25,0.64); bor
 .logo-image { display: block; flex: 0 0 auto; object-fit: cover; background: #000; }
 .logo-text h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.5px; }
 .logo-text span { color: #780000; }
-.logo-text p { font-size: 0.8rem; color: #8b95a9; }
+.logo-text p { font-size: 0.8rem; color: #c2c9d5; }
 .header-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .dashboard-body .header-actions { gap: 8px; flex-wrap: nowrap; }
 .user-chip { display: flex; align-items: center; gap: 8px; background: #202020; border: 1px solid #393939; padding: 8px 16px; border-radius: 30px; font-size: 0.85rem; font-weight: 500; }
@@ -264,6 +264,7 @@ label:has(input[name="wiPlan"]:checked) {
 .login-brand .logo-icon { background: #0a0a0a; color: #8b0000; }
 .login-brand .logo-text h1 { color: #fff; }
 .login-brand .logo-text span { color: #0a0a0a; }
+.login-brand .logo-text p { color: #f2eaea; }
 .login-brand-content { margin: auto 0; padding: 40px 0; }
 .login-brand-content h2 { font-size: 2.2rem; font-weight: 800; line-height: 1.15; margin-bottom: 16px; }
 .login-brand-content p { font-size: 0.95rem; opacity: 0.9; margin-bottom: 24px; }
