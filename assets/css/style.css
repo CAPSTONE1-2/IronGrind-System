@@ -126,6 +126,11 @@ body.dashboard-body .low-stock-item { background-color: rgba(13,18,25,0.64); bor
 
 /* ========== TABLES ========== */
 .attendance-table { width: 100%; border-collapse: collapse; }
+.attendance-log-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 6px 0 12px; }
+.attendance-log-controls h3 { display: flex; align-items: center; gap: 8px; font-size: 0.95rem; font-weight: 600; }
+.attendance-log-controls h3 i { color: #8b0000; }
+.attendance-date-filter { display: flex; align-items: center; gap: 9px; color: #c2c9d5; font-size: 0.8rem; }
+.attendance-date-filter input { padding: 8px 10px; border: 1px solid #393939; border-radius: 9px; background: #101010; color: #e8edf5; font: inherit; color-scheme: dark; }
 .attendance-table th { text-align: left; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.6px; color: #6a748b; padding: 8px 12px; border-bottom: 1px solid #282828; font-weight: 600; }
 .attendance-table td { padding: 12px; font-size: 0.9rem; border-bottom: 1px solid #222222; }
 .attendance-table tr:last-child td { border-bottom: none; }

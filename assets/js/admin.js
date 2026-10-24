@@ -1593,13 +1593,17 @@ async function completeMemberRenewal(id) {
 /* ========== ATTENDANCE ========== */
 function renderAttendance() {
     const today = todayStr();
-    const todayAtt = attendance.filter(a => a.date === today);
+    const dateInput = document.getElementById('attendanceLogDate');
+    if (dateInput && !dateInput.value) dateInput.value = today;
+    const selectedDate = dateInput?.value || today;
+    const dateAtt = attendance.filter(a => a.date === selectedDate);
     const el = document.getElementById('attendanceLogTable');
-    if (todayAtt.length === 0) { el.innerHTML = '<div class="empty-state">No attendance records for today.</div>'; return; }
+    if (!el) return;
+    if (dateAtt.length === 0) { el.innerHTML = `<div class="empty-state">No attendance records for ${selectedDate === today ? 'today' : escapeHTML(selectedDate)}.</div>`; return; }
     el.innerHTML = `
         <table class="attendance-table">
             <thead><tr><th>Member</th><th>Time In</th><th>Time Out</th><th>Status</th><th>Action</th></tr></thead>
-            <tbody>${todayAtt.map(a => `
+            <tbody>${dateAtt.map(a => `
                 <tr><td>${a.memberName}</td><td>${formatAttendanceClock(a.timeIn)}</td><td>${formatAttendanceClock(a.timeOut)}</td>
                 <td>${a.timeOut ? '<span class="badge-status out">Checked Out</span>' : '<span class="badge-status in">Inside</span>'}</td>
                 <td>${a.timeOut ? '' : `<button class="btn-sm" onclick="checkOut('${a.id}')">Check Out</button>`}</td></tr>
