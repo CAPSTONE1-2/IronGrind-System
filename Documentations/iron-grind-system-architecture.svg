@@ -24,7 +24,7 @@ text{font-family:"Times New Roman",serif;fill:#111}.title{font-size:24px;font-we
 <path d="M760 173H735V81H755" class="back"/><text x="726" y="142" text-anchor="end" class="xs">Authentication result / error</text>
 <path d="M875 201V226" class="wire"/><text x="886" y="219" class="xs">successful login</text>
 <rect x="705" y="231" width="340" height="55" class="box"/><text x="875" y="253" text-anchor="middle" class="hdr">Load profiles.role by Auth user ID</text><text x="875" y="272" text-anchor="middle" class="xs">Admin role → admin.html · member role → membership lookup</text>
-<path d="M705 258H655V303H565" class="wire"/><text x="623" y="296" text-anchor="middle" class="xs">role = customer</text>
+<path d="M705 258H655V303H565" class="wire"/><text x="623" y="296" text-anchor="middle" class="xs">role = member</text>
 <rect x="375" y="305" width="190" height="50" class="box"/><text x="470" y="326" text-anchor="middle" class="hdr">Member lookup</text><text x="470" y="344" text-anchor="middle" class="xs">members.auth_user_id = user.id</text>
 <path d="M375 330H325" class="wire"/><rect x="160" y="305" width="165" height="50" class="soft"/><text x="242" y="326" text-anchor="middle" class="hdr">customer.html</text><text x="242" y="344" text-anchor="middle" class="xs">or show application status</text>
 <path d="M470 355V368H255V360" class="back"/>
@@ -140,7 +140,7 @@ text{font-family:"Times New Roman",serif;fill:#111}.title{font-size:24px;font-we
 <path d="M1021 855H1021V1155" class="wire"/>
 <text x="1017" y="1000" transform="rotate(-90 1017 1000)" class="xs">sale_items INSERT lines</text>
 <path d="M1021 855H1039V1155" class="wire"/>
-<text x="1035" y="1000" transform="rotate(-90 1035 1000)" class="xs">products UPDATE stock</text>
+<text x="1035" y="1000" transform="rotate(-90 1035 1000)" class="xs">products UPDATE merchandise stock</text>
 <path d="M1021 855H1057V1155" class="wire"/>
 <text x="1053" y="1000" transform="rotate(-90 1053 1000)" class="xs">receipt result</text>
 <path d="M1089 1155V855" class="back"/>
@@ -173,7 +173,7 @@ text{font-family:"Times New Roman",serif;fill:#111}.title{font-size:24px;font-we
 <text x="1677" y="1010" transform="rotate(-90 1677 1010)" class="xs">query result / response</text>
 <rect x="40" y="1165" width="1670" height="88" class="soft"/>
 <text x="875" y="1190" text-anchor="middle" class="hdr">Supabase Data API / RPC + Row-Level Security (RLS)</text>
-<text x="875" y="1211" text-anchor="middle" class="xs">Authenticated requests are checked against user role, record ownership, and database rules before reads or writes.</text>
+<text x="875" y="1211" text-anchor="middle" class="xs">Direct table requests use RLS; RPC functions enforce their own authorization and validation checks.</text>
 <text x="875" y="1230" text-anchor="middle" class="xs">Staff-created accounts use admin-create-member Edge Function; it verifies the admin before service-role database operations.</text>
 <path d="M875 1253V1300" class="wire"/>
 <ellipse cx="875" cy="1325" rx="165" ry="30" fill="#111"/>
