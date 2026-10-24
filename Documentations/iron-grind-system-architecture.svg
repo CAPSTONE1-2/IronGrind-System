@@ -43,8 +43,8 @@ text{font-family:"Times New Roman",serif;fill:#111}.title{font-size:24px;font-we
 <text x="145" y="510" text-anchor="middle" font-size="23">📝</text>
 <text x="145" y="530" text-anchor="middle" class="hdr">Applications &amp; Membership</text>
 <text x="145" y="549" text-anchor="middle" class="xs">register.html · admin.html</text>
-<path d="M145 563V668" class="wire"/>
-<text x="145" y="588" text-anchor="middle" font-size="22">📝</text>
+<path d="M145 563V603" class="wire"/>
+<text x="145" y="615" text-anchor="middle" font-size="22">📝</text>
 <text x="145" y="698" text-anchor="middle" class="hdr">Applications Service</text>
 <text x="145" y="716" text-anchor="middle" class="xs">Submit registration • review approval</text>
 <text x="145" y="733" text-anchor="middle" class="xs">Tables: applications | members | sales | sale_items</text>
@@ -53,8 +53,8 @@ text{font-family:"Times New Roman",serif;fill:#111}.title{font-size:24px;font-we
 <text x="437" y="510" text-anchor="middle" font-size="23">📅</text>
 <text x="437" y="530" text-anchor="middle" class="hdr">Attendance / QR</text>
 <text x="437" y="549" text-anchor="middle" class="xs">admin.html · customer.html</text>
-<path d="M437 563V668" class="wire"/>
-<text x="437" y="588" text-anchor="middle" font-size="22">📷</text>
+<path d="M437 563V603" class="wire"/>
+<text x="437" y="615" text-anchor="middle" font-size="22">📷</text>
 <text x="437" y="698" text-anchor="middle" class="hdr">Attendance Service</text>
 <text x="437" y="716" text-anchor="middle" class="xs">Resolve QR • check-in / check-out</text>
 <text x="437" y="733" text-anchor="middle" class="xs">Tables: members | attendance</text>
@@ -63,8 +63,8 @@ text{font-family:"Times New Roman",serif;fill:#111}.title{font-size:24px;font-we
 <text x="729" y="510" text-anchor="middle" font-size="23">📦</text>
 <text x="729" y="530" text-anchor="middle" class="hdr">Inventory &amp; Products</text>
 <text x="729" y="549" text-anchor="middle" class="xs">admin.html · read-only member view</text>
-<path d="M729 563V668" class="wire"/>
-<text x="729" y="588" text-anchor="middle" font-size="22">⚙️</text>
+<path d="M729 563V603" class="wire"/>
+<text x="729" y="615" text-anchor="middle" font-size="22">⚙️</text>
 <text x="729" y="698" text-anchor="middle" class="hdr">Inventory Service</text>
 <text x="729" y="716" text-anchor="middle" class="xs">Product CRUD • stock • active catalog</text>
 <text x="729" y="733" text-anchor="middle" class="xs">Tables: products</text>
@@ -73,8 +73,8 @@ text{font-family:"Times New Roman",serif;fill:#111}.title{font-size:24px;font-we
 <text x="1021" y="510" text-anchor="middle" font-size="23">🧾</text>
 <text x="1021" y="530" text-anchor="middle" class="hdr">Walk-in POS / Receipts</text>
 <text x="1021" y="549" text-anchor="middle" class="xs">staff-entered sale</text>
-<path d="M1021 563V668" class="wire"/>
-<text x="1021" y="588" text-anchor="middle" font-size="22">💳</text>
+<path d="M1021 563V603" class="wire"/>
+<text x="1021" y="615" text-anchor="middle" font-size="22">💳</text>
 <text x="1021" y="698" text-anchor="middle" class="hdr">Sales Service (RPC)</text>
 <text x="1021" y="716" text-anchor="middle" class="xs">record_walk_in_sale()</text>
 <text x="1021" y="733" text-anchor="middle" class="xs">Tables: products | sales | sale_items</text>
@@ -83,8 +83,8 @@ text{font-family:"Times New Roman",serif;fill:#111}.title{font-size:24px;font-we
 <text x="1313" y="510" text-anchor="middle" font-size="23">👤</text>
 <text x="1313" y="530" text-anchor="middle" class="hdr">Member Portal</text>
 <text x="1313" y="549" text-anchor="middle" class="xs">customer.html</text>
-<path d="M1313 563V668" class="wire"/>
-<text x="1313" y="588" text-anchor="middle" font-size="22">🔄</text>
+<path d="M1313 563V603" class="wire"/>
+<text x="1313" y="615" text-anchor="middle" font-size="22">🔄</text>
 <text x="1313" y="698" text-anchor="middle" class="hdr">Member Data Service</text>
 <text x="1313" y="716" text-anchor="middle" class="xs">Own membership • visits • catalog</text>
 <text x="1313" y="733" text-anchor="middle" class="xs">Tables: members | attendance | products | applications</text>
@@ -93,70 +93,31 @@ text{font-family:"Times New Roman",serif;fill:#111}.title{font-size:24px;font-we
 <text x="1605" y="510" text-anchor="middle" font-size="23">📊</text>
 <text x="1605" y="530" text-anchor="middle" class="hdr">Reports &amp; Exports</text>
 <text x="1605" y="549" text-anchor="middle" class="xs">admin.html</text>
-<path d="M1605 563V668" class="wire"/>
-<text x="1605" y="588" text-anchor="middle" font-size="22">🔎</text>
+<path d="M1605 563V603" class="wire"/>
+<text x="1605" y="615" text-anchor="middle" font-size="22">🔎</text>
 <text x="1605" y="698" text-anchor="middle" class="hdr">Report Query Service</text>
 <text x="1605" y="716" text-anchor="middle" class="xs">Frontend filters / authorized SELECT</text>
 <text x="1605" y="733" text-anchor="middle" class="xs">Reads: members | attendance | inventory | sales | history</text>
 <text x="875" y="816" text-anchor="middle" class="hdr">📡 SUPABASE CLIENT CALLS AND LABELED DATA FLOWS</text>
 <text x="875" y="835" text-anchor="middle" class="xs">Direct .from(table) queries / writes and .rpc(function) calls; service-role Edge Function is a separate privileged route</text>
-<path d="M145 741V870H35V1338H710" class="wire"/>
-<text x="40" y="990" transform="rotate(-90 40 990)" class="xs">membership_applications INSERT: pending</text>
-<path d="M145 741V887H55V1342H710" class="wire"/>
-<text x="60" y="1007" transform="rotate(-90 60 1007)" class="xs">members INSERT: approved member</text>
-<path d="M145 741V904H75V1346H710" class="wire"/>
-<text x="80" y="1024" transform="rotate(-90 80 1024)" class="xs">admin_record_registration_sale RPC</text>
-<path d="M145 741V921H95V1350H710" class="wire"/>
-<text x="100" y="1041" transform="rotate(-90 100 1041)" class="xs">sales + sale_items: membership receipt</text>
-<path d="M145 741V938H115V1354H710" class="wire"/>
-<text x="120" y="1058" transform="rotate(-90 120 1058)" class="xs">membership_applications UPDATE: approved</text>
-<path d="M437 741V955H35V1358H710" class="wire"/>
-<text x="40" y="1075" transform="rotate(-90 40 1075)" class="xs">members SELECT by id / auth_user_id / username</text>
-<path d="M437 741V972H55V1362H710" class="wire"/>
-<text x="60" y="1092" transform="rotate(-90 60 1092)" class="xs">attendance INSERT: time_in</text>
-<path d="M437 741V989H75V1366H710" class="wire"/>
-<text x="80" y="1109" transform="rotate(-90 80 1109)" class="xs">attendance UPDATE: time_out</text>
-<path d="M437 741V1006H95V1370H710" class="wire"/>
-<text x="100" y="1126" transform="rotate(-90 100 1126)" class="xs">attendance SELECT: visit history</text>
-<path d="M729 741V1023H35V1305H917V1325" class="wire"/>
-<text x="40" y="1143" transform="rotate(-90 40 1143)" class="xs">products SELECT: product lookup</text>
-<path d="M729 741V1040H55V1305H930V1325" class="wire"/>
-<text x="60" y="1160" transform="rotate(-90 60 1160)" class="xs">products INSERT / UPDATE: details and stock</text>
-<path d="M729 741V1057H75V1305H943V1325" class="wire"/>
-<text x="80" y="1177" transform="rotate(-90 80 1177)" class="xs">products SELECT: active member catalog</text>
-<path d="M1021 741V1074H1655V1386H1040" class="wire"/>
-<text x="1650" y="1194" transform="rotate(-90 1650 1194)" class="xs">products SELECT / lock: validate product and stock</text>
-<path d="M1021 741V1091H1635V1390H1040" class="wire"/>
-<text x="1630" y="1211" transform="rotate(-90 1630 1211)" class="xs">sales INSERT: receipt, customer, total</text>
-<path d="M1021 741V1108H1615V1394H1040" class="wire"/>
-<text x="1610" y="1228" transform="rotate(-90 1610 1228)" class="xs">sale_items INSERT: item, quantity, price</text>
-<path d="M1021 741V1125H1595V1398H1040" class="wire"/>
-<text x="1590" y="1245" transform="rotate(-90 1590 1245)" class="xs">products UPDATE: merchandise stock</text>
-<path d="M1313 741V1142H1655V1402H1040" class="wire"/>
-<text x="1650" y="1262" transform="rotate(-90 1650 1262)" class="xs">members SELECT: auth_user_id = user.id</text>
-<path d="M1313 741V1159H1635V1406H1040" class="wire"/>
-<text x="1630" y="1279" transform="rotate(-90 1630 1279)" class="xs">attendance SELECT: own member_id</text>
-<path d="M1313 741V1176H1615V1410H1040" class="wire"/>
-<text x="1610" y="1296" transform="rotate(-90 1610 1296)" class="xs">products SELECT: is_active</text>
-<path d="M1313 741V1193H1595V1414H1040" class="wire"/>
-<text x="1590" y="1313" transform="rotate(-90 1590 1313)" class="xs">membership_applications INSERT: renewal</text>
-<path d="M1313 741V1210H1575V1418H1040" class="wire"/>
-<text x="1570" y="1330" transform="rotate(-90 1570 1330)" class="xs">update_own_member_personal_info() RPC</text>
-<path d="M1605 741V1227H1655V1422H1040" class="wire"/>
-<text x="1650" y="1347" transform="rotate(-90 1650 1347)" class="xs">members + membership_applications: member status</text>
-<path d="M1605 741V1244H1635V1426H1040" class="wire"/>
-<text x="1630" y="1364" transform="rotate(-90 1630 1364)" class="xs">attendance: visits by date</text>
-<path d="M1605 741V1261H1615V1430H1040" class="wire"/>
-<text x="1610" y="1381" transform="rotate(-90 1610 1381)" class="xs">products: catalog / stock</text>
-<path d="M1605 741V1278H1595V1434H1040" class="wire"/>
-<text x="1590" y="1398" transform="rotate(-90 1590 1398)" class="xs">sales + sale_items: sales totals and details</text>
-<path d="M1605 741V1295H1575V1438H1040" class="wire"/>
-<text x="1570" y="1415" transform="rotate(-90 1570 1415)" class="xs">membership_history: change / expiry history</text>
-<path d="M875 838V1300" class="line"/>
-<rect x="245" y="1260" width="390" height="64" class="soft"/>
-<text x="440" y="1283" text-anchor="middle" class="hdr">RLS / access checks</text>
-<text x="440" y="1303" text-anchor="middle" class="xs">Direct table access uses authenticated user policies</text>
-<text x="440" y="1317" text-anchor="middle" class="xs">Edge Function verifies admin before service-role writes</text>
+<!-- Parallel request and response paths, one per workflow -->
+<path d="M145 855V1155" class="wire"/><path d="M153 1155V855" class="back"/>
+<text x="134" y="1010" transform="rotate(-90 134 1010)" class="xs">application and membership data</text>
+<path d="M437 855V1155" class="wire"/><path d="M445 1155V855" class="back"/>
+<text x="426" y="1010" transform="rotate(-90 426 1010)" class="xs">member lookup and attendance records</text>
+<path d="M729 855V1155" class="wire"/><path d="M737 1155V855" class="back"/>
+<text x="718" y="1010" transform="rotate(-90 718 1010)" class="xs">product and inventory data</text>
+<path d="M1021 855V1155" class="wire"/><path d="M1029 1155V855" class="back"/>
+<text x="1010" y="1010" transform="rotate(-90 1010 1010)" class="xs">sale, receipt, and stock data</text>
+<path d="M1313 855V1155" class="wire"/><path d="M1321 1155V855" class="back"/>
+<text x="1302" y="1010" transform="rotate(-90 1302 1010)" class="xs">own profile, visit, renewal data</text>
+<path d="M1605 855V1155" class="wire"/><path d="M1613 1155V855" class="back"/>
+<text x="1594" y="1010" transform="rotate(-90 1594 1010)" class="xs">filtered reports and query results</text>
+<rect x="100" y="1165" width="1550" height="88" class="soft"/>
+<text x="875" y="1190" text-anchor="middle" class="hdr">Supabase Data API / RPC + Row-Level Security (RLS)</text>
+<text x="875" y="1211" text-anchor="middle" class="xs">Authenticated requests are checked against user role, record ownership, and database rules before reads or writes.</text>
+<text x="875" y="1230" text-anchor="middle" class="xs">Staff-created accounts use admin-create-member Edge Function; it verifies the admin before service-role database operations.</text>
+<path d="M875 1253V1300" class="wire"/>
 <ellipse cx="875" cy="1325" rx="165" ry="30" fill="#111"/>
 <path d="M710 1325V1455C710 1472 784 1485 875 1485S1040 1472 1040 1455V1325" fill="#111"/>
 <ellipse cx="875" cy="1455" rx="165" ry="30" fill="#111"/>
