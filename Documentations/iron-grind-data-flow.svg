@@ -111,7 +111,7 @@
 <rect x="700" y="850" width="270" height="86" class="service"/>
 <text x="835" y="880" text-anchor="middle" class="node-title">Supabase Realtime</text>
 <text x="835" y="903" text-anchor="middle" class="node-sub">database change notifications to browser views</text>
-<text x="835" y="922" text-anchor="middle" class="small">applications · attendance · member name</text>
+<text x="835" y="922" text-anchor="middle" class="small">active publication: applications + attendance; not members</text>
 
 <!-- Data stores -->
 <g>
@@ -188,7 +188,6 @@
 
 <!-- Realtime data flow -->
 <path d="M1120 334H1090V875H970" class="flow"/><text x="1080" y="858" text-anchor="end" class="small">application changes</text>
-<path d="M1120 429H1070V890H970" class="flow"/><text x="1058" y="883" text-anchor="end" class="small">member-name changes</text>
 <path d="M1120 524H1050V905H970" class="flow"/><text x="1042" y="923" text-anchor="end" class="small">attendance changes</text>
 <path d="M700 885H650V474H615" class="flow"/><text x="636" y="527" transform="rotate(-90 636 527)" text-anchor="middle" class="small">live updates to member view</text>
 <path d="M700 900H635V634H615" class="flow"/><text x="621" y="770" transform="rotate(-90 621 770)" text-anchor="middle" class="small">live updates to admin view</text>

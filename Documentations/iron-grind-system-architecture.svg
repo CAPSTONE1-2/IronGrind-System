@@ -171,11 +171,12 @@ text{font-family:"Times New Roman",serif;fill:#111}.title{font-size:24px;font-we
 <text x="1637" y="1000" transform="rotate(-90 1637 1000)" class="xs">history query / export</text>
 <path d="M1673 1155V855" class="back"/>
 <text x="1677" y="1010" transform="rotate(-90 1677 1010)" class="xs">query result / response</text>
-<rect x="40" y="1165" width="1670" height="88" class="soft"/>
+<rect x="40" y="1165" width="1670" height="98" class="soft"/>
 <text x="875" y="1190" text-anchor="middle" class="hdr">Supabase Data API / RPC + Row-Level Security (RLS)</text>
 <text x="875" y="1211" text-anchor="middle" class="xs">Direct table requests use RLS; RPC functions enforce their own authorization and validation checks.</text>
 <text x="875" y="1230" text-anchor="middle" class="xs">Staff-created accounts use admin-create-member Edge Function; it verifies the admin before service-role database operations.</text>
-<path d="M875 1253V1300" class="wire"/>
+<text x="875" y="1249" text-anchor="middle" class="xs">Realtime publication includes membership_applications and attendance; members is not enabled for Realtime.</text>
+<path d="M875 1263V1300" class="wire"/>
 <ellipse cx="875" cy="1325" rx="165" ry="30" fill="#111"/>
 <path d="M710 1325V1455C710 1472 784 1485 875 1485S1040 1472 1040 1455V1325" fill="#111"/>
 <ellipse cx="875" cy="1455" rx="165" ry="30" fill="#111"/>
