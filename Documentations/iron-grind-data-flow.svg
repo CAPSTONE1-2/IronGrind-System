@@ -1,0 +1,163 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1700" viewBox="0 0 1600 1700" role="img" aria-labelledby="title desc">
+  <title id="title">Iron Grind Data Flow Diagram</title>
+  <desc id="desc">A black-and-white data flow diagram showing member and admin interactions with the login page, Supabase Auth, database tables, and operational services.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#111"/>
+    </marker>
+    <style>
+      .title { font: bold 26px 'Times New Roman', serif; fill: #111; }
+      .subtitle { font: bold 14px 'Times New Roman', serif; fill: #111; }
+      .label { font: 12px 'Times New Roman', serif; fill: #111; }
+      .small { font: 10px 'Times New Roman', serif; fill: #111; }
+      .box { fill: #fff; stroke: #111; stroke-width: 1.2; }
+      .thin { fill: none; stroke: #111; stroke-width: 1.2; marker-end: url(#arrow); }
+      .double { fill: none; stroke: #111; stroke-width: 1.2; marker-end: url(#arrow); }
+      .box-sm { fill: #f9f9f9; stroke: #111; stroke-width: 1.2; }
+      .caption { font: bold 18px 'Times New Roman', serif; fill: #111; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="1700" fill="#fff"/>
+
+  <!-- Top actors -->
+  <rect x="120" y="80" width="220" height="90" class="box"/>
+  <text x="230" y="120" text-anchor="middle" class="subtitle">Member / Applicant</text>
+  <text x="230" y="145" text-anchor="middle" class="small">Inputs personal info, login,</text>
+  <text x="230" y="160" text-anchor="middle" class="small">membership application</text>
+
+  <rect x="1260" y="80" width="220" height="90" class="box"/>
+  <text x="1370" y="120" text-anchor="middle" class="subtitle">Admin / Staff</text>
+  <text x="1370" y="145" text-anchor="middle" class="small">Approves applications,</text>
+  <text x="1370" y="160" text-anchor="middle" class="small">monitors attendance &amp; sales</text>
+
+  <!-- Center system -->
+  <rect x="520" y="50" width="560" height="130" class="box"/>
+  <text x="800" y="88" text-anchor="middle" class="title">Iron Grind Membership &amp; Operations System</text>
+  <text x="800" y="116" text-anchor="middle" class="label">Web Client / Browser Interface</text>
+  <text x="800" y="138" text-anchor="middle" class="small">index.html, register.html, customer.html, admin.html</text>
+
+  <path d="M340 125 H520" class="thin"/>
+  <path d="M1080 125 H1260" class="thin"/>
+
+  <!-- Login and auth -->
+  <rect x="520" y="220" width="560" height="110" class="box"/>
+  <text x="800" y="255" text-anchor="middle" class="subtitle">Login / Authentication Module</text>
+  <text x="800" y="278" text-anchor="middle" class="label">email, password, reset password, sign in / sign out</text>
+  <text x="800" y="298" text-anchor="middle" class="small">Supabase Auth + Auth session management</text>
+
+  <path d="M800 180 V220" class="thin"/>
+
+  <!-- Supabase auth + database -->
+  <rect x="310" y="420" width="980" height="120" class="box"/>
+  <text x="800" y="455" text-anchor="middle" class="subtitle">Supabase Cloud Platform</text>
+  <text x="800" y="482" text-anchor="middle" class="label">Authentication, Data API, Realtime, Edge Functions</text>
+  <text x="800" y="503" text-anchor="middle" class="small">Auth session, RLS checks, scheduled updates, live changes</text>
+
+  <rect x="390" y="610" width="240" height="110" class="box-sm"/>
+  <text x="510" y="650" text-anchor="middle" class="subtitle">Profile &amp; Roles</text>
+  <text x="510" y="675" text-anchor="middle" class="label">profiles</text>
+  <text x="510" y="695" text-anchor="middle" class="small">user_id, email, username,</text>
+  <text x="510" y="710" text-anchor="middle" class="small">full_name, role</text>
+
+  <rect x="680" y="610" width="240" height="110" class="box-sm"/>
+  <text x="800" y="650" text-anchor="middle" class="subtitle">Membership Applications</text>
+  <text x="800" y="675" text-anchor="middle" class="label">membership_applications</text>
+  <text x="800" y="695" text-anchor="middle" class="small">pending / approved / rejected</text>
+  <text x="800" y="710" text-anchor="middle" class="small">registration + renewal requests</text>
+
+  <rect x="970" y="610" width="240" height="110" class="box-sm"/>
+  <text x="1090" y="650" text-anchor="middle" class="subtitle">Approved Members</text>
+  <text x="1090" y="675" text-anchor="middle" class="label">members</text>
+  <text x="1090" y="695" text-anchor="middle" class="small">membership data, contact,</text>
+  <text x="1090" y="710" text-anchor="middle" class="small">plan, expiry, status</text>
+
+  <path d="M800 330 V420" class="thin"/>
+  <path d="M510 540 V610" class="thin"/>
+  <path d="M800 540 V610" class="thin"/>
+  <path d="M1090 540 V610" class="thin"/>
+
+  <!-- Registration and admin approval flow -->
+  <rect x="100" y="830" width="230" height="110" class="box"/>
+  <text x="215" y="868" text-anchor="middle" class="subtitle">Registration Form</text>
+  <text x="215" y="892" text-anchor="middle" class="label">register.html</text>
+  <text x="215" y="910" text-anchor="middle" class="small">Personal details, health info,</text>
+  <text x="215" y="925" text-anchor="middle" class="small">plan selection, signature</text>
+
+  <rect x="420" y="830" width="250" height="110" class="box"/>
+  <text x="545" y="868" text-anchor="middle" class="subtitle">Create Auth Account</text>
+  <text x="545" y="892" text-anchor="middle" class="label">Supabase Auth signUp()</text>
+  <text x="545" y="910" text-anchor="middle" class="small">email, username, password</text>
+  <text x="545" y="925" text-anchor="middle" class="small">Auto-create profile row</text>
+
+  <rect x="760" y="830" width="260" height="110" class="box"/>
+  <text x="890" y="868" text-anchor="middle" class="subtitle">Pending Application</text>
+  <text x="890" y="892" text-anchor="middle" class="label">status = pending</text>
+  <text x="890" y="910" text-anchor="middle" class="small">Application waits for admin</text>
+  <text x="890" y="925" text-anchor="middle" class="small">review and approval</text>
+
+  <rect x="1100" y="830" width="250" height="110" class="box"/>
+  <text x="1225" y="868" text-anchor="middle" class="subtitle">Admin Review</text>
+  <text x="1225" y="892" text-anchor="middle" class="label">Approve / Reject</text>
+  <text x="1225" y="910" text-anchor="middle" class="small">Update application status</text>
+  <text x="1225" y="925" text-anchor="middle" class="small">Create member record if approved</text>
+
+  <path d="M330 885 H420" class="thin"/>
+  <path d="M670 885 H760" class="thin"/>
+  <path d="M1020 885 H1100" class="thin"/>
+
+  <!-- Services and tables -->
+  <rect x="100" y="1060" width="220" height="100" class="box"/>
+  <text x="210" y="1098" text-anchor="middle" class="subtitle">Attendance</text>
+  <text x="210" y="1122" text-anchor="middle" class="label">attendance</text>
+  <text x="210" y="1138" text-anchor="middle" class="small">member_id, time_in, time_out</text>
+
+  <rect x="410" y="1060" width="220" height="100" class="box"/>
+  <text x="520" y="1098" text-anchor="middle" class="subtitle">Inventory</text>
+  <text x="520" y="1122" text-anchor="middle" class="label">products</text>
+  <text x="520" y="1138" text-anchor="middle" class="small">name, stock, price, category</text>
+
+  <rect x="720" y="1060" width="220" height="100" class="box"/>
+  <text x="830" y="1098" text-anchor="middle" class="subtitle">Sales</text>
+  <text x="830" y="1122" text-anchor="middle" class="label">sales + sale_items</text>
+  <text x="830" y="1138" text-anchor="middle" class="small">receipt, items, total, customer</text>
+
+  <rect x="1030" y="1060" width="220" height="100" class="box"/>
+  <text x="1140" y="1098" text-anchor="middle" class="subtitle">Membership History</text>
+  <text x="1140" y="1122" text-anchor="middle" class="label">membership_history</text>
+  <text x="1140" y="1138" text-anchor="middle" class="small">expired / renewed / plan changes</text>
+
+  <path d="M320 1110 H410" class="thin"/>
+  <path d="M630 1110 H720" class="thin"/>
+  <path d="M940 1110 H1030" class="thin"/>
+
+  <!-- bottom database -->
+  <rect x="440" y="1260" width="720" height="200" class="box"/>
+  <text x="800" y="1305" text-anchor="middle" class="subtitle">Central Database</text>
+  <text x="800" y="1338" text-anchor="middle" class="label">profiles → members → membership_applications → attendance</text>
+  <text x="800" y="1364" text-anchor="middle" class="label">→ products → sales → sale_items → membership_history</text>
+  <text x="800" y="1395" text-anchor="middle" class="small">All data is stored in PostgreSQL and protected by Row Level Security.</text>
+  <text x="800" y="1416" text-anchor="middle" class="small">The browser uses Supabase Auth and Data API to read and write only allowed records.</text>
+
+  <!-- connections from service area to database -->
+  <path d="M510 720 V1260" class="thin"/>
+  <path d="M800 720 V1260" class="thin"/>
+  <path d="M1090 720 V1260" class="thin"/>
+  <path d="M210 940 V1060" class="thin"/>
+  <path d="M520 940 V1060" class="thin"/>
+  <path d="M890 940 V1060" class="thin"/>
+  <path d="M1225 940 V1060" class="thin"/>
+
+  <!-- Labels around connections -->
+  <text x="540" y="760" text-anchor="middle" class="small">role check</text>
+  <text x="925" y="760" text-anchor="middle" class="small">application records</text>
+  <text x="1150" y="760" text-anchor="middle" class="small">member records</text>
+
+  <text x="350" y="1010" text-anchor="middle" class="small">QR check-in / check-out</text>
+  <text x="650" y="1010" text-anchor="middle" class="small">inventory queries</text>
+  <text x="950" y="1010" text-anchor="middle" class="small">sale entries</text>
+  <text x="1250" y="1010" text-anchor="middle" class="small">renewal history</text>
+
+  <!-- Bottom caption -->
+  <text x="800" y="1525" text-anchor="middle" class="caption">Figure 4. Data Flow Diagram</text>
+</svg>
